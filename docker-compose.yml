@@ -22,14 +22,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: wealthgift_backend
+    env_file:
+      - ./backend/.env
     environment:
-      PORT: 3001
       DATABASE_URL: postgresql://postgres:password@postgres:5432/wealthgift
-      JWT_SECRET: supersecret_change_in_production
-      JWT_EXPIRES_IN: 7d
-      ALPACA_BROKER_KEY: mock
-      ALPACA_BROKER_SECRET: mock
-      ALPACA_BASE_URL: https://broker-api.sandbox.alpaca.markets
+      FRONTEND_URL: http://localhost:5173
     ports:
       - "3001:3001"
     depends_on:
