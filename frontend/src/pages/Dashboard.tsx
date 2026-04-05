@@ -167,7 +167,17 @@ export default function Dashboard() {
                         {gift.occasion} &middot; {isClaimed ? `Estado: ${gift.status.replace(/_/g, ' ')}` : 'Pendiente de reclamar'}
                       </p>
                     </div>
-                    {!isClaimed ? (
+                    {gift.status === 'INVESTED' || gift.status === 'REDEEMED' ? (
+                      <Link
+                        to={`/recipient/${gift.claimToken}/dashboard`}
+                        className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+                      >
+                        Ver mi portafolio
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </Link>
+                    ) : !isClaimed ? (
                       <a
                         href={gift.claimLink}
                         className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
@@ -178,7 +188,7 @@ export default function Dashboard() {
                         </svg>
                       </a>
                     ) : (
-                      <span className="flex-shrink-0 text-xs font-medium bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                      <span className="flex-shrink-0 text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
                         {gift.status.replace(/_/g, ' ')}
                       </span>
                     )}

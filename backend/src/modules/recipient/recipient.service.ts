@@ -1,6 +1,6 @@
 import { prisma } from '../../shared/db/prisma.client';
 import { NotFoundError, BadRequestError } from '../../shared/errors/http-errors';
-import { alpacaService } from '../alpaca/alpaca.service';
+import { fetchCurrentPrice, fetchPriceHistory } from '../market-data/market-data.service';
 import {
   RecipientPortfolioResponse,
   SellRequestDto,
@@ -15,18 +15,45 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
     throw new BadRequestError('Este regalo aún no está invertido.');
   }
 
-  const accountId = gift.alpacaAccountId || `mock-${gift.id}`;
-  const snapshot = await alpacaService.getPortfolio(accountId);
+  // Fetch real current price from Yahoo Finance
+  let currentPrice: number;
+  try {
+    currentPrice = await fetchCurrentPrice(gift.etfSymbol);
+  } catch {
+    // Fallback: use invested amount as current value if market data unavailable
+    currentPrice = gift.amount;
+  }
+
+  // Calculate shares based on amount invested and price at investment time
+  // We approximate purchase price using 1M history first bar, or current price
+  let purchasePrice = currentPrice;
+  try {
+    const history = await fetchPriceHistory(gift.etfSymbol, '1M');
+    if (history.length > 0) {
+      // Find the bar closest to the investment date
+      const investedAt = gift.updatedAt.getTime();
+      const closest = history.reduce((prev, curr) => {
+        const prevDiff = Math.abs(new Date(prev.date).getTime() - investedAt);
+        const currDiff = Math.abs(new Date(curr.date).getTime() - investedAt);
+        return currDiff < prevDiff ? curr : prev;
+      });
+      purchasePrice = closest.value;
+    }
+  } catch { /* use currentPrice as fallback */ }
+
+  const shares = purchasePrice > 0 ? gift.amount / purchasePrice : 0;
+  const totalValue = shares * currentPrice;
+  const gainLoss = totalValue - gift.amount;
+  const gainLossPercent = gift.amount > 0 ? (gainLoss / gift.amount) * 100 : 0;
 
   const investedAt = gift.updatedAt.toISOString();
-  const pricePerShare = snapshot.shares > 0 ? snapshot.totalValue / snapshot.shares : 0;
 
   const transactions = [
     {
       date: investedAt,
       type: 'BUY' as const,
-      shares: snapshot.shares,
-      pricePerShare,
+      shares,
+      pricePerShare: purchasePrice,
       total: gift.amount,
     },
   ];
@@ -36,10 +63,10 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
     recipientName: gift.recipientName,
     etfSymbol: gift.etfSymbol,
     occasion: gift.occasion,
-    totalValue: snapshot.totalValue,
-    gainLoss: snapshot.gainLoss,
-    gainLossPercent: snapshot.gainLossPercent,
-    shares: snapshot.shares,
+    totalValue,
+    gainLoss,
+    gainLossPercent,
+    shares,
     investedAt,
     isRedeemed: gift.status === 'REDEEMED',
     transactions,
@@ -51,7 +78,13 @@ export async function getRecipientHistory(claimToken: string, period: string) {
   if (!gift) throw new NotFoundError('Regalo no encontrado.');
 
   const validPeriod = ['1D', '1W', '1M', '1Y', 'ALL'].includes(period) ? period : '1M';
-  const data = await alpacaService.getPriceHistory(gift.etfSymbol, validPeriod);
+
+  let data;
+  try {
+    data = await fetchPriceHistory(gift.etfSymbol, validPeriod);
+  } catch {
+    data = [];
+  }
 
   return { period: validPeriod, data };
 }
