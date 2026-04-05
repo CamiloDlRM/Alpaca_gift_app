@@ -1,0 +1,74 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  gifts     Gift[]
+}
+
+model Gift {
+  id              String     @id @default(uuid())
+  senderId        String
+  sender          User       @relation(fields: [senderId], references: [id])
+  recipientName   String
+  occasion        String
+  etfSymbol       String
+  amount          Float
+  note            String?
+  deliveryDate    DateTime
+  status          GiftStatus @default(PENDING)
+  claimToken      String     @unique @default(uuid())
+  alpacaAccountId String?
+  alpacaOrderId   String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  kyc             KYC?
+  agreement       Agreement?
+}
+
+model KYC {
+  id         String    @id @default(uuid())
+  giftId     String    @unique
+  gift       Gift      @relation(fields: [giftId], references: [id])
+  fullName   String
+  dob        String
+  ssnLast4   String
+  address    String
+  city       String
+  state      String
+  zip        String
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model Agreement {
+  id              String   @id @default(uuid())
+  giftId          String   @unique
+  gift            Gift     @relation(fields: [giftId], references: [id])
+  signatureBase64 String
+  agreedToTerms   Boolean  @default(true)
+  signedAt        DateTime @default(now())
+}
+
+enum GiftStatus {
+  PENDING
+  CLAIMING
+  KYC_SUBMITTED
+  KYC_VERIFIED
+  AGREEMENT_SIGNED
+  ACCOUNT_CREATING
+  INVESTED
+  FAILED
+}

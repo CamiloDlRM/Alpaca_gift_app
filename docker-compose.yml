@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wealthgift_db
+    environment:
+      POSTGRES_DB: wealthgift
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - wealthgift_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wealthgift_backend
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/wealthgift
+      JWT_SECRET: supersecret_change_in_production
+      JWT_EXPIRES_IN: 7d
+      ALPACA_BROKER_KEY: mock
+      ALPACA_BROKER_SECRET: mock
+      ALPACA_BASE_URL: https://broker-api.sandbox.alpaca.markets
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wealthgift_frontend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  wealthgift_pgdata:
