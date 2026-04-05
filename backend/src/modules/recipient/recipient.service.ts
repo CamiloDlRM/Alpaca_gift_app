@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/db/prisma.client';
 import { NotFoundError, BadRequestError } from '../../shared/errors/http-errors';
 import { fetchCurrentPrice, fetchPriceHistory } from '../market-data/market-data.service';
+import { alpacaService } from '../alpaca/alpaca.service';
 import {
   RecipientPortfolioResponse,
   SellRequestDto,
@@ -79,12 +80,10 @@ export async function getRecipientHistory(claimToken: string, period: string) {
 
   const validPeriod = ['1D', '1W', '1M', '1Y', 'ALL'].includes(period) ? period : '1M';
 
-  let data;
+  let data: { date: string; value: number }[] = [];
   try {
     data = await fetchPriceHistory(gift.etfSymbol, validPeriod);
-  } catch {
-    data = [];
-  }
+  } catch { /* fallback to empty */ }
 
   return { period: validPeriod, data };
 }
