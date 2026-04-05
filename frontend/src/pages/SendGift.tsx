@@ -38,7 +38,16 @@ interface GiftFormData {
   recipientEmail: string;
 }
 
-const OCCASIONS = ['Birthday', 'Anniversary', 'Graduation', 'Baby Shower', 'Holiday', 'Just Because'];
+const OCCASIONS = [
+  { value: 'Birthday', label: 'Birthday', emoji: '🎂', color: 'from-pink-400 to-rose-500', bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-700' },
+  { value: 'Anniversary', label: 'Anniversary', emoji: '💍', color: 'from-purple-400 to-violet-600', bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700' },
+  { value: 'Graduation', label: 'Graduation', emoji: '🎓', color: 'from-blue-400 to-indigo-600', bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700' },
+  { value: 'Baby Shower', label: 'Baby Shower', emoji: '👶', color: 'from-cyan-300 to-sky-500', bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700' },
+  { value: 'Holiday', label: 'Holiday', emoji: '🎄', color: 'from-green-400 to-emerald-600', bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700' },
+  { value: 'Just Because', label: 'Just Because', emoji: '💝', color: 'from-yellow-400 to-orange-500', bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-700' },
+  { value: 'Wedding', label: 'Wedding', emoji: '💒', color: 'from-pink-300 to-fuchsia-500', bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-700' },
+  { value: 'Achievement', label: 'Achievement', emoji: '🏆', color: 'from-amber-400 to-yellow-500', bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700' },
+];
 
 // Inner payment component that uses Stripe hooks
 interface PaymentStepProps {
@@ -46,7 +55,7 @@ interface PaymentStepProps {
   paymentData: PaymentIntentResponse;
   isPro: boolean;
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess: (giftId: string) => void;
 }
 
 function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: PaymentStepProps) {
@@ -78,7 +87,11 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
         return;
       }
 
-      onSuccess();
+      // Confirm gift creation in backend (doesn't depend on webhook)
+      const { data } = await apiClient.post<{ giftId: string }>('/payments/confirm', {
+        paymentIntentId: paymentData.paymentIntentId,
+      });
+      onSuccess(data.giftId);
     } catch {
       setError('Error al procesar el pago. Intenta de nuevo.');
     } finally {
@@ -188,7 +201,7 @@ export default function SendGift() {
 
   // Form state
   const [recipientName, setRecipientName] = useState('');
-  const [occasion, setOccasion] = useState('Birthday');
+  const [occasion, setOccasion] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [etfSymbol, setEtfSymbol] = useState('');
   const [amount, setAmount] = useState('');
@@ -200,6 +213,7 @@ export default function SendGift() {
   const [step, setStep] = useState<1 | 2>(1);
   const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [createdGiftId, setCreatedGiftId] = useState<string>('');
 
   const isPro = user?.subscriptionStatus === 'PRO';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
@@ -260,17 +274,29 @@ export default function SendGift() {
 
   // Success screen
   if (paymentSuccess) {
+    const selectedOccasion = OCCASIONS.find((o) => o.value === occasion);
+    const claimLink = `${window.location.origin}/claim/${createdGiftId}`;
     return (
       <div className="min-h-screen bg-gray-50">
         <Nav />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <Card className="p-8 bg-green-50 border-green-200">
-            <div className="text-5xl mb-4">&#127873;</div>
-            <h1 className="text-2xl font-bold text-green-800 mb-3">Regalo enviado!</h1>
-            <p className="text-green-700 mb-6">
-              Tu pago fue procesado. El link del regalo se generara en unos segundos y podras verlo en tu dashboard.
+          <Card className="p-8">
+            <div className="text-5xl mb-4">{selectedOccasion?.emoji ?? '🎁'}</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Regalo enviado!</h1>
+            <p className="text-gray-500 mb-6">
+              Comparte este link con <span className="font-semibold text-gray-700">{recipientName}</span> para que reclame su regalo.
             </p>
-            <Button onClick={() => navigate('/dashboard')}>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-700 font-mono break-all mb-4 text-left">
+              {claimLink}
+            </div>
+            <Button
+              variant="secondary"
+              className="w-full mb-3"
+              onClick={() => { navigator.clipboard.writeText(claimLink); }}
+            >
+              Copiar link
+            </Button>
+            <Button className="w-full" onClick={() => navigate('/dashboard')}>
               Ver mis regalos
             </Button>
           </Card>
@@ -314,25 +340,46 @@ export default function SendGift() {
           /* Step 1 - Gift form */
           <Card className="p-6 sm:p-8">
             <form onSubmit={handleContinueToPayment} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <Input
-                  label="Nombre del destinatario"
-                  placeholder="Para quien es este regalo?"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  required
-                />
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-gray-700">Ocasion</label>
-                  <select
-                    className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
-                    value={occasion}
-                    onChange={(e) => setOccasion(e.target.value)}
-                  >
-                    {OCCASIONS.map((o) => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
-                  </select>
+              <Input
+                label="Nombre del destinatario"
+                placeholder="Para quien es este regalo?"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                required
+              />
+
+              <div className="flex flex-col gap-3">
+                <label className="text-sm font-medium text-gray-700">Ocasion</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {OCCASIONS.map((o) => {
+                    const selected = occasion === o.value;
+                    return (
+                      <button
+                        type="button"
+                        key={o.value}
+                        onClick={() => setOccasion(o.value)}
+                        className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all text-center ${
+                          selected
+                            ? `${o.border} ${o.bg} shadow-md scale-[1.03]`
+                            : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${o.color} flex items-center justify-center text-2xl shadow-sm`}>
+                          {o.emoji}
+                        </div>
+                        <span className={`text-xs font-semibold ${selected ? o.text : 'text-gray-600'}`}>
+                          {o.label}
+                        </span>
+                        {selected && (
+                          <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#F5C518] flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12">
+                              <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -421,7 +468,7 @@ export default function SendGift() {
                 />
               </div>
 
-              <Button type="submit" loading={loading} className="w-full" disabled={!etfSymbol || !amount}>
+              <Button type="submit" loading={loading} className="w-full" disabled={!occasion || !etfSymbol || !amount}>
                 Continuar al pago
               </Button>
             </form>
@@ -442,7 +489,7 @@ export default function SendGift() {
               paymentData={paymentData}
               isPro={isPro}
               onBack={() => setStep(1)}
-              onSuccess={() => setPaymentSuccess(true)}
+              onSuccess={(giftId) => { setCreatedGiftId(giftId); setPaymentSuccess(true); }}
             />
           </Elements>
         ) : null}

@@ -67,6 +67,59 @@ export async function createPaymentIntent(
   };
 }
 
+export async function confirmGift(
+  userId: string,
+  paymentIntentId: string
+): Promise<{ giftId: string }> {
+  // Check if gift was already created by webhook (idempotent)
+  const existing = await prisma.gift.findFirst({ where: { paymentIntentId } });
+  if (existing) return { giftId: existing.id };
+
+  // Retrieve and verify PaymentIntent from Stripe
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+  if (pi.status !== 'succeeded') {
+    throw new BadRequestError('El pago aún no ha sido confirmado.');
+  }
+
+  const { giftData, commission, giftAmount } = pi.metadata as Record<string, string>;
+
+  if (!giftData) throw new BadRequestError('Datos del regalo no encontrados en el pago.');
+
+  const parsedGiftData = JSON.parse(giftData);
+  const commissionVal = parseFloat(commission || '0');
+  const amountVal = parseFloat(giftAmount || '0');
+
+  const gift = await prisma.gift.create({
+    data: {
+      senderId: userId,
+      recipientName: parsedGiftData.recipientName,
+      occasion: parsedGiftData.occasion,
+      etfSymbol: parsedGiftData.etfSymbol,
+      amount: amountVal,
+      commission: commissionVal,
+      note: parsedGiftData.note || null,
+      deliveryDate: new Date(parsedGiftData.deliveryDate),
+      recipientEmail: parsedGiftData.recipientEmail || null,
+      paymentIntentId: pi.id,
+      status: 'PENDING',
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      giftId: gift.id,
+      stripePaymentIntentId: pi.id,
+      amount: pi.amount / 100,
+      commission: commissionVal,
+      status: 'SUCCEEDED',
+    },
+  });
+
+  eventBus.emit('gift.created', { giftId: gift.id });
+  return { giftId: gift.id };
+}
+
 export async function handleWebhook(rawBody: Buffer, signature: string): Promise<void> {
   let event: any;
 
