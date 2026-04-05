@@ -190,11 +190,12 @@ export default function Dashboard() {
                 <Card className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">Portfolio Value</div>
+                      <div className="text-sm text-gray-500 mb-1">Total Gifted</div>
                       <div className="text-3xl font-bold text-gray-900">${totalGifted.toFixed(2)}</div>
+                      <div className="text-xs text-gray-400 mt-1">Suma de todos los regalos enviados</div>
                     </div>
                     <div className="text-positive text-sm font-semibold bg-green-50 px-3 py-1 rounded-full">
-                      +{gifts.length > 0 ? '8.4' : '0.0'}%
+                      {investedGifts.length} invertidos
                     </div>
                   </div>
                   <div className="h-48 sm:h-64">
@@ -356,9 +357,10 @@ export default function Dashboard() {
             <div className="space-y-6">
               {/* Upcoming gifts */}
               <Card className="p-6">
-                <h3 className="font-bold text-gray-900 mb-4">Upcoming Gifts</h3>
+                <h3 className="font-bold text-gray-900 mb-1">Pendientes de reclamar</h3>
+                <p className="text-xs text-gray-400 mb-4">Regalos enviados esperando al destinatario</p>
                 {pendingGifts.length === 0 ? (
-                  <p className="text-sm text-gray-400">No upcoming gifts scheduled.</p>
+                  <p className="text-sm text-gray-400">Todos los regalos han sido reclamados.</p>
                 ) : (
                   <div className="space-y-4">
                     {pendingGifts.slice(0, 3).map((gift) => (
