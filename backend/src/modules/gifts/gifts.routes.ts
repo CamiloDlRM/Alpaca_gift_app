@@ -4,7 +4,7 @@ import { authMiddleware } from '../../shared/middleware/auth.middleware';
 import { validate } from '../../shared/middleware/validate.middleware';
 import {
   createGiftHandler, listGiftsHandler, getGiftHandler,
-  getGiftByClaimTokenHandler, startClaimingHandler,
+  getGiftByClaimTokenHandler, startClaimingHandler, listReceivedGiftsHandler,
 } from './gifts.controller';
 
 const router = Router();
@@ -20,6 +20,7 @@ const createGiftSchema = z.object({
 
 router.post('/', authMiddleware, validate(createGiftSchema), createGiftHandler);
 router.get('/', authMiddleware, listGiftsHandler);
+router.get('/received', authMiddleware, listReceivedGiftsHandler);
 router.get('/claim/:claimToken', getGiftByClaimTokenHandler);
 router.patch('/claim/:claimToken/start', startClaimingHandler);
 router.get('/:id', authMiddleware, getGiftHandler);

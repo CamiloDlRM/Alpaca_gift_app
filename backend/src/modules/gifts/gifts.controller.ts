@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as giftsService from './gifts.service';
+import { prisma } from '../../shared/db/prisma.client';
 
 export async function createGiftHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -32,6 +33,16 @@ export async function getGiftByClaimTokenHandler(req: Request, res: Response, ne
   try {
     const gift = await giftsService.getGiftByClaimToken(req.params.claimToken);
     res.json(gift);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listReceivedGiftsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.id } });
+    const gifts = await giftsService.listReceivedGifts(user.email);
+    res.json(gifts);
   } catch (err) {
     next(err);
   }

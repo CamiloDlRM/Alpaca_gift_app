@@ -55,7 +55,7 @@ interface PaymentStepProps {
   paymentData: PaymentIntentResponse;
   isPro: boolean;
   onBack: () => void;
-  onSuccess: (giftId: string) => void;
+  onSuccess: (giftId: string, claimLink: string) => void;
 }
 
 function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: PaymentStepProps) {
@@ -88,10 +88,10 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
       }
 
       // Confirm gift creation in backend (doesn't depend on webhook)
-      const { data } = await apiClient.post<{ giftId: string }>('/payments/confirm', {
+      const { data } = await apiClient.post<{ giftId: string; claimToken: string; claimLink: string }>('/payments/confirm', {
         paymentIntentId: paymentData.paymentIntentId,
       });
-      onSuccess(data.giftId);
+      onSuccess(data.giftId, data.claimLink);
     } catch {
       setError('Error al procesar el pago. Intenta de nuevo.');
     } finally {
@@ -214,6 +214,7 @@ export default function SendGift() {
   const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [createdGiftId, setCreatedGiftId] = useState<string>('');
+  const [claimLink, setClaimLink] = useState<string>('');
 
   const isPro = user?.subscriptionStatus === 'PRO';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
@@ -275,7 +276,6 @@ export default function SendGift() {
   // Success screen
   if (paymentSuccess) {
     const selectedOccasion = OCCASIONS.find((o) => o.value === occasion);
-    const claimLink = `${window.location.origin}/claim/${createdGiftId}`;
     return (
       <div className="min-h-screen bg-gray-50">
         <Nav />
@@ -489,7 +489,7 @@ export default function SendGift() {
               paymentData={paymentData}
               isPro={isPro}
               onBack={() => setStep(1)}
-              onSuccess={(giftId) => { setCreatedGiftId(giftId); setPaymentSuccess(true); }}
+              onSuccess={(giftId, link) => { setCreatedGiftId(giftId); setClaimLink(link); setPaymentSuccess(true); }}
             />
           </Elements>
         ) : null}

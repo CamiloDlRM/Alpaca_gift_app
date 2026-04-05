@@ -55,6 +55,7 @@ function generateOverviewChart(): Array<{ date: string; value: number }> {
 export default function Dashboard() {
   const { user, updateUser } = useAuthStore();
   const [gifts, setGifts] = useState<GiftResponse[]>([]);
+  const [receivedGifts, setReceivedGifts] = useState<GiftResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Overview');
@@ -62,8 +63,12 @@ export default function Dashboard() {
 
   const fetchGifts = useCallback(async () => {
     try {
-      const res = await apiClient.get<GiftResponse[]>('/gifts');
-      setGifts(res.data);
+      const [sentRes, receivedRes] = await Promise.all([
+        apiClient.get<GiftResponse[]>('/gifts'),
+        apiClient.get<GiftResponse[]>('/gifts/received'),
+      ]);
+      setGifts(sentRes.data);
+      setReceivedGifts(receivedRes.data);
     } catch {
       setError('Failed to load gifts.');
     } finally {
@@ -142,6 +147,46 @@ export default function Dashboard() {
               <Button>Send a Gift</Button>
             </Link>
           </div>
+
+          {/* Received gifts notification */}
+          {receivedGifts.length > 0 && (
+            <div className="mb-8 space-y-3">
+              {receivedGifts.map((gift) => {
+                const isClaimed = !['PENDING', 'CLAIMING'].includes(gift.status);
+                return (
+                  <div
+                    key={gift.id}
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 border border-[#F5C518]/40 rounded-xl px-5 py-4"
+                  >
+                    <div className="text-3xl flex-shrink-0">🎁</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">
+                        Tienes un regalo de <span className="text-[#b8960c]">${gift.amount.toFixed(2)}</span> en {gift.etfSymbol}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {gift.occasion} &middot; {isClaimed ? `Estado: ${gift.status.replace(/_/g, ' ')}` : 'Pendiente de reclamar'}
+                      </p>
+                    </div>
+                    {!isClaimed ? (
+                      <a
+                        href={gift.claimLink}
+                        className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+                      >
+                        Reclamar regalo
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="flex-shrink-0 text-xs font-medium bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                        {gift.status.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Stats row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

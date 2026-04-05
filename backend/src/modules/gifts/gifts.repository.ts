@@ -25,6 +25,13 @@ export async function findGiftByClaimToken(claimToken: string) {
   return prisma.gift.findUnique({ where: { claimToken } });
 }
 
+export async function findGiftsByRecipientEmail(email: string) {
+  return prisma.gift.findMany({
+    where: { recipientEmail: email },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function updateGiftStatus(id: string, status: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string }) {
   return prisma.gift.update({ where: { id }, data: { status, ...extra } });
 }

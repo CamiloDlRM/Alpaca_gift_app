@@ -70,10 +70,14 @@ export async function createPaymentIntent(
 export async function confirmGift(
   userId: string,
   paymentIntentId: string
-): Promise<{ giftId: string }> {
+): Promise<{ giftId: string; claimToken: string; claimLink: string }> {
   // Check if gift was already created by webhook (idempotent)
   const existing = await prisma.gift.findFirst({ where: { paymentIntentId } });
-  if (existing) return { giftId: existing.id };
+  if (existing) return {
+    giftId: existing.id,
+    claimToken: existing.claimToken,
+    claimLink: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/claim/${existing.claimToken}`,
+  };
 
   // Retrieve and verify PaymentIntent from Stripe
   const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -117,7 +121,11 @@ export async function confirmGift(
   });
 
   eventBus.emit('gift.created', { giftId: gift.id });
-  return { giftId: gift.id };
+  return {
+    giftId: gift.id,
+    claimToken: gift.claimToken,
+    claimLink: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/claim/${gift.claimToken}`,
+  };
 }
 
 export async function handleWebhook(rawBody: Buffer, signature: string): Promise<void> {

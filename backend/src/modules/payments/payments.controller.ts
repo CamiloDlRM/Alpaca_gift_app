@@ -25,6 +25,7 @@ export async function confirmGiftHandler(
   try {
     const userId = req.user!.id;
     const { paymentIntentId } = req.body as { paymentIntentId: string };
+    if (!paymentIntentId) { res.status(400).json({ error: 'paymentIntentId requerido' }); return; }
     const result = await confirmGift(userId, paymentIntentId);
     res.json(result);
   } catch (err) {

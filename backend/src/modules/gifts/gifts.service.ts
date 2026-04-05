@@ -55,6 +55,11 @@ export async function startClaiming(claimToken: string): Promise<GiftResponse> {
   return toGiftResponse(updated);
 }
 
+export async function listReceivedGifts(userEmail: string): Promise<GiftResponse[]> {
+  const gifts = await giftsRepo.findGiftsByRecipientEmail(userEmail);
+  return gifts.map(toGiftResponse);
+}
+
 export async function transitionStatus(giftId: string, newStatus: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string }): Promise<void> {
   const gift = await giftsRepo.findGiftById(giftId);
   if (!gift) throw new NotFoundError('Gift not found');
