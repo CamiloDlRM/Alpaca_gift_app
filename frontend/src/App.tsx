@@ -14,6 +14,11 @@ import GiftDashboard from './pages/GiftDashboard';
 import Dashboard from './pages/Dashboard';
 import Pricing from './pages/Pricing';
 import RecipientDashboard from './pages/RecipientDashboard';
+import MyGifts from './pages/MyGifts';
+import Activity from './pages/Activity';
+import Education from './pages/Education';
+import Profile from './pages/Profile';
+import Support from './pages/Support';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -39,6 +44,11 @@ export default function App() {
         <Route path="/recipient/:claimToken/dashboard" element={<RecipientDashboard />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/gift/:giftId" element={<ProtectedRoute><GiftDashboard /></ProtectedRoute>} />
+        <Route path="/my-gifts" element={<ProtectedRoute><MyGifts /></ProtectedRoute>} />
+        <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
+        <Route path="/education" element={<ProtectedRoute><Education /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
