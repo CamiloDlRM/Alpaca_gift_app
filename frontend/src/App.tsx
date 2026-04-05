@@ -12,6 +12,8 @@ import KYCSuccess from './pages/kyc/KYCSuccess';
 import Agreement from './pages/Agreement';
 import GiftDashboard from './pages/GiftDashboard';
 import Dashboard from './pages/Dashboard';
+import Pricing from './pages/Pricing';
+import RecipientDashboard from './pages/RecipientDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -33,6 +35,8 @@ export default function App() {
         <Route path="/claim/:claimToken/kyc/questions" element={<KYCQuestions />} />
         <Route path="/claim/:claimToken/kyc/success" element={<KYCSuccess />} />
         <Route path="/claim/:claimToken/agreement" element={<Agreement />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/recipient/:claimToken/dashboard" element={<RecipientDashboard />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard/gift/:giftId" element={<ProtectedRoute><GiftDashboard /></ProtectedRoute>} />
       </Routes>

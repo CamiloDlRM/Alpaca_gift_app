@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
+
+const stripePromise = loadStripe('pk_test_51TIimc8uinwBNZCCChvO18g9m3WqfrJuZALjTIUeg7Qe8ERGh4XEKudIodlSxkmHtXZEQEDLTyx1WNeQK5sgr0SG00hTZkVUst');
 
 interface ETF {
   symbol: string;
@@ -15,24 +20,173 @@ interface ETF {
   price: number;
 }
 
-interface GiftResponse {
-  id: string;
-  claimLink: string;
-  claimToken: string;
+interface PaymentIntentResponse {
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+  commission: number;
+  total: number;
+}
+
+interface GiftFormData {
   recipientName: string;
+  occasion: string;
   etfSymbol: string;
   amount: number;
-  status: string;
+  deliveryDate: string;
+  note: string;
+  recipientEmail: string;
+}
+
+const OCCASIONS = ['Birthday', 'Anniversary', 'Graduation', 'Baby Shower', 'Holiday', 'Just Because'];
+
+// Inner payment component that uses Stripe hooks
+interface PaymentStepProps {
+  formData: GiftFormData;
+  paymentData: PaymentIntentResponse;
+  isPro: boolean;
+  onBack: () => void;
+  onSuccess: () => void;
+}
+
+function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: PaymentStepProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError('');
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      setError('Card element not found.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: stripeError } = await stripe.confirmCardPayment(paymentData.clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      if (stripeError) {
+        setError(stripeError.message ?? 'Error al procesar el pago.');
+        setLoading(false);
+        return;
+      }
+
+      onSuccess();
+    } catch {
+      setError('Error al procesar el pago. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Gift summary */}
+      <Card className="p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Resumen del regalo</h2>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-500">Destinatario</span>
+            <span className="text-gray-900 font-medium">{formData.recipientName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">ETF</span>
+            <span className="text-gray-900 font-medium">{formData.etfSymbol}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Monto del regalo</span>
+            <span className="text-gray-900 font-medium">${paymentData.amount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Fecha de entrega</span>
+            <span className="text-gray-900 font-medium">{formData.deliveryDate}</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Cost breakdown */}
+      <Card className="p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Desglose de costos</h2>
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-500">Monto del regalo</span>
+            <span className="text-gray-900">${paymentData.amount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">
+              {isPro ? 'Comision' : 'Comision de servicio (2.5%)'}
+            </span>
+            <span className={isPro ? 'text-green-600 font-medium' : 'text-gray-900'}>
+              {isPro ? '$0.00 \u2713 Plan PRO' : `$${paymentData.commission.toFixed(2)}`}
+            </span>
+          </div>
+          <div className="border-t border-gray-100 pt-3 flex justify-between">
+            <span className="text-gray-900 font-bold">Total</span>
+            <span className="text-gray-900 font-bold">${paymentData.total.toFixed(2)}</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Stripe card input */}
+      <Card className="p-6">
+        <label className="text-sm font-medium text-gray-700 block mb-3">Datos de tarjeta</label>
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#1f2937',
+                  '::placeholder': { color: '#9ca3af' },
+                },
+                invalid: { color: '#ef4444' },
+              },
+            }}
+          />
+        </div>
+      </Card>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm" role="alert">{error}</div>
+      )}
+
+      <div className="flex gap-3">
+        <Button onClick={handlePay} loading={loading} className="flex-1">
+          Pagar ${paymentData.total.toFixed(2)} y enviar regalo
+        </Button>
+      </div>
+      <button
+        onClick={onBack}
+        className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
+        disabled={loading}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Editar regalo
+      </button>
+    </div>
+  );
 }
 
 export default function SendGift() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [etfs, setEtfs] = useState<ETF[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [giftsCount, setGiftsCount] = useState<number>(0);
+  const [loadingInit, setLoadingInit] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState<GiftResponse | null>(null);
 
+  // Form state
   const [recipientName, setRecipientName] = useState('');
   const [occasion, setOccasion] = useState('Birthday');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -40,18 +194,31 @@ export default function SendGift() {
   const [amount, setAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [note, setNote] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
+
+  // Step state
+  const [step, setStep] = useState<1 | 2>(1);
+  const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  const isPro = user?.subscriptionStatus === 'PRO';
+  const isFreeLimitReached = !isPro && giftsCount >= 5;
 
   const fetchData = useCallback(async () => {
     try {
-      const [etfRes, catRes] = await Promise.all([
+      const [etfRes, catRes, giftsRes] = await Promise.all([
         apiClient.get<ETF[]>('/etfs'),
         apiClient.get<string[]>('/etfs/categories'),
+        apiClient.get<unknown[]>('/gifts'),
       ]);
       setEtfs(etfRes.data);
       setCategories(catRes.data);
+      setGiftsCount(giftsRes.data.length);
       if (catRes.data.length > 0) setSelectedCategory(catRes.data[0]);
     } catch {
-      setError('Failed to load ETFs. Please try again.');
+      setError('Error al cargar datos. Intenta de nuevo.');
+    } finally {
+      setLoadingInit(false);
     }
   }, []);
 
@@ -61,62 +228,52 @@ export default function SendGift() {
 
   const filteredEtfs = etfs.filter((e) => e.category === selectedCategory);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleContinueToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await apiClient.post<GiftResponse>('/gifts', {
-        recipientName,
-        occasion,
-        etfSymbol,
-        amount: parseFloat(amount),
-        note: note || undefined,
-        deliveryDate,
+      const res = await apiClient.post<PaymentIntentResponse>('/payments/create-intent', {
+        giftData: {
+          recipientName,
+          occasion,
+          etfSymbol,
+          amount: parseFloat(amount),
+          note: note || undefined,
+          deliveryDate,
+          recipientEmail: recipientEmail || undefined,
+        },
       });
-      setSuccess(res.data);
+      setPaymentData(res.data);
+      setStep(2);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        setError(axiosErr.response?.data?.error || 'Failed to send gift.');
+        setError(axiosErr.response?.data?.error || 'Error al crear el pago.');
       } else {
-        setError('Failed to send gift. Please try again.');
+        setError('Error al crear el pago. Intenta de nuevo.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
+  // Success screen
+  if (paymentSuccess) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Nav />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <div className="w-20 h-20 bg-positive/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-positive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Gift Sent!</h1>
-          <p className="text-gray-600 mb-8">
-            Your ${success.amount} gift of {success.etfSymbol} to {success.recipientName} is ready to be claimed.
-          </p>
-          <Card className="p-6 mb-8 text-left">
-            <div className="text-sm text-gray-500 mb-2">Share this claim link:</div>
-            <div className="bg-gray-50 rounded-lg p-4 text-sm font-mono text-gray-700 break-all border border-gray-200">
-              {success.claimLink}
-            </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(success.claimLink)}
-              className="mt-3 text-sm text-[#F5C518] font-semibold hover:underline"
-            >
-              Copy to clipboard
-            </button>
+          <Card className="p-8 bg-green-50 border-green-200">
+            <div className="text-5xl mb-4">&#127873;</div>
+            <h1 className="text-2xl font-bold text-green-800 mb-3">Regalo enviado!</h1>
+            <p className="text-green-700 mb-6">
+              Tu pago fue procesado. El link del regalo se generara en unos segundos y podras verlo en tu dashboard.
+            </p>
+            <Button onClick={() => navigate('/dashboard')}>
+              Ver mis regalos
+            </Button>
           </Card>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => navigate('/send')}>Send Another</Button>
-            <Button variant="secondary" onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
-          </div>
         </div>
       </div>
     );
@@ -126,119 +283,169 @@ export default function SendGift() {
     <div className="min-h-screen bg-gray-50">
       <Nav />
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Send a Gift</h1>
-        <p className="text-gray-500 mb-8">Choose an investment and send it to someone you love.</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Enviar un Regalo</h1>
+        <p className="text-gray-500 mb-8">Elige una inversion y enviala a alguien especial.</p>
 
         {error && (
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
         )}
 
-        <Card className="p-6 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid sm:grid-cols-2 gap-6">
-              <Input
-                label="Recipient Name"
-                placeholder="Who is this gift for?"
-                value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
-                required
-              />
+        {loadingInit ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
+              <span className="sr-only">Cargando</span>
+            </div>
+          </div>
+        ) : isFreeLimitReached ? (
+          /* FREE limit banner */
+          <Card className="p-8 text-center">
+            <div className="text-yellow-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Has alcanzado el limite de 5 regalos del plan gratuito</h2>
+            <p className="text-gray-500 mb-6">Actualiza a PRO para enviar regalos ilimitados y sin comisiones.</p>
+            <Button onClick={() => navigate('/pricing')}>
+              Upgrade a PRO
+            </Button>
+          </Card>
+        ) : step === 1 ? (
+          /* Step 1 - Gift form */
+          <Card className="p-6 sm:p-8">
+            <form onSubmit={handleContinueToPayment} className="space-y-6">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <Input
+                  label="Nombre del destinatario"
+                  placeholder="Para quien es este regalo?"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  required
+                />
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium text-gray-700">Ocasion</label>
+                  <select
+                    className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
+                    value={occasion}
+                    onChange={(e) => setOccasion(e.target.value)}
+                  >
+                    {OCCASIONS.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Occasion</label>
+                <label className="text-sm font-medium text-gray-700">Categoria de inversion</label>
                 <select
                   className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
-                  value={occasion}
-                  onChange={(e) => setOccasion(e.target.value)}
+                  value={selectedCategory}
+                  onChange={(e) => { setSelectedCategory(e.target.value); setEtfSymbol(''); }}
                 >
-                  {['Birthday', 'Graduation', 'Wedding', 'Holiday', 'Baby Shower', 'Just Because', 'Other'].map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Investment Category</label>
-              <select
-                className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
-                value={selectedCategory}
-                onChange={(e) => { setSelectedCategory(e.target.value); setEtfSymbol(''); }}
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Select Investment</label>
-              {filteredEtfs.length === 0 ? (
-                <p className="text-sm text-gray-400 py-3">No ETFs found for this category.</p>
-              ) : (
-                <div className="grid gap-3">
-                  {filteredEtfs.map((etf) => (
-                    <button
-                      type="button"
-                      key={etf.symbol}
-                      onClick={() => setEtfSymbol(etf.symbol)}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
-                        etfSymbol === etf.symbol
-                          ? 'border-[#F5C518] bg-yellow-50'
-                          : 'border-gray-100 hover:border-gray-200'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-semibold text-gray-900">{etf.symbol}</div>
-                        <div className="text-sm text-gray-500">{etf.name}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-900">${etf.price.toFixed(2)}</div>
-                        <div className={`text-sm font-medium ${etf.changePercent >= 0 ? 'text-positive' : 'text-red-500'}`}>
-                          {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent}%
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Seleccionar inversion</label>
+                {filteredEtfs.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-3">No hay ETFs para esta categoria.</p>
+                ) : (
+                  <div className="grid gap-3">
+                    {filteredEtfs.map((etf) => (
+                      <button
+                        type="button"
+                        key={etf.symbol}
+                        onClick={() => setEtfSymbol(etf.symbol)}
+                        className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
+                          etfSymbol === etf.symbol
+                            ? 'border-[#F5C518] bg-yellow-50'
+                            : 'border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-semibold text-gray-900">{etf.symbol}</div>
+                          <div className="text-sm text-gray-500">{etf.name}</div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900">${etf.price.toFixed(2)}</div>
+                          <div className={`text-sm font-medium ${etf.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent}%
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <Input
+                  label="Monto ($)"
+                  type="number"
+                  min="10"
+                  step="0.01"
+                  placeholder="100.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Fecha de entrega"
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  required
+                />
+              </div>
+
               <Input
-                label="Amount ($)"
-                type="number"
-                min="1"
-                step="0.01"
-                placeholder="100.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
+                label="Email del destinatario (opcional)"
+                type="email"
+                placeholder="email@ejemplo.com"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
               />
-              <Input
-                label="Delivery Date"
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-                required
-              />
-            </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Add a Note (optional)</label>
-              <textarea
-                className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
-                rows={3}
-                placeholder="Happy Birthday! Here's a gift that will grow with you..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Nota (opcional)</label>
+                <textarea
+                  className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
+                  rows={3}
+                  placeholder="Feliz cumple! Aqui tienes un regalo que crecera contigo..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
 
-            <Button type="submit" loading={loading} className="w-full" disabled={!etfSymbol}>
-              Continue
-            </Button>
-          </form>
-        </Card>
+              <Button type="submit" loading={loading} className="w-full" disabled={!etfSymbol || !amount}>
+                Continuar al pago
+              </Button>
+            </form>
+          </Card>
+        ) : paymentData ? (
+          /* Step 2 - Payment */
+          <Elements stripe={stripePromise}>
+            <PaymentStepInner
+              formData={{
+                recipientName,
+                occasion,
+                etfSymbol,
+                amount: parseFloat(amount),
+                deliveryDate,
+                note,
+                recipientEmail,
+              }}
+              paymentData={paymentData}
+              isPro={isPro}
+              onBack={() => setStep(1)}
+              onSuccess={() => setPaymentSuccess(true)}
+            />
+          </Elements>
+        ) : null}
       </div>
     </div>
   );

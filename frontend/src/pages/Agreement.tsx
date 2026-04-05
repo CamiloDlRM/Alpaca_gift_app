@@ -102,7 +102,7 @@ export default function Agreement() {
         signatureBase64,
         agreed: true,
       });
-      navigate('/dashboard');
+      navigate(`/recipient/${claimToken}/dashboard`);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };

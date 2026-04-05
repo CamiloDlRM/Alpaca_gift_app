@@ -9,12 +9,15 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  gifts     Gift[]
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  password           String
+  name               String
+  subscriptionStatus SubscriptionStatus @default(FREE)
+  stripeCustomerId   String?
+  createdAt          DateTime           @default(now())
+  gifts              Gift[]
+  subscription       Subscription?
 }
 
 model Gift {
@@ -25,16 +28,20 @@ model Gift {
   occasion        String
   etfSymbol       String
   amount          Float
+  commission      Float      @default(0)
   note            String?
   deliveryDate    DateTime
   status          GiftStatus @default(PENDING)
   claimToken      String     @unique @default(uuid())
   alpacaAccountId String?
   alpacaOrderId   String?
+  paymentIntentId String?
+  recipientEmail  String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   kyc             KYC?
   agreement       Agreement?
+  payment         Payment?
 }
 
 model KYC {
@@ -62,6 +69,31 @@ model Agreement {
   signedAt        DateTime @default(now())
 }
 
+model Subscription {
+  id                   String           @id @default(uuid())
+  userId               String           @unique
+  user                 User             @relation(fields: [userId], references: [id])
+  plan                 SubscriptionPlan @default(FREE)
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  status               String           @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  giftId                String        @unique
+  gift                  Gift          @relation(fields: [giftId], references: [id])
+  stripePaymentIntentId String        @unique
+  amount                Float
+  commission            Float         @default(0)
+  status                PaymentStatus @default(PENDING)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
 enum GiftStatus {
   PENDING
   CLAIMING
@@ -71,4 +103,22 @@ enum GiftStatus {
   ACCOUNT_CREATING
   INVESTED
   FAILED
+  REDEEMED
+}
+
+enum SubscriptionStatus {
+  FREE
+  PRO
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
 }

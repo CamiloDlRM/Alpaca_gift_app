@@ -4,6 +4,67 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-04-05] - [SCHEMA PRISMA] + [MIGRACIÓN] + [NUEVO MÓDULO] x3 + [MODIFICACIÓN]
+
+**Acción**: Implementación completa de Stripe Payments, Subscriptions y Recipient portfolio -- módulos nuevos para monetización y experiencia del destinatario.
+
+**Archivos afectados**:
+
+### Schema y Migración
+- `backend/prisma/schema.prisma` - Schema actualizado con modelos Subscription, Payment, enums SubscriptionStatus, SubscriptionPlan, PaymentStatus. Campos nuevos en User (subscriptionStatus, stripeCustomerId) y Gift (commission, paymentIntentId, recipientEmail). GiftStatus enum ahora incluye REDEEMED.
+- `backend/prisma/migrations/20260405055251_add_payments_subscriptions_recipient/migration.sql` - Migración SQL para los nuevos modelos y columnas.
+
+### Módulo Payments (`src/modules/payments/`)
+- `payments.types.ts` - Interfaces CreatePaymentIntentDto y PaymentIntentResponse
+- `payments.service.ts` - Lógica de creación de PaymentIntent con comisión 2.5% (plan FREE), límite de 5 regalos para plan FREE, webhook handler para payment_intent.succeeded/failed, customer.subscription.created/updated/deleted, invoice.payment_succeeded/failed. Crea Gift + Payment al recibir pago exitoso via webhook.
+- `payments.controller.ts` - Handlers para createPaymentIntent y webhook
+- `payments.routes.ts` - POST /webhook (raw body), POST /create-intent (auth required)
+
+### Módulo Subscriptions (`src/modules/subscriptions/`)
+- `subscriptions.types.ts` - Interfaces CreateSubscriptionDto y SubscriptionStatusResponse
+- `subscriptions.service.ts` - CRUD de suscripciones PRO ($9.99/mes) via Stripe: getStatus, create (attach payment method, create price, create subscription), cancel. Gestión de Stripe Customer.
+- `subscriptions.controller.ts` - Handlers para get/create/cancel
+- `subscriptions.routes.ts` - GET / (status), POST / (create), DELETE / (cancel), todos con auth
+
+### Módulo Recipient (`src/modules/recipient/`)
+- `recipient.types.ts` - Interfaces RecipientTransaction, RecipientPortfolioResponse, SellRequestDto, SellResponse
+- `recipient.service.ts` - Portfolio del destinatario via claimToken (sin auth), historial de precios, venta de inversión (marca gift como REDEEMED). Usa alpacaService.getPortfolio para snapshots.
+- `recipient.controller.ts` - Handlers para portfolio, history y sell
+- `recipient.routes.ts` - GET /portfolio/:claimToken, GET /portfolio/:claimToken/history, POST /portfolio/:claimToken/sell (públicos, sin auth)
+
+### Modificaciones a archivos existentes
+- `backend/src/app.ts` - Añadido express.raw() para webhook de Stripe ANTES de express.json(). Importados y montados 3 nuevos routers: /api/payments, /api/subscriptions, /api/recipient.
+- `backend/src/modules/gifts/gifts.types.ts` - Añadido REDEEMED al mapa de transiciones válidas (INVESTED -> REDEEMED).
+
+**Detalles**:
+- Stripe v22.0.0 usa un patrón de constructor diferente (función, no clase). Se usa `require('stripe')` en lugar de `import Stripe from 'stripe'` + `new Stripe()` para compatibilidad. Los tipos de eventos webhook se anotan como `any` para evitar conflictos con la API de tipos de v22.
+- El webhook de Stripe requiere raw body, por lo que `express.raw({ type: 'application/json' })` se monta en `/api/payments/webhook` ANTES de `express.json()`.
+- El módulo recipient es público (sin auth) -- los endpoints se acceden via claimToken, que es un UUID único por regalo. Esto permite a los destinatarios ver su portfolio sin crear cuenta.
+- Plan FREE: 5 regalos máximo, comisión 2.5%. Plan PRO: ilimitado, sin comisión.
+- La migración se sincronizó con el estado existente de la BD (la migración ya había sido aplicada previamente, se recreó el archivo SQL local).
+
+**Comandos ejecutados**:
+```bash
+npx prisma migrate status
+npx prisma generate
+npm run build
+```
+
+**Nuevos endpoints API**:
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/payments/create-intent` | Bearer JWT | Crea PaymentIntent de Stripe con comisión calculada |
+| POST | `/api/payments/webhook` | No (Stripe sig) | Webhook de Stripe para procesar pagos y suscripciones |
+| GET | `/api/subscriptions` | Bearer JWT | Estado de suscripción del usuario |
+| POST | `/api/subscriptions` | Bearer JWT | Crear suscripción PRO ($9.99/mes) |
+| DELETE | `/api/subscriptions` | Bearer JWT | Cancelar suscripción PRO |
+| GET | `/api/recipient/portfolio/:claimToken` | No | Portfolio del destinatario |
+| GET | `/api/recipient/portfolio/:claimToken/history` | No | Historial de precios |
+| POST | `/api/recipient/portfolio/:claimToken/sell` | No | Vender inversión (redeem) |
+
+---
+
 ## [2026-03-17 20:55] - [NUEVO MODULO] - Full WealthGift Backend MVP
 
 **Accion**: Creacion completa del backend MVP de WealthGift -- plataforma para regalar fondos de inversion (ETFs) a seres queridos.

@@ -77,3 +77,41 @@ Complete frontend implementation for the WealthGift platform. Built all 13 pages
 - Error handling uses Axios error response shape extraction throughout.
 - All components use semantic HTML (nav, main, aside, button, form) and include aria-labels/roles where appropriate.
 ---
+
+---
+## [2026-04-05] - Stripe Payments, PRO Subscriptions, Recipient Dashboard, Pricing Page
+
+### Files Modified/Created
+
+**Modified**
+- `frontend/src/store/auth.store.ts` — Added `subscriptionStatus: 'FREE' | 'PRO'` to User type, added `updateUser(partial)` action, default subscriptionStatus to 'FREE' on login/register
+- `frontend/src/pages/SendGift.tsx` — Full rewrite: 2-step flow (gift form + Stripe payment), FREE plan limit check (5 gifts), `POST /api/payments/create-intent` integration, cost breakdown with commission display, Stripe CardElement for payment, success/error states
+- `frontend/src/pages/Dashboard.tsx` — Added subscription status sync via `GET /api/subscriptions` on load, PRO badge (green with star icon) or FREE badge (gray with gift count + Upgrade link) next to welcome header
+- `frontend/src/pages/Agreement.tsx` — Changed post-sign navigation from `/dashboard` to `/recipient/${claimToken}/dashboard`
+- `frontend/src/App.tsx` — Added imports and routes for Pricing (`/pricing`) and RecipientDashboard (`/recipient/:claimToken/dashboard`)
+- `frontend/src/components/layout/Sidebar.tsx` — Added "Pricing" nav item with star icon linking to `/pricing`
+
+**Created**
+- `frontend/src/pages/Pricing.tsx` — Pricing page with FREE/PRO plan cards, Stripe-powered subscription modal (`POST /api/subscriptions`), cancel subscription (`DELETE /api/subscriptions`), success banner, responsive grid layout
+- `frontend/src/pages/RecipientDashboard.tsx` — Recipient portfolio view (public, no auth): portfolio value with gain/loss, Recharts AreaChart with period tabs (1D/1W/1M/1Y/ALL), holdings card, transaction history table with type badges, sell investment flow with confirmation modal, 30s polling for value updates
+
+### Changes Summary
+Implemented the full monetization and recipient experience frontend. The Pricing page presents FREE and PRO plans with Stripe-powered subscription checkout. SendGift was rewritten as a 2-step flow: gift form with FREE plan limit enforcement (5 gifts max), then Stripe payment with cost breakdown showing commission (2.5% for FREE, $0 for PRO). RecipientDashboard provides a standalone portfolio view for gift recipients accessed via claimToken, with real-time value charts, transaction history, and a sell-to-redeem flow. The Dashboard now syncs subscription status on load and displays plan badges. Agreement now redirects recipients to their portfolio dashboard after signing.
+
+### Backend Dependencies
+- `POST /api/payments/create-intent` (JWT) — Creates Stripe PaymentIntent with gift data, returns clientSecret + cost breakdown
+- `GET /api/subscriptions` (JWT) — Returns current subscription plan and status
+- `POST /api/subscriptions` (JWT) — Creates PRO subscription with Stripe paymentMethodId
+- `DELETE /api/subscriptions` (JWT) — Cancels PRO subscription
+- `GET /api/recipient/portfolio/:claimToken` — Recipient portfolio data (public)
+- `GET /api/recipient/portfolio/:claimToken/history?period=` — Price history for recipient chart (public)
+- `POST /api/recipient/portfolio/:claimToken/sell` — Sell/redeem recipient investment (public)
+- `GET /api/gifts` (JWT) — Used to count sender's gifts for FREE plan limit check
+
+### Notes
+- Stripe publishable key is hardcoded as `pk_test_...` (test mode). For production, this should be moved to `import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY`.
+- The RecipientDashboard polls every 30s for portfolio value updates with proper cleanup on unmount.
+- The sell confirmation modal includes a "cannot be undone" warning and handles the isRedeemed state to show appropriate messaging.
+- Chunk size increased to ~686KB due to Stripe.js additions; code-splitting on routes would reduce initial load.
+- All new components handle loading, error, and empty states with proper aria attributes.
+---
