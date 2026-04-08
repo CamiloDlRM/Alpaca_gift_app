@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
-const stripePromise = loadStripe('pk_test_51TIimc8uinwBNZCCChvO18g9m3WqfrJuZALjTIUeg7Qe8ERGh4XEKudIodlSxkmHtXZEQEDLTyx1WNeQK5sgr0SG00hTZkVUst');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY!);
 
 const CHECK_ICON = (
   <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
