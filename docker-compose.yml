@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: wealthgift_backend
     env_file:
-      - ./backend/.env
+      - ./.env
     ports:
       - "3001:3001"
     depends_on:
@@ -43,6 +43,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL}
+        STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
     container_name: wealthgift_frontend
     ports:
       - "80:80"
