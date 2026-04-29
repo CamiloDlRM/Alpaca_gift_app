@@ -19,3 +19,12 @@ export async function getPriceHistoryHandler(req: Request, res: Response, next: 
     next(err);
   }
 }
+
+export async function getOverviewHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await portfolioService.getPortfolioOverview(req.user!.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}

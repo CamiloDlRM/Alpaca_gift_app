@@ -3,9 +3,13 @@ const Stripe = require('stripe');
 import { prisma } from '../../shared/db/prisma.client';
 import { BadRequestError } from '../../shared/errors/http-errors';
 import { eventBus } from '../../shared/events/event-bus';
+import { isEmailRegistered } from '../auth/auth.service';
 import { CreatePaymentIntentDto, PaymentIntentResponse } from './payments.types';
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY!);
+
+// Flat sending fee charged to BASIC users on each gift (replaces the 2.5% commission).
+export const BASIC_SENDING_FEE = 0.99;
 
 async function getOrCreateStripeCustomer(userId: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -31,18 +35,31 @@ export async function createPaymentIntent(
 ): Promise<PaymentIntentResponse> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
-  if (user.subscriptionStatus === 'FREE') {
+  // Validate that the recipient email (if provided) belongs to a registered user.
+  if (dto.giftData.recipientEmail) {
+    const registered = await isEmailRegistered(dto.giftData.recipientEmail);
+    if (!registered) {
+      throw new BadRequestError(
+        'El email del destinatario no corresponde a un usuario registrado en la plataforma.'
+      );
+    }
+  }
+
+  if (user.subscriptionStatus === 'BASIC') {
     const giftCount = await prisma.gift.count({ where: { senderId: userId } });
     if (giftCount >= 5) {
       throw new BadRequestError(
-        'Has alcanzado el límite de 5 regalos del plan gratuito. Suscríbete a PRO para enviar regalos ilimitados.'
+        'Has alcanzado el límite de 5 regalos del plan BASIC. Suscríbete a PRO para enviar regalos ilimitados.'
       );
     }
   }
 
   const amount = dto.giftData.amount;
-  const commission = user.subscriptionStatus === 'FREE' ? amount * 0.025 : 0;
-  const total = amount + commission;
+  // BASIC users pay a flat $0.99 "tarifa de envío" per gift.
+  // PRO and PRO_PLUS users pay no fee and no commission.
+  const sendingFee = user.subscriptionStatus === 'BASIC' ? BASIC_SENDING_FEE : 0;
+  const commission = sendingFee; // kept in legacy field for backward compatibility
+  const total = amount + sendingFee;
 
   const customerId = await getOrCreateStripeCustomer(userId);
 
@@ -54,6 +71,7 @@ export async function createPaymentIntent(
       userId,
       giftData: JSON.stringify(dto.giftData),
       commission: commission.toString(),
+      sendingFee: sendingFee.toString(),
       giftAmount: amount.toString(),
     },
   });
@@ -63,6 +81,7 @@ export async function createPaymentIntent(
     paymentIntentId: paymentIntent.id,
     amount,
     commission,
+    sendingFee,
     total,
   };
 }
@@ -218,7 +237,9 @@ export async function handleWebhook(rawBody: Buffer, signature: string): Promise
       if (!user) break;
 
       const isActive = sub.status === 'active' || sub.status === 'trialing';
-      const newPlan = isActive ? 'PRO' : 'FREE';
+      // Prefer the plan stored in metadata (PRO or PRO_PLUS); fall back to PRO when absent.
+      const metadataPlan = (sub.metadata?.plan as 'PRO' | 'PRO_PLUS' | undefined) ?? 'PRO';
+      const newPlan = isActive ? metadataPlan : 'BASIC';
 
       await prisma.user.update({
         where: { id: user.id },
@@ -254,12 +275,12 @@ export async function handleWebhook(rawBody: Buffer, signature: string): Promise
 
       await prisma.user.update({
         where: { id: user.id },
-        data: { subscriptionStatus: 'FREE' },
+        data: { subscriptionStatus: 'BASIC' },
       });
 
       await prisma.subscription.updateMany({
         where: { userId: user.id },
-        data: { status: 'canceled', plan: 'FREE' },
+        data: { status: 'canceled', plan: 'BASIC' },
       });
       break;
     }

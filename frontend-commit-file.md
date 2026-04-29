@@ -1,6 +1,39 @@
 # Frontend Commit File
 
 ---
+## [2026-04-29] - ETF Ratings, Unified Portfolio, 3 Plans, Gift Validation UI
+
+### Files Created
+- `frontend/src/components/ETFRatingWidget.tsx` — Componente de calificaciones de ETFs (estrellas 1-5 + comentario). Muestra promedio, lista de valoraciones recientes, y formulario para calificar (solo usuarios autenticados). Usa `GET /api/etf-ratings/:symbol` y `POST /api/etf-ratings/:symbol`.
+
+### Files Modified
+- `frontend/src/store/auth.store.ts` — `subscriptionStatus` actualizado de `'FREE' | 'PRO'` a `'BASIC' | 'PRO' | 'PRO_PLUS'`. Default fallback cambiado de `'FREE'` a `'BASIC'`.
+
+- `frontend/src/pages/Dashboard.tsx` — Vista unificada del portafolio:
+  - Llama a `GET /api/portfolio/overview` para obtener saldo total, rendimiento general, e inversiones activas.
+  - Hero card con "Saldo Total del Portafolio" + porcentaje de rendimiento general en verde/rojo.
+  - Grid de `InvestmentCard` por cada regalo invertido (muestra ETF, destinatario, valor original, valor actual, cambio en $ y %).
+  - Badges de plan: BASIC muestra "Plan Basico · X/5 regalos", PRO muestra verde con estrella, PRO_PLUS muestra dorado.
+  - Lista de "Regalos en Proceso" solo muestra gifts con status != INVESTED.
+  - Eliminado el mock chart data, datos reales del API.
+
+- `frontend/src/pages/Pricing.tsx` — Tres planes:
+  - BASIC ($0/mes): hasta 5 regalos, tarifa de envio $0.99 por regalo.
+  - PRO ($9.99/mes): regalos ilimitados, sin tarifas. Badge "MAS POPULAR".
+  - PRO+ ($19.99/mes): todo PRO + analytics avanzados + soporte 24/7.
+  - `SubscribeModal` acepta `plan: 'PRO' | 'PRO_PLUS'` y lo envía al API.
+  - Cancelar suscripcion regresa a `'BASIC'` (no `'FREE'`).
+  - Cada plan muestra "Plan activo" si es el plan actual del usuario.
+
+- `frontend/src/pages/SendGift.tsx`:
+  - `ETFRatingWidget` integrado debajo de la lista de ETFs cuando hay uno seleccionado.
+  - `isPro` actualizado: `user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS'`.
+  - `PaymentIntentResponse` añadido campo `sendingFee`.
+  - Desglose de costos: muestra "Tarifa de envio ($0.99)" en lugar de "Comision de servicio (2.5%)".
+  - Banner de límite: "plan BASIC" en lugar de "plan gratuito".
+  - Label del email del destinatario actualizado para indicar que debe ser usuario registrado.
+
+---
 ## [2026-03-17] - Complete WealthGift Frontend MVP
 
 ### Files Modified/Created

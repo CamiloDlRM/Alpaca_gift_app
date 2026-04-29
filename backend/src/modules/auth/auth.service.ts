@@ -27,3 +27,13 @@ export async function login(dto: LoginDto): Promise<AuthResponse> {
   const token = signToken({ id: user.id, email: user.email });
   return { token, user: { id: user.id, email: user.email, name: user.name } };
 }
+
+export async function findUserByEmail(email: string) {
+  return prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+}
+
+export async function isEmailRegistered(email: string): Promise<boolean> {
+  if (!email) return false;
+  const user = await findUserByEmail(email);
+  return Boolean(user);
+}

@@ -6,6 +6,7 @@ import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { ETFRatingWidget } from '../components/ETFRatingWidget';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
@@ -25,6 +26,7 @@ interface PaymentIntentResponse {
   paymentIntentId: string;
   amount: number;
   commission: number;
+  sendingFee: number;
   total: number;
 }
 
@@ -134,10 +136,10 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">
-              {isPro ? 'Comision' : 'Comision de servicio (2.5%)'}
+              {isPro ? 'Tarifa de envio' : 'Tarifa de envio ($0.99)'}
             </span>
             <span className={isPro ? 'text-green-600 font-medium' : 'text-gray-900'}>
-              {isPro ? '$0.00 \u2713 Plan PRO' : `$${paymentData.commission.toFixed(2)}`}
+              {isPro ? '$0.00 \u2713 Sin tarifa' : `$${(paymentData.sendingFee ?? paymentData.commission).toFixed(2)}`}
             </span>
           </div>
           <div className="border-t border-gray-100 pt-3 flex justify-between">
@@ -216,7 +218,7 @@ export default function SendGift() {
   const [createdGiftId, setCreatedGiftId] = useState<string>('');
   const [claimLink, setClaimLink] = useState<string>('');
 
-  const isPro = user?.subscriptionStatus === 'PRO';
+  const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
 
   const fetchData = useCallback(async () => {
@@ -330,8 +332,8 @@ export default function SendGift() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Has alcanzado el limite de 5 regalos del plan gratuito</h2>
-            <p className="text-gray-500 mb-6">Actualiza a PRO para enviar regalos ilimitados y sin comisiones.</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Has alcanzado el limite de 5 regalos del plan BASIC</h2>
+            <p className="text-gray-500 mb-6">Actualiza a PRO o PRO+ para enviar regalos ilimitados sin tarifas de envio.</p>
             <Button onClick={() => navigate('/pricing')}>
               Upgrade a PRO
             </Button>
@@ -429,6 +431,21 @@ export default function SendGift() {
                 )}
               </div>
 
+              {etfSymbol && (
+                <div>
+                  {(() => {
+                    const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
+                    return selectedEtf ? (
+                      <ETFRatingWidget
+                        etfSymbol={etfSymbol}
+                        etfName={selectedEtf.name}
+                        isAuthenticated={!!user}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              )}
+
               <div className="grid sm:grid-cols-2 gap-6">
                 <Input
                   label="Monto ($)"
@@ -450,7 +467,7 @@ export default function SendGift() {
               </div>
 
               <Input
-                label="Email del destinatario (opcional)"
+                label="Email del destinatario (debe estar registrado en la plataforma)"
                 type="email"
                 placeholder="email@ejemplo.com"
                 value={recipientEmail}

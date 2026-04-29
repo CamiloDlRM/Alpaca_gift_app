@@ -6,7 +6,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  subscriptionStatus: 'FREE' | 'PRO';
+  subscriptionStatus: 'BASIC' | 'PRO' | 'PRO_PLUS';
 }
 
 interface AuthState {
@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('wealthgift_token', res.data.token);
         set({
           token: res.data.token,
-          user: { ...res.data.user, subscriptionStatus: res.data.user.subscriptionStatus ?? 'FREE' },
+          user: { ...res.data.user, subscriptionStatus: res.data.user.subscriptionStatus ?? 'BASIC' },
         });
       },
       register: async (email, password, name) => {
@@ -36,7 +36,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('wealthgift_token', res.data.token);
         set({
           token: res.data.token,
-          user: { ...res.data.user, subscriptionStatus: res.data.user.subscriptionStatus ?? 'FREE' },
+          user: { ...res.data.user, subscriptionStatus: res.data.user.subscriptionStatus ?? 'BASIC' },
         });
       },
       logout: () => {

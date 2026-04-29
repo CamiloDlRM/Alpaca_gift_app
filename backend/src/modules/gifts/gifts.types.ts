@@ -7,6 +7,7 @@ export interface CreateGiftDto {
   amount: number;
   note?: string;
   deliveryDate: string;
+  recipientEmail?: string;
 }
 
 export interface GiftResponse {

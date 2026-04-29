@@ -13,11 +13,12 @@ model User {
   email              String             @unique
   password           String
   name               String
-  subscriptionStatus SubscriptionStatus @default(FREE)
+  subscriptionStatus SubscriptionStatus @default(BASIC)
   stripeCustomerId   String?
   createdAt          DateTime           @default(now())
   gifts              Gift[]
   subscription       Subscription?
+  etfRatings         ETFRating[]
 }
 
 model Gift {
@@ -73,7 +74,7 @@ model Subscription {
   id                   String           @id @default(uuid())
   userId               String           @unique
   user                 User             @relation(fields: [userId], references: [id])
-  plan                 SubscriptionPlan @default(FREE)
+  plan                 SubscriptionPlan @default(BASIC)
   stripeSubscriptionId String?
   stripeCustomerId     String?
   status               String           @default("active")
@@ -94,6 +95,19 @@ model Payment {
   updatedAt             DateTime      @updatedAt
 }
 
+model ETFRating {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  etfSymbol String
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, etfSymbol])
+}
+
 enum GiftStatus {
   PENDING
   CLAIMING
@@ -107,13 +121,15 @@ enum GiftStatus {
 }
 
 enum SubscriptionStatus {
-  FREE
+  BASIC
   PRO
+  PRO_PLUS
 }
 
 enum SubscriptionPlan {
-  FREE
+  BASIC
   PRO
+  PRO_PLUS
 }
 
 enum PaymentStatus {

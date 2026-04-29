@@ -4,6 +4,193 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-04-29 12:00] - [SCHEMA PRISMA] + [MIGRACIÓN] + [NUEVO MÓDULO] + [MODIFICACIÓN] x4
+
+**Acción**: Cuatro cambios coordinados: (1) sistema de calificación de ETFs, (2) validación de email del destinatario, (3) tres planes de suscripción (BASIC, PRO, PRO_PLUS), (4) endpoint de overview del portfolio.
+
+### Schema Prisma y Migración
+
+**Archivo**: `backend/prisma/schema.prisma`
+- Renombrado `FREE` -> `BASIC` en los enums `SubscriptionStatus` y `SubscriptionPlan`.
+- Añadido nuevo valor `PRO_PLUS` a ambos enums.
+- Cambiados los `@default(FREE)` a `@default(BASIC)` en `User.subscriptionStatus` y `Subscription.plan`.
+- Añadido nuevo modelo `ETFRating` (id, userId, etfSymbol, stars 1-5, comment opcional, createdAt, updatedAt) con `@@unique([userId, etfSymbol])`.
+- Añadida relación `etfRatings ETFRating[]` en `User`.
+
+**Archivo**: `backend/prisma/migrations/20260429120000_add_etf_ratings_three_plans/migration.sql`
+- Migración manual cuidadosamente ordenada para preservar datos existentes:
+  1. DROP DEFAULT en `User.subscriptionStatus` y `Subscription.plan` (Postgres no permite renombrar valores enum referenciados por defaults).
+  2. `ALTER TYPE ... RENAME VALUE 'FREE' TO 'BASIC'` en ambos enums.
+  3. `ALTER TYPE ... ADD VALUE 'PRO_PLUS'` en ambos enums.
+  4. Restablecer DEFAULT a `'BASIC'`.
+  5. CREATE TABLE `ETFRating` + UNIQUE INDEX en `(userId, etfSymbol)` + FK a `User`.
+
+### CHANGE 1: ETF Rating System
+
+**Nuevo módulo**: `backend/src/modules/etf-ratings/`
+- `etf-ratings.types.ts` - Interfaces `CreateRatingDto`, `RatingResponse`, `ETFRatingsAggregateResponse`.
+- `etf-ratings.repository.ts` - `upsertRating`, `findByETF`, `findByUserAndETF` usando `prisma.eTFRating` con `include: { user: { select: { id, name } } }`.
+- `etf-ratings.service.ts` - Validación de símbolo contra catálogo, validación de stars 1-5, agregado de promedio y conteo total.
+- `etf-ratings.controller.ts` - `upsertRatingHandler` (auth requerido), `getRatingsHandler` (público pero detecta token Bearer opcional para incluir `userRating`).
+- `etf-ratings.routes.ts` - `POST /:symbol` (auth + zod schema), `GET /:symbol` (público).
+- `index.ts` - Barrel export del router.
+
+**Nuevo router montado**: `app.use('/api/etf-ratings', etfRatingsRouter)` en `backend/src/app.ts`.
+
+### CHANGE 2: Validación de email del destinatario
+
+**Archivo**: `backend/src/modules/auth/auth.service.ts`
+- Añadidas funciones helper `findUserByEmail(email)` e `isEmailRegistered(email)`. Lowercase + trim del email antes de buscar.
+
+**Archivo**: `backend/src/modules/payments/payments.service.ts`
+- Antes de crear el PaymentIntent, si `dto.giftData.recipientEmail` está presente se valida con `isEmailRegistered`. Si no existe, se lanza `BadRequestError` con el mensaje exacto: `"El email del destinatario no corresponde a un usuario registrado en la plataforma."`
+
+**Archivo**: `backend/src/modules/gifts/gifts.service.ts`
+- Misma validación en `createGift` (defensa en profundidad para llamadas directas al endpoint `POST /api/gifts`).
+
+**Archivo**: `backend/src/modules/gifts/gifts.types.ts`, `gifts.repository.ts`, `gifts.routes.ts`
+- Añadido `recipientEmail?: string` al `CreateGiftDto`, propagado al repositorio, y validado con `z.string().email().optional()` en el schema Zod.
+
+### CHANGE 3: Tres planes de suscripción (BASIC, PRO, PRO_PLUS)
+
+**Archivo**: `backend/src/modules/subscriptions/subscriptions.types.ts`
+- Nuevos types `SubscriptionPlanName = 'BASIC' | 'PRO' | 'PRO_PLUS'` y `PaidPlanName = 'PRO' | 'PRO_PLUS'`.
+- `CreateSubscriptionDto` ahora acepta `plan?: PaidPlanName` (default 'PRO' por compatibilidad).
+- Constante exportada `PLAN_PRICING`: PRO = $9.99/mes (999 cents), PRO_PLUS = $19.99/mes (1999 cents).
+
+**Archivo**: `backend/src/modules/subscriptions/subscriptions.service.ts`
+- `getSubscriptionStatus` retorna `SubscriptionPlanName` correcto.
+- `createSubscription(userId, dto)` lee `dto.plan` (default 'PRO'), valida que sea PRO o PRO_PLUS, lanza error si el usuario ya tiene ese mismo plan, crea precio inline con el monto y nombre del plan correctos. Embedde `metadata: { userId, plan }` en la suscripción de Stripe para que el webhook pueda recuperar el plan exacto.
+- `cancelSubscription` regresa al usuario y a su `Subscription` al plan `'BASIC'` (no `'FREE'`).
+
+**Archivo**: `backend/src/modules/subscriptions/subscriptions.routes.ts`
+- Validación Zod: `paymentMethodId: z.string().min(1)`, `plan: z.enum(['PRO', 'PRO_PLUS']).optional()`.
+
+**Archivo**: `backend/src/modules/payments/payments.service.ts`
+- Reemplazada la comisión 2.5% por una **tarifa de envío plana de $0.99 (`BASIC_SENDING_FEE`)** para usuarios con plan `BASIC`. Para `PRO` y `PRO_PLUS` no hay tarifa ni comisión.
+- El campo `commission` se mantiene en el response y en `pi.metadata` (con valor igual a `sendingFee`) por compatibilidad con la BD y el webhook handler existente.
+- Webhook `customer.subscription.created/updated`: ahora lee `sub.metadata.plan` (default 'PRO') para distinguir PRO vs PRO_PLUS al activar; al desactivar regresa a `'BASIC'`.
+- Webhook `customer.subscription.deleted`: regresa al usuario a `'BASIC'`.
+- Mensaje de error de límite de regalos actualizado: `"Has alcanzado el límite de 5 regalos del plan BASIC..."`
+
+**Archivo**: `backend/src/modules/payments/payments.types.ts`
+- `PaymentIntentResponse` ahora incluye `sendingFee: number` (además del `commission` legacy).
+
+### CHANGE 4: Portfolio overview endpoint
+
+**Archivo**: `backend/src/modules/portfolio/portfolio.types.ts`
+- Nuevas interfaces `PortfolioInvestmentItem` y `PortfolioOverviewResponse`.
+
+**Archivo**: `backend/src/modules/portfolio/portfolio.service.ts`
+- Nueva función `getPortfolioOverview(userId)`. Carga todos los gifts del sender, filtra por `status === 'INVESTED'` para los items, calcula `currentValue = amount * (1 + changePercent / 100)` usando el catálogo mock de `etfs.service` (`getAllETFs` indexado en un Map), retorna `totalBalance`, `totalGifted` (suma de todos los regalos enviados, no solo invertidos), `investments[]`, y `overallChangePercent` (cambio ponderado).
+
+**Archivo**: `backend/src/modules/portfolio/portfolio.controller.ts`
+- Nuevo handler `getOverviewHandler`.
+
+**Archivo**: `backend/src/modules/portfolio/portfolio.routes.ts`
+- Ruta `GET /overview` registrada **antes** de `GET /:giftId` para evitar conflicto de matching.
+
+### Comandos a ejecutar (manual - el sandbox no tiene node/npm)
+
+```bash
+cd /home/camilo/Alpaca_gift_app/backend
+
+# 1. Aplicar la migración (la SQL ya está escrita; Prisma solo la registra y genera el cliente)
+npx prisma migrate dev --name "add_etf_ratings_three_plans" --skip-seed
+
+# 2. Verificar tipos
+npx tsc --noEmit
+```
+
+> **Nota**: La migración SQL ya está pre-escrita en `backend/prisma/migrations/20260429120000_add_etf_ratings_three_plans/migration.sql`. Prisma debería detectarla como migración pendiente y aplicarla. Si por algún motivo se quiere que Prisma la regenere, se puede borrar la carpeta y dejar que `prisma migrate dev` proponga el SQL automáticamente — pero **el SQL auto-generado romperá el rename FREE -> BASIC** porque Prisma trataría el cambio como DROP+CREATE de enum, perdiendo datos. La migración manual preserva los registros existentes.
+
+### Nuevos endpoints API
+
+| Method | Path | Auth | Body / Params | Response |
+|--------|------|------|---------------|----------|
+| POST   | `/api/etf-ratings/:symbol`        | Bearer JWT | `{ stars: 1-5, comment?: string }`                     | `RatingResponse` (201) |
+| GET    | `/api/etf-ratings/:symbol`        | Optional Bearer | -                                                  | `{ ratings, averageStars, totalCount, userRating }` |
+| GET    | `/api/portfolio/overview`         | Bearer JWT | -                                                       | `PortfolioOverviewResponse` (ver abajo) |
+
+### Endpoints modificados
+
+| Method | Path | Cambio |
+|--------|------|--------|
+| POST | `/api/payments/create-intent` | Acepta `recipientEmail` en `giftData`; lo valida contra usuarios registrados antes de crear el PaymentIntent. Response añade `sendingFee`. Para BASIC users `commission === sendingFee === 0.99`. Para PRO/PRO_PLUS ambos son 0. |
+| POST | `/api/gifts` | Acepta `recipientEmail` opcional (validado con `z.email()`); si está presente debe corresponder a un usuario registrado. |
+| POST | `/api/subscriptions` | Acepta `plan: 'PRO' \| 'PRO_PLUS'` opcional (default 'PRO'). PRO_PLUS factura $19.99/mes; PRO factura $9.99/mes. |
+| GET / DELETE | `/api/subscriptions` | El `plan` retornado puede ser `BASIC \| PRO \| PRO_PLUS`. Cancelar regresa al estado `BASIC`. |
+
+### Shapes de respuesta nuevos
+
+**`RatingResponse`**:
+```json
+{
+  "id": "uuid",
+  "userId": "uuid",
+  "userName": "string",
+  "etfSymbol": "VOO",
+  "stars": 5,
+  "comment": "string | null",
+  "createdAt": "ISO",
+  "updatedAt": "ISO"
+}
+```
+
+**`GET /api/etf-ratings/:symbol` response**:
+```json
+{
+  "ratings": [RatingResponse, ...],
+  "averageStars": 4.32,
+  "totalCount": 15,
+  "userRating": RatingResponse | null
+}
+```
+
+**`PortfolioOverviewResponse`**:
+```json
+{
+  "totalBalance": 1234.56,
+  "totalGifted": 1500.00,
+  "investments": [
+    {
+      "giftId": "uuid",
+      "recipientName": "Maria",
+      "etfSymbol": "VOO",
+      "etfName": "Vanguard S&P 500 ETF",
+      "amount": 100.00,
+      "currentValue": 101.23,
+      "changePercent": 1.23,
+      "changeAmount": 1.23,
+      "status": "INVESTED"
+    }
+  ],
+  "overallChangePercent": 1.23
+}
+```
+
+**`PaymentIntentResponse`** (modificado, añadido `sendingFee`):
+```json
+{
+  "clientSecret": "pi_xxx_secret_yyy",
+  "paymentIntentId": "pi_xxx",
+  "amount": 100.00,
+  "commission": 0.99,
+  "sendingFee": 0.99,
+  "total": 100.99
+}
+```
+
+### Resumen de planes de suscripción
+
+| Plan | Precio mensual | Tarifa por regalo | Límite de regalos | Detalles |
+|------|---------------|-------------------|-------------------|----------|
+| BASIC | Gratis | $0.99 (tarifa de envío) | 5 | Plan gratuito (renombrado de FREE) |
+| PRO | $9.99 | Sin tarifa | Ilimitado | - |
+| PRO_PLUS | $19.99 | Sin tarifa | Ilimitado | Soporte prioritario |
+
+---
+
 ## [2026-04-05] - [SCHEMA PRISMA] + [MIGRACIÓN] + [NUEVO MÓDULO] x3 + [MODIFICACIÓN]
 
 **Acción**: Implementación completa de Stripe Payments, Subscriptions y Recipient portfolio -- módulos nuevos para monetización y experiencia del destinatario.

@@ -9,6 +9,7 @@ export async function createGift(data: {
   amount: number;
   note?: string;
   deliveryDate: Date;
+  recipientEmail?: string;
 }) {
   return prisma.gift.create({ data });
 }

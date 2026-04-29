@@ -16,6 +16,7 @@ const createGiftSchema = z.object({
   amount: z.number().positive(),
   note: z.string().optional(),
   deliveryDate: z.string(),
+  recipientEmail: z.string().email().optional(),
 });
 
 router.post('/', authMiddleware, validate(createGiftSchema), createGiftHandler);

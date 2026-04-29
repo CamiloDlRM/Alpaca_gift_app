@@ -1,7 +1,8 @@
 import * as giftsRepo from './gifts.repository';
 import { eventBus, EVENTS } from '../../shared/events/event-bus';
-import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors/http-errors';
+import { NotFoundError, ConflictError, ForbiddenError, BadRequestError } from '../../shared/errors/http-errors';
 import { GiftStatus } from '@prisma/client';
+import { isEmailRegistered } from '../auth/auth.service';
 import { VALID_TRANSITIONS, type CreateGiftDto, type GiftResponse } from './gifts.types';
 
 const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -14,6 +15,16 @@ function toGiftResponse(gift: any): GiftResponse {
 }
 
 export async function createGift(senderId: string, dto: CreateGiftDto): Promise<GiftResponse> {
+  // Validate that the recipient email (if provided) belongs to a registered user.
+  if (dto.recipientEmail) {
+    const registered = await isEmailRegistered(dto.recipientEmail);
+    if (!registered) {
+      throw new BadRequestError(
+        'El email del destinatario no corresponde a un usuario registrado en la plataforma.'
+      );
+    }
+  }
+
   const gift = await giftsRepo.createGift({
     ...dto,
     senderId,
