@@ -2,10 +2,14 @@ import { prisma } from '../../shared/db/prisma.client';
 import { NotFoundError, BadRequestError } from '../../shared/errors/http-errors';
 import { fetchCurrentPrice, fetchPriceHistory } from '../market-data/market-data.service';
 import { alpacaService } from '../alpaca/alpaca.service';
+import { getAllETFs } from '../etfs/etfs.service';
 import {
   RecipientPortfolioResponse,
   SellRequestDto,
   SellResponse,
+  ConsolidatedPortfolioResponse,
+  ConsolidatedPositionItem,
+  ConsolidatedGiftItem,
 } from './recipient.types';
 
 export async function getRecipientPortfolio(claimToken: string): Promise<RecipientPortfolioResponse> {
@@ -136,4 +140,96 @@ export async function sellRecipientInvestment(
     message:
       'Tu inversión ha sido vendida exitosamente. El monto será transferido en 1-3 días hábiles.',
   };
+}
+
+export async function getConsolidatedRecipientPortfolio(
+  userEmail: string
+): Promise<ConsolidatedPortfolioResponse> {
+  const gifts = await prisma.gift.findMany({
+    where: {
+      recipientEmail: userEmail.toLowerCase().trim(),
+      status: { in: ['INVESTED', 'REDEEMED'] },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  // Build a map of ETF metadata for quick lookup
+  const etfMap = new Map(getAllETFs().map((e) => [e.symbol, e]));
+
+  // Compute current value for each gift
+  const positionMap = new Map<string, ConsolidatedPositionItem>();
+
+  for (const gift of gifts) {
+    const isRedeemed = gift.status === 'REDEEMED';
+    const etf = etfMap.get(gift.etfSymbol);
+    const changePercent = etf?.changePercent ?? 0;
+
+    // Use persisted redeemedAmount for sold gifts, otherwise compute from market
+    const currentValue = isRedeemed && gift.redeemedAmount != null
+      ? gift.redeemedAmount
+      : Number((gift.amount * (1 + changePercent / 100)).toFixed(2));
+
+    const gainLoss = Number((currentValue - gift.amount).toFixed(2));
+    const gainLossPercent = gift.amount > 0
+      ? Number(((gainLoss / gift.amount) * 100).toFixed(2))
+      : 0;
+
+    const giftItem: ConsolidatedGiftItem = {
+      giftId: gift.id,
+      claimToken: gift.claimToken,
+      occasion: gift.occasion,
+      amountInvested: gift.amount,
+      currentValue,
+      gainLoss,
+      gainLossPercent,
+      investedAt: gift.updatedAt.toISOString(),
+      isRedeemed,
+      redeemedAmount: gift.redeemedAmount ?? undefined,
+    };
+
+    const existing = positionMap.get(gift.etfSymbol);
+    if (existing) {
+      existing.gifts.push(giftItem);
+      existing.totalInvested = Number((existing.totalInvested + gift.amount).toFixed(2));
+      existing.totalCurrentValue = Number((existing.totalCurrentValue + currentValue).toFixed(2));
+    } else {
+      positionMap.set(gift.etfSymbol, {
+        etfSymbol: gift.etfSymbol,
+        etfName: etf?.name ?? gift.etfSymbol,
+        totalInvested: gift.amount,
+        totalCurrentValue: currentValue,
+        gainLoss: 0,
+        gainLossPercent: 0,
+        changePercent,
+        gifts: [giftItem],
+      });
+    }
+  }
+
+  // Compute per-position gain/loss
+  const positions: ConsolidatedPositionItem[] = [];
+  for (const pos of positionMap.values()) {
+    pos.gainLoss = Number((pos.totalCurrentValue - pos.totalInvested).toFixed(2));
+    pos.gainLossPercent = pos.totalInvested > 0
+      ? Number(((pos.gainLoss / pos.totalInvested) * 100).toFixed(2))
+      : 0;
+    positions.push(pos);
+  }
+
+  // Sort: active first, then redeemed; by ETF symbol within group
+  positions.sort((a, b) => {
+    const aAllRedeemed = a.gifts.every((g) => g.isRedeemed);
+    const bAllRedeemed = b.gifts.every((g) => g.isRedeemed);
+    if (aAllRedeemed !== bAllRedeemed) return aAllRedeemed ? 1 : -1;
+    return a.etfSymbol.localeCompare(b.etfSymbol);
+  });
+
+  const totalInvested = Number(positions.reduce((s, p) => s + p.totalInvested, 0).toFixed(2));
+  const totalCurrentValue = Number(positions.reduce((s, p) => s + p.totalCurrentValue, 0).toFixed(2));
+  const totalGainLoss = Number((totalCurrentValue - totalInvested).toFixed(2));
+  const totalGainLossPercent = totalInvested > 0
+    ? Number(((totalGainLoss / totalInvested) * 100).toFixed(2))
+    : 0;
+
+  return { totalInvested, totalCurrentValue, totalGainLoss, totalGainLossPercent, positions };
 }

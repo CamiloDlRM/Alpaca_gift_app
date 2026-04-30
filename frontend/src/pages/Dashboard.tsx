@@ -158,6 +158,19 @@ export default function Dashboard() {
           {/* Received gifts notification */}
           {receivedGifts.length > 0 && (
             <div className="mb-8 space-y-3">
+              {receivedGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED') && (
+                <div className="flex justify-end mb-1">
+                  <Link
+                    to="/my-portfolio"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b8960c] hover:underline"
+                  >
+                    Ver mi portafolio completo
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
+                </div>
+              )}
               {receivedGifts.map((gift) => {
                 const isClaimed = !['PENDING', 'CLAIMING'].includes(gift.status);
                 return (

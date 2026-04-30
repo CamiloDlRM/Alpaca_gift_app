@@ -3,6 +3,7 @@ import {
   getRecipientPortfolio,
   getRecipientHistory,
   sellRecipientInvestment,
+  getConsolidatedRecipientPortfolio,
 } from './recipient.service';
 import { SellRequestDto } from './recipient.types';
 
@@ -29,6 +30,19 @@ export async function sellHandler(req: Request, res: Response, next: NextFunctio
   try {
     const dto = req.body as SellRequestDto;
     const result = await sellRecipientInvestment(req.params.claimToken, dto);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getConsolidatedPortfolioHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await getConsolidatedRecipientPortfolio(req.user!.email);
     res.json(result);
   } catch (err) {
     next(err);

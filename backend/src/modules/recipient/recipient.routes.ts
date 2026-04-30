@@ -1,7 +1,11 @@
 import { Router } from 'express';
-import { getPortfolioHandler, getHistoryHandler, sellHandler } from './recipient.controller';
+import { authMiddleware } from '../../shared/middleware/auth.middleware';
+import { getPortfolioHandler, getHistoryHandler, sellHandler, getConsolidatedPortfolioHandler } from './recipient.controller';
 
 const router = Router();
+
+// Consolidated portfolio for a logged-in recipient — must come before /:claimToken routes
+router.get('/portfolio/consolidated', authMiddleware, getConsolidatedPortfolioHandler);
 
 router.get('/portfolio/:claimToken', getPortfolioHandler);
 router.get('/portfolio/:claimToken/history', getHistoryHandler);

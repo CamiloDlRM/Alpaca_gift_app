@@ -19,6 +19,7 @@ import Activity from './pages/Activity';
 import Education from './pages/Education';
 import Profile from './pages/Profile';
 import Support from './pages/Support';
+import RecipientPortfolioPage from './pages/RecipientPortfolioPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/education" element={<ProtectedRoute><Education /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+        <Route path="/my-portfolio" element={<ProtectedRoute><RecipientPortfolioPage /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

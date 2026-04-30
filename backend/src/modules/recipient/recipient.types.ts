@@ -21,6 +21,38 @@ export interface RecipientPortfolioResponse {
   transactions: RecipientTransaction[];
 }
 
+export interface ConsolidatedGiftItem {
+  giftId: string;
+  claimToken: string;
+  occasion: string;
+  amountInvested: number;
+  currentValue: number;
+  gainLoss: number;
+  gainLossPercent: number;
+  investedAt: string;
+  isRedeemed: boolean;
+  redeemedAmount?: number;
+}
+
+export interface ConsolidatedPositionItem {
+  etfSymbol: string;
+  etfName: string;
+  totalInvested: number;
+  totalCurrentValue: number;
+  gainLoss: number;
+  gainLossPercent: number;
+  changePercent: number;
+  gifts: ConsolidatedGiftItem[];
+}
+
+export interface ConsolidatedPortfolioResponse {
+  totalInvested: number;
+  totalCurrentValue: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+  positions: ConsolidatedPositionItem[];
+}
+
 export interface SellRequestDto {
   shares?: number;
 }
