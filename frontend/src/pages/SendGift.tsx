@@ -84,7 +84,7 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
       });
 
       if (stripeError) {
-        setError(stripeError.message ?? 'Error al procesar el pago.');
+        setError(stripeError.message ?? 'Error processing payment.');
         setLoading(false);
         return;
       }
@@ -95,7 +95,7 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
       });
       onSuccess(data.giftId, data.claimLink);
     } catch {
-      setError('Error al procesar el pago. Intenta de nuevo.');
+      setError('Error processing payment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -105,54 +105,54 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
     <div className="space-y-6">
       {/* Gift summary */}
       <Card className="p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Resumen del regalo</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Gift summary</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Destinatario</span>
-            <span className="text-gray-900 font-medium">{formData.recipientName}</span>
+            <span className="text-gray-500 dark:text-gray-400">Recipient</span>
+            <span className="text-gray-900 dark:text-white font-medium">{formData.recipientName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">ETF</span>
-            <span className="text-gray-900 font-medium">{formData.etfSymbol}</span>
+            <span className="text-gray-500 dark:text-gray-400">ETF</span>
+            <span className="text-gray-900 dark:text-white font-medium">{formData.etfSymbol}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Monto del regalo</span>
-            <span className="text-gray-900 font-medium">${paymentData.amount.toFixed(2)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Gift amount</span>
+            <span className="text-gray-900 dark:text-white font-medium">${paymentData.amount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Fecha de entrega</span>
-            <span className="text-gray-900 font-medium">{formData.deliveryDate}</span>
+            <span className="text-gray-500 dark:text-gray-400">Delivery date</span>
+            <span className="text-gray-900 dark:text-white font-medium">{formData.deliveryDate}</span>
           </div>
         </div>
       </Card>
 
       {/* Cost breakdown */}
       <Card className="p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Desglose de costos</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Cost breakdown</h2>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Monto del regalo</span>
-            <span className="text-gray-900">${paymentData.amount.toFixed(2)}</span>
+            <span className="text-gray-500 dark:text-gray-400">Gift amount</span>
+            <span className="text-gray-900 dark:text-white">${paymentData.amount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">
-              {isPro ? 'Tarifa de envio' : 'Tarifa de envio ($0.99)'}
+            <span className="text-gray-500 dark:text-gray-400">
+              {isPro ? 'Sending fee' : 'Sending fee ($0.99)'}
             </span>
-            <span className={isPro ? 'text-green-600 font-medium' : 'text-gray-900'}>
-              {isPro ? '$0.00 \u2713 Sin tarifa' : `$${(paymentData.sendingFee ?? paymentData.commission).toFixed(2)}`}
+            <span className={isPro ? 'text-green-600 font-medium' : 'text-gray-900 dark:text-white'}>
+              {isPro ? '$0.00 \u2713 No fee' : `$${(paymentData.sendingFee ?? paymentData.commission).toFixed(2)}`}
             </span>
           </div>
-          <div className="border-t border-gray-100 pt-3 flex justify-between">
-            <span className="text-gray-900 font-bold">Total</span>
-            <span className="text-gray-900 font-bold">${paymentData.total.toFixed(2)}</span>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between">
+            <span className="text-gray-900 dark:text-white font-bold">Total</span>
+            <span className="text-gray-900 dark:text-white font-bold">${paymentData.total.toFixed(2)}</span>
           </div>
         </div>
       </Card>
 
       {/* Stripe card input */}
       <Card className="p-6">
-        <label className="text-sm font-medium text-gray-700 block mb-3">Datos de tarjeta</label>
-        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">Card details</label>
+        <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
           <CardElement
             options={{
               style: {
@@ -174,18 +174,18 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
 
       <div className="flex gap-3">
         <Button onClick={handlePay} loading={loading} className="flex-1">
-          Pagar ${paymentData.total.toFixed(2)} y enviar regalo
+          Pay ${paymentData.total.toFixed(2)} and send gift
         </Button>
       </div>
       <button
         onClick={onBack}
-        className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium flex items-center gap-1"
         disabled={loading}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Editar regalo
+        Edit gift
       </button>
     </div>
   );
@@ -266,9 +266,9 @@ export default function SendGift() {
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        setError(axiosErr.response?.data?.error || 'Error al crear el pago.');
+        setError(axiosErr.response?.data?.error || 'Error creating payment.');
       } else {
-        setError('Error al crear el pago. Intenta de nuevo.');
+        setError('Error creating payment. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -279,16 +279,16 @@ export default function SendGift() {
   if (paymentSuccess) {
     const selectedOccasion = OCCASIONS.find((o) => o.value === occasion);
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Nav />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <Card className="p-8">
             <div className="text-5xl mb-4">{selectedOccasion?.emoji ?? '🎁'}</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Regalo enviado!</h1>
-            <p className="text-gray-500 mb-6">
-              Comparte este link con <span className="font-semibold text-gray-700">{recipientName}</span> para que reclame su regalo.
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Gift sent!</h1>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              Share this link with <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientName}</span> so they can claim their gift.
             </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-700 font-mono break-all mb-4 text-left">
+            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono break-all mb-4 text-left">
               {claimLink}
             </div>
             <Button
@@ -296,10 +296,10 @@ export default function SendGift() {
               className="w-full mb-3"
               onClick={() => { navigator.clipboard.writeText(claimLink); }}
             >
-              Copiar link
+              Copy link
             </Button>
             <Button className="w-full" onClick={() => navigate('/dashboard')}>
-              Ver mis regalos
+              View my gifts
             </Button>
           </Card>
         </div>
@@ -308,34 +308,33 @@ export default function SendGift() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Enviar un Regalo</h1>
-        <p className="text-gray-500 mb-8">Elige una inversion y enviala a alguien especial.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Send a Gift</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">Choose an investment and send it to someone special.</p>
 
         {error && (
-          <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
         )}
 
         {loadingInit ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
-              <span className="sr-only">Cargando</span>
+              <span className="sr-only">Loading</span>
             </div>
           </div>
         ) : isFreeLimitReached ? (
-          /* FREE limit banner */
           <Card className="p-8 text-center">
             <div className="text-yellow-500 mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Has alcanzado el limite de 5 regalos del plan BASIC</h2>
-            <p className="text-gray-500 mb-6">Actualiza a PRO o PRO+ para enviar regalos ilimitados sin tarifas de envio.</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">You have reached the 5-gift limit on the BASIC plan</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Upgrade to PRO or PRO+ to send unlimited gifts with no sending fees.</p>
             <Button onClick={() => navigate('/pricing')}>
-              Upgrade a PRO
+              Upgrade to PRO
             </Button>
           </Card>
         ) : step === 1 ? (
@@ -344,15 +343,15 @@ export default function SendGift() {
           <Card className="p-6 sm:p-8">
             <form onSubmit={handleContinueToPayment} className="space-y-6">
               <Input
-                label="Nombre del destinatario"
-                placeholder="Para quien es este regalo?"
+                label="Recipient name"
+                placeholder="Who is this gift for?"
                 value={recipientName}
                 onChange={(e) => setRecipientName(e.target.value)}
                 required
               />
 
               <div className="flex flex-col gap-3">
-                <label className="text-sm font-medium text-gray-700">Ocasion</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Occasion</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {OCCASIONS.map((o) => {
                     const selected = occasion === o.value;
@@ -370,7 +369,7 @@ export default function SendGift() {
                         <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${o.color} flex items-center justify-center text-2xl shadow-sm`}>
                           {o.emoji}
                         </div>
-                        <span className={`text-xs font-semibold ${selected ? o.text : 'text-gray-600'}`}>
+                        <span className={`text-xs font-semibold ${selected ? o.text : 'text-gray-600 dark:text-gray-400'}`}>
                           {o.label}
                         </span>
                         {selected && (
@@ -387,9 +386,9 @@ export default function SendGift() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Categoria de inversion</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Investment category</label>
                 <select
-                  className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
+                  className="rounded-lg border border-gray-200 dark:border-gray-600 py-3 px-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white dark:bg-gray-700"
                   value={selectedCategory}
                   onChange={(e) => { setSelectedCategory(e.target.value); setEtfSymbol(''); }}
                 >
@@ -400,9 +399,9 @@ export default function SendGift() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Seleccionar inversion</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select investment</label>
                 {filteredEtfs.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-3">No hay ETFs para esta categoria.</p>
+                  <p className="text-sm text-gray-400 py-3">No ETFs available for this category.</p>
                 ) : (
                   <div className="grid gap-3">
                     {filteredEtfs.map((etf) => (
@@ -412,16 +411,16 @@ export default function SendGift() {
                         onClick={() => setEtfSymbol(etf.symbol)}
                         className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
                           etfSymbol === etf.symbol
-                            ? 'border-[#F5C518] bg-yellow-50'
-                            : 'border-gray-100 hover:border-gray-200'
+                            ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20'
+                            : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
                         }`}
                       >
                         <div>
-                          <div className="font-semibold text-gray-900">{etf.symbol}</div>
-                          <div className="text-sm text-gray-500">{etf.name}</div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{etf.symbol}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{etf.name}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold text-gray-900">${etf.price.toFixed(2)}</div>
+                          <div className="font-semibold text-gray-900 dark:text-white">${etf.price.toFixed(2)}</div>
                           <div className={`text-sm font-medium ${etf.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                             {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent}%
                           </div>
@@ -434,7 +433,7 @@ export default function SendGift() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <Input
-                  label="Monto ($)"
+                  label="Amount ($)"
                   type="number"
                   min="10"
                   step="0.01"
@@ -444,7 +443,7 @@ export default function SendGift() {
                   required
                 />
                 <Input
-                  label="Fecha de entrega"
+                  label="Delivery date"
                   type="date"
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
@@ -453,26 +452,26 @@ export default function SendGift() {
               </div>
 
               <Input
-                label="Email del destinatario (debe estar registrado en la plataforma)"
+                label="Recipient email (must be registered on the platform)"
                 type="email"
-                placeholder="email@ejemplo.com"
+                placeholder="email@example.com"
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
               />
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Nota (opcional)</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Note (optional)</label>
                 <textarea
-                  className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
+                  className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
                   rows={3}
-                  placeholder="Feliz cumple! Aqui tienes un regalo que crecera contigo..."
+                  placeholder="Happy birthday! Here is a gift that will grow with you..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
 
               <Button type="submit" loading={loading} className="w-full" disabled={!occasion || !etfSymbol || !amount}>
-                Continuar al pago
+                Continue to payment
               </Button>
             </form>
           </Card>

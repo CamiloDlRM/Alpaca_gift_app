@@ -66,7 +66,7 @@ function StarPicker({ value, onChange, disabled }: StarPickerProps) {
   const [hover, setHover] = useState<number>(0);
   const display = hover || value;
   return (
-    <div className="inline-flex items-center gap-1" role="radiogroup" aria-label="Selecciona una calificacion del 1 al 5">
+    <div className="inline-flex items-center gap-1" role="radiogroup" aria-label="Select a rating from 1 to 5">
       {[1, 2, 3, 4, 5].map((i) => {
         const filled = i <= display;
         return (
@@ -134,7 +134,7 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
         setComment('');
       }
     } catch {
-      setError('No se pudieron cargar las calificaciones.');
+      setError('Could not load ratings.');
     } finally {
       setLoading(false);
     }
@@ -147,7 +147,7 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (stars < 1 || stars > 5) {
-      setSubmitError('Debes seleccionar entre 1 y 5 estrellas.');
+      setSubmitError('Please select between 1 and 5 stars.');
       return;
     }
     setSubmitting(true);
@@ -162,9 +162,9 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        setSubmitError(axiosErr.response?.data?.error || 'No se pudo guardar la calificacion.');
+        setSubmitError(axiosErr.response?.data?.error || 'Could not save rating.');
       } else {
-        setSubmitError('No se pudo guardar la calificacion. Intenta de nuevo.');
+        setSubmitError('Could not save rating. Please try again.');
       }
     } finally {
       setSubmitting(false);
@@ -176,7 +176,7 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
       <Card className="p-6">
         <div className="flex items-center justify-center py-6">
           <div className="w-6 h-6 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
-            <span className="sr-only">Cargando calificaciones</span>
+            <span className="sr-only">Loading ratings</span>
           </div>
         </div>
       </Card>
@@ -200,33 +200,33 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
     <Card className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Calificaciones de {etfSymbol}</h3>
-          <p className="text-xs text-gray-500">{etfName}</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{etfSymbol} Ratings</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{etfName}</p>
         </div>
         <div className="flex items-center gap-3">
           <StarsDisplay value={averageStars} size="md" />
           <div className="text-sm">
-            <span className="font-bold text-gray-900">{averageStars.toFixed(1)}</span>
-            <span className="text-gray-500"> &middot; {totalCount} valoraciones</span>
+            <span className="font-bold text-gray-900 dark:text-white">{averageStars.toFixed(1)}</span>
+            <span className="text-gray-500 dark:text-gray-400"> &middot; {totalCount} ratings</span>
           </div>
         </div>
       </div>
 
       {/* Recent ratings list */}
       {ratings.length === 0 ? (
-        <div className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-6 text-center">
-          Aun no hay calificaciones. Se el primero en opinar.
+        <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-4 py-6 text-center">
+          No ratings yet. Be the first to share your opinion.
         </div>
       ) : (
         <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
           {ratings.slice(0, 5).map((r) => (
-            <div key={r.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+            <div key={r.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="font-medium text-gray-900 text-sm truncate">{r.userName}</div>
+                <div className="font-medium text-gray-900 dark:text-white text-sm truncate">{r.userName}</div>
                 <StarsDisplay value={r.stars} size="sm" />
               </div>
               {r.comment && (
-                <p className="text-sm text-gray-600 mb-1 break-words">{r.comment}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1 break-words">{r.comment}</p>
               )}
               <div className="text-xs text-gray-400">{formatDate(r.createdAt)}</div>
             </div>
@@ -236,22 +236,22 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
 
       {/* Rating form */}
       {isAuthenticated && (
-        <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-100 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
           <div>
-            <h4 className="font-bold text-gray-900 mb-3">Calificar este ETF</h4>
+            <h4 className="font-bold text-gray-900 dark:text-white mb-3">Rate this ETF</h4>
             <StarPicker value={stars} onChange={setStars} disabled={submitting} />
           </div>
 
           <div>
-            <label htmlFor={`comment-${etfSymbol}`} className="text-sm font-medium text-gray-700 block mb-1">
-              Comentario (opcional)
+            <label htmlFor={`comment-${etfSymbol}`} className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">
+              Comment (optional)
             </label>
             <textarea
               id={`comment-${etfSymbol}`}
-              className="w-full rounded-lg border border-gray-200 py-3 px-4 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 py-3 px-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
               rows={3}
               maxLength={1000}
-              placeholder="Comparte tu opinion sobre este ETF..."
+              placeholder="Share your opinion on this ETF..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               disabled={submitting}
@@ -259,18 +259,18 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
           </div>
 
           {submitError && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm" role="alert">{submitError}</div>
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm" role="alert">{submitError}</div>
           )}
 
           <Button type="submit" loading={submitting} disabled={stars < 1}>
-            {hasUserRating ? 'Actualizar calificacion' : 'Publicar calificacion'}
+            {hasUserRating ? 'Update rating' : 'Publish rating'}
           </Button>
         </form>
       )}
 
       {!isAuthenticated && (
-        <div className="mt-6 pt-6 border-t border-gray-100 text-sm text-gray-500">
-          Inicia sesion para calificar este ETF.
+        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+          Sign in to rate this ETF.
         </div>
       )}
     </Card>

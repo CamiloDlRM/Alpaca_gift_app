@@ -22,27 +22,27 @@ interface GiftResponse {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  PENDING: { bg: 'bg-yellow-50', text: 'text-yellow-700' },
-  CLAIMING: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  KYC_SUBMITTED: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  KYC_VERIFIED: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  AGREEMENT_SIGNED: { bg: 'bg-blue-50', text: 'text-blue-700' },
-  ACCOUNT_CREATING: { bg: 'bg-purple-50', text: 'text-purple-700' },
-  INVESTED: { bg: 'bg-green-50', text: 'text-green-700' },
-  FAILED: { bg: 'bg-red-50', text: 'text-red-700' },
-  REDEEMED: { bg: 'bg-gray-50', text: 'text-gray-600' },
+  PENDING:          { bg: 'bg-yellow-50',  text: 'text-yellow-700' },
+  CLAIMING:         { bg: 'bg-blue-50',    text: 'text-blue-700' },
+  KYC_SUBMITTED:    { bg: 'bg-blue-50',    text: 'text-blue-700' },
+  KYC_VERIFIED:     { bg: 'bg-blue-50',    text: 'text-blue-700' },
+  AGREEMENT_SIGNED: { bg: 'bg-blue-50',    text: 'text-blue-700' },
+  ACCOUNT_CREATING: { bg: 'bg-purple-50',  text: 'text-purple-700' },
+  INVESTED:         { bg: 'bg-green-50',   text: 'text-green-700' },
+  FAILED:           { bg: 'bg-red-50',     text: 'text-red-700' },
+  REDEEMED:         { bg: 'bg-gray-50',    text: 'text-gray-600' },
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pendiente',
-  CLAIMING: 'Reclamando',
-  KYC_SUBMITTED: 'KYC Enviado',
-  KYC_VERIFIED: 'KYC Verificado',
-  AGREEMENT_SIGNED: 'Acuerdo Firmado',
-  ACCOUNT_CREATING: 'Creando Cuenta',
-  INVESTED: 'Invertido',
-  FAILED: 'Fallido',
-  REDEEMED: 'Cobrado',
+  PENDING:          'Pending',
+  CLAIMING:         'Claiming',
+  KYC_SUBMITTED:    'KYC Submitted',
+  KYC_VERIFIED:     'KYC Verified',
+  AGREEMENT_SIGNED: 'Agreement Signed',
+  ACCOUNT_CREATING: 'Creating Account',
+  INVESTED:         'Invested',
+  FAILED:           'Failed',
+  REDEEMED:         'Redeemed',
 };
 
 function PlanBadge({ status, giftsCount }: { status: string; giftsCount: number }) {
@@ -68,7 +68,7 @@ function PlanBadge({ status, giftsCount }: { status: string; giftsCount: number 
   }
   return (
     <span className="inline-flex items-center gap-2 text-xs font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-      Plan Basico &middot; {giftsCount}/5
+      Basic Plan &middot; {giftsCount}/5
       <Link to="/pricing" className="text-[#F5C518] font-semibold hover:underline">Upgrade</Link>
     </span>
   );
@@ -90,7 +90,7 @@ export default function Dashboard() {
       setGifts(sentRes.data);
       setReceivedGifts(receivedRes.data);
     } catch {
-      setError('Error al cargar los regalos.');
+      setError('Failed to load gifts.');
     } finally {
       setLoading(false);
     }
@@ -103,38 +103,34 @@ export default function Dashboard() {
         if (res.data.plan !== user?.subscriptionStatus) {
           updateUser({ subscriptionStatus: res.data.plan });
         }
-      } catch {
-        // silently fail
-      }
+      } catch { /* silently fail */ }
     };
     syncSubscription();
   }, [updateUser, user?.subscriptionStatus]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const totalGifted = gifts.reduce((sum, g) => sum + g.amount, 0);
   const investedGifts = gifts.filter((g) => g.status === 'INVESTED');
   const pendingGifts = gifts.filter((g) => g.status === 'PENDING');
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
 
       <main className="flex-1 overflow-auto">
         {/* Mobile header */}
-        <div className="lg:hidden bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
+        <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
               <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true">
                 <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="font-bold text-gray-900">WealthGift</span>
+            <span className="font-bold text-gray-900 dark:text-white">WealthGift</span>
           </div>
           <Link to="/send">
-            <Button size="sm">Enviar Regalo</Button>
+            <Button size="sm">Send Gift</Button>
           </Link>
         </div>
 
@@ -143,19 +139,19 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  Bienvenido{user ? `, ${user.name.split(' ')[0]}` : ''}
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                  Welcome{user ? `, ${user.name.split(' ')[0]}` : ''}
                 </h1>
                 <PlanBadge status={user?.subscriptionStatus ?? 'BASIC'} giftsCount={gifts.length} />
               </div>
-              <p className="text-gray-500 mt-1">Resumen de tus regalos de inversion</p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">Your investment gifts overview</p>
             </div>
             <Link to="/send" className="hidden lg:block">
-              <Button>Enviar un Regalo</Button>
+              <Button>Send a Gift</Button>
             </Link>
           </div>
 
-          {/* Received gifts notification */}
+          {/* Received gifts */}
           {receivedGifts.length > 0 && (
             <div className="mb-8 space-y-3">
               {receivedGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED') && (
@@ -164,7 +160,7 @@ export default function Dashboard() {
                     to="/my-portfolio"
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b8960c] hover:underline"
                   >
-                    Ver mi portafolio completo
+                    View my full portfolio
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -176,15 +172,15 @@ export default function Dashboard() {
                 return (
                   <div
                     key={gift.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 border border-[#F5C518]/40 rounded-xl px-5 py-4"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 dark:to-yellow-900/10 border border-[#F5C518]/40 rounded-xl px-5 py-4"
                   >
                     <div className="text-3xl flex-shrink-0">🎁</div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900">
-                        Tienes un regalo de <span className="text-[#b8960c]">${gift.amount.toFixed(2)}</span> en {gift.etfSymbol}
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        You have a gift of <span className="text-[#b8960c]">${gift.amount.toFixed(2)}</span> in {gift.etfSymbol}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {gift.occasion} &middot; {isClaimed ? `Estado: ${STATUS_LABELS[gift.status] ?? gift.status}` : 'Pendiente de reclamar'}
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {gift.occasion} &middot; {isClaimed ? `Status: ${STATUS_LABELS[gift.status] ?? gift.status}` : 'Pending claim'}
                       </p>
                     </div>
                     {gift.status === 'INVESTED' || gift.status === 'REDEEMED' ? (
@@ -192,7 +188,7 @@ export default function Dashboard() {
                         to={`/recipient/${gift.claimToken}/dashboard`}
                         className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
                       >
-                        Ver mi portafolio
+                        View portfolio
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
@@ -202,7 +198,7 @@ export default function Dashboard() {
                         href={gift.claimLink}
                         className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
                       >
-                        Reclamar regalo
+                        Claim gift
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
@@ -221,52 +217,51 @@ export default function Dashboard() {
           {/* Stats row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card className="p-5">
-              <div className="text-sm text-gray-500 mb-1">Total Regalado</div>
-              <div className="text-2xl font-bold text-gray-900">${totalGifted.toFixed(2)}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Gifted</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">${totalGifted.toFixed(2)}</div>
             </Card>
             <Card className="p-5">
-              <div className="text-sm text-gray-500 mb-1">Regalos Enviados</div>
-              <div className="text-2xl font-bold text-gray-900">{gifts.length}</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Gifts Sent</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{gifts.length}</div>
             </Card>
             <Card className="p-5">
-              <div className="text-sm text-gray-500 mb-1">Invertidos</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Invested</div>
               <div className="text-2xl font-bold text-green-600">{investedGifts.length}</div>
             </Card>
             <Card className="p-5">
-              <div className="text-sm text-gray-500 mb-1">Pendientes</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Pending</div>
               <div className="text-2xl font-bold text-yellow-600">{pendingGifts.length}</div>
             </Card>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Gifts list */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Mis Regalos</h2>
-                  <Link to="/send" className="text-sm text-[#F5C518] font-semibold hover:underline">Enviar Nuevo</Link>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">My Gifts</h2>
+                  <Link to="/send" className="text-sm text-[#F5C518] font-semibold hover:underline">Send New</Link>
                 </div>
 
                 {loading && (
                   <div className="flex items-center justify-center py-12">
                     <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
-                      <span className="sr-only">Cargando</span>
+                      <span className="sr-only">Loading</span>
                     </div>
                   </div>
                 )}
 
                 {error && (
-                  <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm" role="alert">{error}</div>
+                  <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm" role="alert">{error}</div>
                 )}
 
                 {!loading && gifts.length === 0 && (
                   <Card className="p-8 text-center">
-                    <svg className="w-16 h-16 mx-auto text-gray-200 mb-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="w-16 h-16 mx-auto text-gray-200 dark:text-gray-600 mb-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M20 7h-1.209A4.92 4.92 0 0019 5.5C19 3.57 17.43 2 15.5 2c-1.622 0-2.705 1.482-3.404 3.085C11.498 3.49 10.39 2 8.5 2 6.57 2 5 3.57 5 5.5c0 .596.079 1.089.209 1.5H4c-1.1 0-2 .9-2 2v2c0 .55.45 1 1 1v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7c.55 0 1-.45 1-1V9c0-1.1-.9-2-2-2zm-4.5-3c.83 0 1.5.67 1.5 1.5S16.33 7 15.5 7H13c.5-1.58 1.55-3 2.5-3zM7 5.5C7 4.67 7.67 4 8.5 4c.95 0 2 1.42 2.5 3H8.5C7.67 7 7 6.33 7 5.5z"/>
                     </svg>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Aun no tienes regalos</h3>
-                    <p className="text-gray-500 mb-6">Envia tu primer regalo de inversion y empieza a construir riqueza para tus seres queridos.</p>
-                    <Link to="/send"><Button>Enviar Primer Regalo</Button></Link>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No gifts yet</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">Send your first investment gift and start building wealth for your loved ones.</p>
+                    <Link to="/send"><Button>Send First Gift</Button></Link>
                   </Card>
                 )}
 
@@ -283,13 +278,13 @@ export default function Dashboard() {
                               </svg>
                             </div>
                             <div>
-                              <div className="font-semibold text-gray-900">{gift.recipientName}</div>
-                              <div className="text-sm text-gray-500">{gift.occasion} &middot; {gift.etfSymbol}</div>
+                              <div className="font-semibold text-gray-900 dark:text-white">{gift.recipientName}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">{gift.occasion} &middot; {gift.etfSymbol}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 sm:text-right">
                             <div>
-                              <div className="font-semibold text-gray-900">${gift.amount.toFixed(2)}</div>
+                              <div className="font-semibold text-gray-900 dark:text-white">${gift.amount.toFixed(2)}</div>
                               <div className="text-xs text-gray-400">{new Date(gift.deliveryDate).toLocaleDateString()}</div>
                             </div>
                             <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
@@ -307,17 +302,17 @@ export default function Dashboard() {
             {/* Right sidebar */}
             <div className="space-y-6">
               <Card className="p-6">
-                <h3 className="font-bold text-gray-900 mb-1">Pendientes de reclamar</h3>
-                <p className="text-xs text-gray-400 mb-4">Regalos esperando al destinatario</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-1">Pending claim</h3>
+                <p className="text-xs text-gray-400 mb-4">Gifts waiting for the recipient</p>
                 {pendingGifts.length === 0 ? (
-                  <p className="text-sm text-gray-400">Todos los regalos han sido reclamados.</p>
+                  <p className="text-sm text-gray-400">All gifts have been claimed.</p>
                 ) : (
                   <div className="space-y-4">
                     {pendingGifts.slice(0, 3).map((gift) => (
                       <div key={gift.id} className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-[#F5C518] rounded-full flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-gray-900 truncate">{gift.recipientName}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{gift.recipientName}</div>
                           <div className="text-xs text-gray-400">
                             {new Date(gift.deliveryDate).toLocaleDateString()} &middot; ${gift.amount.toFixed(2)}
                           </div>
@@ -329,15 +324,15 @@ export default function Dashboard() {
               </Card>
 
               <Card className="p-6">
-                <h3 className="font-bold text-gray-900 mb-4">Centro de Educacion</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Education Center</h3>
                 <div className="space-y-4">
                   {[
-                    { title: 'Que es un ETF?', desc: 'Aprende los fundamentos de los fondos cotizados.' },
-                    { title: 'El poder del interes compuesto', desc: 'Como los pequenos regalos crecen en gran riqueza.' },
-                    { title: 'Diversificacion 101', desc: 'Por que distribuir el riesgo es importante.' },
+                    { title: 'What is an ETF?', desc: 'Learn the basics of exchange-traded funds.' },
+                    { title: 'The power of compound interest', desc: 'How small gifts grow into great wealth.' },
+                    { title: 'Diversification 101', desc: 'Why spreading risk matters.' },
                   ].map((article) => (
                     <div key={article.title} className="group cursor-pointer">
-                      <div className="text-sm font-medium text-gray-900 group-hover:text-[#F5C518] transition-colors">{article.title}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-[#F5C518] transition-colors">{article.title}</div>
                       <div className="text-xs text-gray-400">{article.desc}</div>
                     </div>
                   ))}
@@ -345,11 +340,11 @@ export default function Dashboard() {
               </Card>
 
               <div className="bg-gradient-to-br from-[#F5C518] to-yellow-400 rounded-xl p-6 text-black">
-                <h3 className="font-bold mb-2">Regala un ETF hoy</h3>
-                <p className="text-sm text-black/70 mb-4">El mejor momento para invertir fue ayer. El segundo mejor momento es hoy.</p>
+                <h3 className="font-bold mb-2">Gift an ETF today</h3>
+                <p className="text-sm text-black/70 mb-4">The best time to invest was yesterday. The second best time is today.</p>
                 <Link to="/send">
                   <Button variant="secondary" size="sm" className="bg-black text-white border-black hover:bg-gray-800">
-                    Enviar Regalo
+                    Send Gift
                   </Button>
                 </Link>
               </div>

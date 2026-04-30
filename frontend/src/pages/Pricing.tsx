@@ -49,7 +49,7 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
       });
 
       if (pmError) {
-        setError(pmError.message ?? 'Error al procesar la tarjeta.');
+        setError(pmError.message ?? 'Error processing card.');
         setLoading(false);
         return;
       }
@@ -63,9 +63,9 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        setError(axiosErr.response?.data?.error || 'No se pudo crear la suscripcion.');
+        setError(axiosErr.response?.data?.error || 'Could not create subscription.');
       } else {
-        setError('No se pudo crear la suscripcion. Intenta de nuevo.');
+        setError('Could not create subscription. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -80,19 +80,19 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
-      aria-label={`Suscribirse a WealthGift ${planLabel}`}
+      aria-label={`Subscribe to WealthGift ${planLabel}`}
     >
       <Card className="w-full max-w-md p-6 sm:p-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Suscribirse a WealthGift {planLabel}</h2>
-        <p className="text-sm text-gray-500 mb-6">{price}/mes &middot; Cancela cuando quieras</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscribe to WealthGift {planLabel}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{price}/month &middot; Cancel anytime</p>
 
         {error && (
-          <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{error}</div>
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{error}</div>
         )}
 
         <div className="mb-6">
-          <label className="text-sm font-medium text-gray-700 block mb-2">Datos de tarjeta</label>
-          <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Card details</label>
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
             <CardElement
               options={{
                 style: {
@@ -106,10 +106,10 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
 
         <div className="flex gap-3">
           <Button onClick={handleSubscribe} loading={loading} className="flex-1">
-            Confirmar suscripcion
+            Confirm subscription
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            Cancelar
+            Cancel
           </Button>
         </div>
       </Card>
@@ -140,18 +140,15 @@ export default function Pricing() {
     try {
       await apiClient.delete('/subscriptions');
       updateUser({ subscriptionStatus: 'BASIC' });
-    } catch {
-      // silently fail
-    } finally {
-      setCancelLoading(false);
-    }
+    } catch { /* silently fail */ }
+    finally { setCancelLoading(false); }
   };
 
   const handleSubscribeSuccess = (plan: PaidPlan) => {
     updateUser({ subscriptionStatus: plan });
     setModalPlan(null);
     const label = plan === 'PRO_PLUS' ? 'PRO+' : 'PRO';
-    setSuccessBanner(`Tu suscripcion ${label} se ha activado correctamente.`);
+    setSuccessBanner(`Your ${label} subscription has been activated.`);
     setTimeout(() => setSuccessBanner(''), 5000);
   };
 
@@ -161,9 +158,9 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-4">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
@@ -171,24 +168,24 @@ export default function Pricing() {
                 <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="font-bold text-gray-900">WealthGift</span>
+            <span className="font-bold text-gray-900 dark:text-white">WealthGift</span>
           </div>
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 font-medium">
-            Volver al inicio
+          <Link to="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium">
+            Back to home
           </Link>
         </div>
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-12">
         {successBanner && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6 text-center font-medium" role="status">
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm mb-6 text-center font-medium" role="status">
             {successBanner}
           </div>
         )}
 
         <div className="text-center mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">Planes y Precios</h1>
-          <p className="text-gray-500 text-lg">Elige el plan que mejor se adapte a tus necesidades</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">Plans & Pricing</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">Choose the plan that best fits your needs</p>
         </div>
 
         {/* 3-plan grid */}
@@ -197,31 +194,31 @@ export default function Pricing() {
           {/* BASIC Plan */}
           <Card className="p-6 sm:p-8 border-gray-200 flex flex-col">
             <div className="mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                BASICO
+              <span className="text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full">
+                BASIC
               </span>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900">$0</span>
-              <span className="text-gray-500 ml-1">/ mes</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">$0</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Hasta 5 regalos de inversion',
-                'Tarifa de envio de $0.99 por regalo',
-                'Dashboard con portafolio',
-                'Acceso a todos los ETFs',
-                'Calificaciones de ETFs',
+                'Up to 5 investment gifts',
+                '$0.99 sending fee per gift',
+                'Portfolio dashboard',
+                'Access to all ETFs',
+                'ETF ratings',
               ].map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
                   <span>{feature}</span>
                 </li>
               ))}
             </ul>
             {currentPlan === 'BASIC' && isAuthenticated ? (
-              <div className="text-center text-sm font-semibold text-gray-500 bg-gray-50 px-4 py-3 rounded-full">
-                Plan actual
+              <div className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-4 py-3 rounded-full">
+                Current plan
               </div>
             ) : (
               <Button
@@ -229,7 +226,7 @@ export default function Pricing() {
                 className="w-full"
                 onClick={() => { if (!isAuthenticated) navigate('/register'); else navigate('/dashboard'); }}
               >
-                Comenzar gratis
+                Get started free
               </Button>
             )}
           </Card>
@@ -238,27 +235,27 @@ export default function Pricing() {
           <Card className="p-6 sm:p-8 border-2 border-[#F5C518] shadow-lg relative flex flex-col">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="text-xs font-bold uppercase tracking-wider bg-[#F5C518] text-black px-4 py-1 rounded-full whitespace-nowrap">
-                MAS POPULAR
+                MOST POPULAR
               </span>
             </div>
             <div className="mb-4 mt-2">
-              <span className="text-xs font-bold uppercase tracking-wider bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold uppercase tracking-wider bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full">
                 PRO
               </span>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900">$9.99</span>
-              <span className="text-gray-500 ml-1">/ mes</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">$9.99</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Regalos ilimitados',
-                'Sin tarifas de envio',
-                'Dashboard completo con analytics',
-                'Calificaciones de ETFs',
-                'Soporte prioritario',
+                'Unlimited gifts',
+                'No sending fees',
+                'Full dashboard with analytics',
+                'ETF ratings',
+                'Priority support',
               ].map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
                   <span>{feature}</span>
                 </li>
@@ -266,40 +263,40 @@ export default function Pricing() {
             </ul>
             {isAuthenticated && currentPlan === 'PRO' ? (
               <div className="space-y-3">
-                <div className="text-center text-sm font-semibold text-green-600 bg-green-50 px-4 py-3 rounded-full">
-                  Plan activo
+                <div className="text-center text-sm font-semibold text-green-600 bg-green-50 dark:bg-green-900/20 px-4 py-3 rounded-full">
+                  Active plan
                 </div>
                 <Button variant="secondary" className="w-full" onClick={handleCancelSubscription} loading={cancelLoading}>
-                  Cancelar suscripcion
+                  Cancel subscription
                 </Button>
               </div>
             ) : (
               <Button className="w-full" onClick={() => openModal('PRO')}>
-                {currentPlan === 'PRO_PLUS' ? 'Cambiar a PRO' : 'Suscribirse a PRO'}
+                {currentPlan === 'PRO_PLUS' ? 'Switch to PRO' : 'Subscribe to PRO'}
               </Button>
             )}
           </Card>
 
           {/* PRO+ Plan */}
-          <Card className="p-6 sm:p-8 border-2 border-purple-200 shadow-lg relative flex flex-col">
+          <Card className="p-6 sm:p-8 border-2 border-purple-200 dark:border-purple-700 shadow-lg relative flex flex-col">
             <div className="mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
+              <span className="text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full">
                 PRO+
               </span>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900">$19.99</span>
-              <span className="text-gray-500 ml-1">/ mes</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">$19.99</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Todo lo del plan PRO',
-                'Regalos programados avanzados',
-                'Analytics avanzados',
-                'Soporte 24/7',
-                'Acceso anticipado a nuevas funciones',
+                'Everything in PRO',
+                'Advanced scheduled gifts',
+                'Advanced analytics',
+                '24/7 support',
+                'Early access to new features',
               ].map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
                   <span>{feature}</span>
                 </li>
@@ -307,11 +304,11 @@ export default function Pricing() {
             </ul>
             {isAuthenticated && currentPlan === 'PRO_PLUS' ? (
               <div className="space-y-3">
-                <div className="text-center text-sm font-semibold text-purple-600 bg-purple-50 px-4 py-3 rounded-full">
-                  Plan activo
+                <div className="text-center text-sm font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-4 py-3 rounded-full">
+                  Active plan
                 </div>
                 <Button variant="secondary" className="w-full" onClick={handleCancelSubscription} loading={cancelLoading}>
-                  Cancelar suscripcion
+                  Cancel subscription
                 </Button>
               </div>
             ) : (
@@ -319,15 +316,14 @@ export default function Pricing() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0"
                 onClick={() => openModal('PRO_PLUS')}
               >
-                {currentPlan === 'PRO' ? 'Mejorar a PRO+' : 'Suscribirse a PRO+'}
+                {currentPlan === 'PRO' ? 'Upgrade to PRO+' : 'Subscribe to PRO+'}
               </Button>
             )}
           </Card>
         </div>
 
-        {/* Fee explanation note */}
-        <p className="text-center text-xs text-gray-400 mt-8">
-          * La tarifa de envio del plan Basico ($0.99) se cobra una vez por cada regalo enviado. No hay comisiones adicionales en ningun plan.
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
+          * The Basic plan sending fee ($0.99) is charged once per gift sent. No additional commissions on any plan.
         </p>
       </div>
 

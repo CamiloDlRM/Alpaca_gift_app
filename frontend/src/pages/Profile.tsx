@@ -27,9 +27,9 @@ export default function Profile() {
     try {
       await apiClient.patch('/auth/profile', { name });
       updateUser({ name });
-      setSuccessMsg('Nombre actualizado correctamente.');
+      setSuccessMsg('Name updated successfully.');
     } catch {
-      setErrorMsg('No se pudo actualizar el nombre.');
+      setErrorMsg('Could not update name.');
     } finally {
       setSaving(false);
     }
@@ -37,68 +37,69 @@ export default function Profile() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) { setErrorMsg('Las contraseñas no coinciden.'); return; }
-    if (newPassword.length < 6) { setErrorMsg('La contraseña debe tener al menos 6 caracteres.'); return; }
+    if (newPassword !== confirmPassword) { setErrorMsg('Passwords do not match.'); return; }
+    if (newPassword.length < 6) { setErrorMsg('Password must be at least 6 characters.'); return; }
     setSavingPwd(true);
     setSuccessMsg('');
     setErrorMsg('');
     try {
       await apiClient.patch('/auth/password', { currentPassword, newPassword });
-      setSuccessMsg('Contraseña actualizada correctamente.');
+      setSuccessMsg('Password updated successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch {
-      setErrorMsg('No se pudo cambiar la contraseña. Verifica la contraseña actual.');
+      setErrorMsg('Could not change password. Please verify your current password.');
     } finally {
       setSavingPwd(false);
     }
   };
 
-  const isPro = user?.subscriptionStatus === 'PRO';
+  const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
+  const planLabel = user?.subscriptionStatus === 'PRO_PLUS' ? 'PRO+' : user?.subscriptionStatus === 'PRO' ? 'PRO' : 'Basic';
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
-          <p className="text-gray-500 mb-8">Administra tu cuenta y preferencias.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Profile</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Manage your account and preferences.</p>
 
-          {successMsg && <div className="bg-green-50 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">{successMsg}</div>}
-          {errorMsg && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6">{errorMsg}</div>}
+          {successMsg && <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm mb-6">{successMsg}</div>}
+          {errorMsg && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6">{errorMsg}</div>}
 
           {/* Plan badge */}
           <Card className="p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-500 mb-1">Plan actual</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current plan</div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-lg font-bold ${isPro ? 'text-green-700' : 'text-gray-700'}`}>
-                    {isPro ? 'PRO' : 'Gratuito'}
+                  <span className={`text-lg font-bold ${isPro ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {planLabel}
                   </span>
                   {isPro && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Activo</span>
+                    <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">Active</span>
                   )}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {isPro ? 'Regalos ilimitados sin comisión.' : 'Hasta 5 regalos con comisión del 2.5%.'}
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {isPro ? 'Unlimited gifts with no sending fee.' : 'Up to 5 gifts with a $0.99 sending fee.'}
                 </div>
               </div>
               {!isPro && (
                 <Link to="/pricing">
-                  <Button size="sm">Upgrade a PRO</Button>
+                  <Button size="sm">Upgrade to PRO</Button>
                 </Link>
               )}
             </div>
           </Card>
 
-          {/* Info */}
+          {/* Personal info */}
           <Card className="p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Información personal</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personal information</h2>
             <form onSubmit={handleSaveName} className="space-y-4">
               <Input
-                label="Nombre completo"
+                label="Full name"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
@@ -108,36 +109,36 @@ export default function Profile() {
                 value={user?.email ?? ''}
                 disabled
               />
-              <Button type="submit" loading={saving}>Guardar cambios</Button>
+              <Button type="submit" loading={saving}>Save changes</Button>
             </form>
           </Card>
 
           {/* Password */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Cambiar contraseña</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change password</h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <Input
-                label="Contraseña actual"
+                label="Current password"
                 type="password"
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 required
               />
               <Input
-                label="Nueva contraseña"
+                label="New password"
                 type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 required
               />
               <Input
-                label="Confirmar nueva contraseña"
+                label="Confirm new password"
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
               />
-              <Button type="submit" loading={savingPwd}>Cambiar contraseña</Button>
+              <Button type="submit" loading={savingPwd}>Change password</Button>
             </form>
           </Card>
         </div>

@@ -39,7 +39,7 @@ function giftToEvents(gift: GiftResponse): ActivityEvent[] {
       id: `${gift.id}-sent`,
       date: gift.createdAt,
       type: 'SENT',
-      description: `Enviaste un regalo de ${gift.etfSymbol} a ${gift.recipientName}`,
+      description: `You sent a ${gift.etfSymbol} gift to ${gift.recipientName}`,
       amount: gift.amount,
       etfSymbol: gift.etfSymbol,
       recipientName: gift.recipientName,
@@ -51,7 +51,7 @@ function giftToEvents(gift: GiftResponse): ActivityEvent[] {
       id: `${gift.id}-claimed`,
       date: gift.createdAt,
       type: 'CLAIMED',
-      description: `${gift.recipientName} comenzó a reclamar su regalo`,
+      description: `${gift.recipientName} started claiming their gift`,
       amount: gift.amount,
       etfSymbol: gift.etfSymbol,
     });
@@ -62,7 +62,7 @@ function giftToEvents(gift: GiftResponse): ActivityEvent[] {
       id: `${gift.id}-invested`,
       date: gift.deliveryDate,
       type: 'INVESTED',
-      description: `El regalo de ${gift.recipientName} fue invertido en ${gift.etfSymbol}`,
+      description: `${gift.recipientName}'s gift was invested in ${gift.etfSymbol}`,
       amount: gift.amount,
       etfSymbol: gift.etfSymbol,
     });
@@ -73,7 +73,7 @@ function giftToEvents(gift: GiftResponse): ActivityEvent[] {
       id: `${gift.id}-failed`,
       date: gift.createdAt,
       type: 'FAILED',
-      description: `El regalo para ${gift.recipientName} falló durante el proceso`,
+      description: `The gift for ${gift.recipientName} failed during processing`,
       amount: gift.amount,
       etfSymbol: gift.etfSymbol,
     });
@@ -98,7 +98,7 @@ export default function Activity() {
         id: `${g.id}-received`,
         date: g.createdAt,
         type: 'RECEIVED' as const,
-        description: `Recibiste un regalo de ${g.etfSymbol} (${g.occasion})`,
+        description: `You received a ${g.etfSymbol} gift (${g.occasion})`,
         amount: g.amount,
         etfSymbol: g.etfSymbol,
       }));
@@ -114,12 +114,12 @@ export default function Activity() {
   useEffect(() => { fetchActivity(); }, [fetchActivity]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Actividad</h1>
-          <p className="text-gray-500 mb-8">Historial completo de tus regalos y transacciones.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Activity</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Complete history of your gifts and transactions.</p>
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
@@ -128,28 +128,28 @@ export default function Activity() {
           ) : events.length === 0 ? (
             <Card className="p-12 text-center">
               <div className="text-5xl mb-4">📊</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin actividad aún</h3>
-              <p className="text-gray-500">Cuando envíes o recibas regalos aparecerán aquí.</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No activity yet</h3>
+              <p className="text-gray-500 dark:text-gray-400">When you send or receive gifts they will appear here.</p>
             </Card>
           ) : (
             <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-px bg-gray-200" />
+              <div className="absolute left-6 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
               <div className="space-y-4">
                 {events.map(event => {
                   const style = EVENT_STYLES[event.type];
                   return (
                     <div key={event.id} className="flex gap-4 relative">
-                      <div className={`w-12 h-12 rounded-full ${style.bg} flex items-center justify-center text-xl flex-shrink-0 z-10 bg-white border-2 border-gray-100`}>
+                      <div className={`w-12 h-12 rounded-full ${style.bg} flex items-center justify-center text-xl flex-shrink-0 z-10 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700`}>
                         {style.icon}
                       </div>
                       <Card className="flex-1 p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                          <p className="text-sm font-medium text-gray-900">{event.description}</p>
-                          <span className="font-bold text-gray-900 flex-shrink-0">${event.amount.toFixed(2)}</span>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{event.description}</p>
+                          <span className="font-bold text-gray-900 dark:text-white flex-shrink-0">${event.amount.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{event.type}</span>
-                          <span className="text-xs text-gray-400">{new Date(event.date).toLocaleDateString('es', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                          <span className="text-xs text-gray-400">{new Date(event.date).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                         </div>
                       </Card>
                     </div>

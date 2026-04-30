@@ -42,9 +42,9 @@ const PERIODS = ['1D', '1W', '1M', '1Y', 'ALL'] as const;
 type Period = (typeof PERIODS)[number];
 
 const TYPE_BADGES: Record<string, { bg: string; text: string }> = {
-  BUY: { bg: 'bg-green-50', text: 'text-green-700' },
-  SELL: { bg: 'bg-red-50', text: 'text-red-700' },
-  DIVIDEND: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  BUY:      { bg: 'bg-green-50', text: 'text-green-700' },
+  SELL:     { bg: 'bg-red-50',   text: 'text-red-700' },
+  DIVIDEND: { bg: 'bg-blue-50',  text: 'text-blue-700' },
 };
 
 export default function RecipientDashboard() {
@@ -64,7 +64,7 @@ export default function RecipientDashboard() {
       const res = await apiClient.get<RecipientPortfolio>(`/recipient/portfolio/${claimToken}`);
       setPortfolio(res.data);
     } catch {
-      setError('No se pudo cargar el portafolio. Verifica que el enlace sea correcto.');
+      setError('Could not load the portfolio. Please verify the link is correct.');
     }
   }, [claimToken]);
 
@@ -75,12 +75,9 @@ export default function RecipientDashboard() {
         params: { period },
       });
       setHistory(res.data.data);
-    } catch {
-      // History might fail independently
-    }
+    } catch { /* History might fail independently */ }
   }, [claimToken, period]);
 
-  // Initial load
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -90,11 +87,8 @@ export default function RecipientDashboard() {
     load();
   }, [fetchPortfolio, fetchHistory]);
 
-  // Polling every 30s for portfolio updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchPortfolio();
-    }, 30000);
+    const interval = setInterval(() => { fetchPortfolio(); }, 30000);
     return () => clearInterval(interval);
   }, [fetchPortfolio]);
 
@@ -107,14 +101,13 @@ export default function RecipientDashboard() {
       );
       setSellSuccess({ amountReturned: res.data.amountReturned, message: res.data.message });
       setShowSellModal(false);
-      // Refresh portfolio to get updated isRedeemed status
       fetchPortfolio();
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
-        setError(axiosErr.response?.data?.error || 'Error al vender la inversion.');
+        setError(axiosErr.response?.data?.error || 'Error selling the investment.');
       } else {
-        setError('Error al vender la inversion. Intenta de nuevo.');
+        setError('Error selling the investment. Please try again.');
       }
     } finally {
       setSellLoading(false);
@@ -123,9 +116,9 @@ export default function RecipientDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
-          <span className="sr-only">Cargando</span>
+          <span className="sr-only">Loading</span>
         </div>
       </div>
     );
@@ -133,7 +126,7 @@ export default function RecipientDashboard() {
 
   if (error && !portfolio) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <Card className="p-8">
@@ -142,8 +135,8 @@ export default function RecipientDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">Portafolio no disponible</h1>
-            <p className="text-gray-500">{error}</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Portfolio unavailable</h1>
+            <p className="text-gray-500 dark:text-gray-400">{error}</p>
           </Card>
         </div>
       </div>
@@ -155,32 +148,32 @@ export default function RecipientDashboard() {
   const isPositive = portfolio.gainLoss >= 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Redeemed banner — shown when investment has been sold */}
+        {/* Redeemed banner */}
         {portfolio.isRedeemed && portfolio.redeemedAmount != null && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 mb-6 flex items-center gap-4">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl px-5 py-4 mb-6 flex items-center gap-4">
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <div className="font-semibold text-green-800">Inversion vendida exitosamente</div>
-              <div className="text-sm text-green-700">
-                Monto recibido: <span className="font-bold">${portfolio.redeemedAmount.toFixed(2)}</span>
-                {' '}&middot; Ganancia: <span className="font-bold">{portfolio.gainLoss >= 0 ? '+' : ''}${portfolio.gainLoss.toFixed(2)}</span>
+              <div className="font-semibold text-green-800 dark:text-green-400">Investment sold successfully</div>
+              <div className="text-sm text-green-700 dark:text-green-300">
+                Amount received: <span className="font-bold">${portfolio.redeemedAmount.toFixed(2)}</span>
+                {' '}&middot; Gain/Loss: <span className="font-bold">{portfolio.gainLoss >= 0 ? '+' : ''}${portfolio.gainLoss.toFixed(2)}</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Card 1 - Portfolio value */}
+        {/* Portfolio value */}
         <Card className="p-6 sm:p-8 mb-6">
-          <div className="mb-1 text-sm text-gray-500">{portfolio.etfSymbol} &middot; {portfolio.recipientName}</div>
-          <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-1">
+          <div className="mb-1 text-sm text-gray-500 dark:text-gray-400">{portfolio.etfSymbol} &middot; {portfolio.recipientName}</div>
+          <div className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-1">
             {portfolio.isRedeemed && portfolio.redeemedAmount != null
               ? `$${portfolio.redeemedAmount.toFixed(2)}`
               : `$${portfolio.totalValue.toFixed(2)}`}
@@ -188,11 +181,11 @@ export default function RecipientDashboard() {
           <div className={`text-lg font-semibold flex items-center gap-2 mb-6 ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
             <span>{isPositive ? '+' : ''}${portfolio.gainLoss.toFixed(2)}</span>
             <span className="text-sm">({isPositive ? '+' : ''}{portfolio.gainLossPercent.toFixed(2)}%)</span>
-            {portfolio.isRedeemed && <span className="text-xs font-normal text-gray-400 ml-1">al momento de la venta</span>}
+            {portfolio.isRedeemed && <span className="text-xs font-normal text-gray-400 ml-1">at time of sale</span>}
           </div>
 
           {/* Period tabs */}
-          <div className="flex gap-2 mb-6" role="tablist" aria-label="Periodo de tiempo">
+          <div className="flex gap-2 mb-6" role="tablist" aria-label="Time period">
             {PERIODS.map((p) => (
               <button
                 key={p}
@@ -200,7 +193,7 @@ export default function RecipientDashboard() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   period === p
                     ? 'bg-[#F5C518] text-black'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 role="tab"
                 aria-selected={period === p}
@@ -245,7 +238,7 @@ export default function RecipientDashboard() {
                       borderRadius: '12px',
                       boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                     }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Valor']}
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
                     labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
                   />
                   <Area
@@ -259,27 +252,27 @@ export default function RecipientDashboard() {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                No hay datos de historial disponibles para este periodo.
+                No history data available for this period.
               </div>
             )}
           </div>
         </Card>
 
-        {/* Card 2 - Holdings */}
+        {/* Holdings */}
         <Card className="p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Holdings</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Holdings</h2>
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-[#F5C518]/10 rounded-full flex items-center justify-center">
                 <span className="text-sm font-bold text-[#F5C518]">{portfolio.etfSymbol.charAt(0)}</span>
               </div>
               <div>
-                <div className="font-semibold text-gray-900">{portfolio.etfSymbol}</div>
-                <div className="text-sm text-gray-500">{portfolio.shares.toFixed(4)} acciones</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{portfolio.etfSymbol}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{portfolio.shares.toFixed(4)} shares</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="font-semibold text-gray-900">${portfolio.totalValue.toFixed(2)}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">${portfolio.totalValue.toFixed(2)}</div>
               <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
                 {isPositive ? '+' : ''}{portfolio.gainLossPercent.toFixed(2)}%
               </div>
@@ -287,20 +280,20 @@ export default function RecipientDashboard() {
           </div>
         </Card>
 
-        {/* Card 3 - Transaction History */}
+        {/* Transaction History */}
         <Card className="p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Historial de Transacciones</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Transaction History</h2>
           {portfolio.transactions.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">No hay transacciones registradas.</p>
+            <p className="text-sm text-gray-400 py-4 text-center">No transactions recorded.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-100">
-                    <th className="py-3 pr-4 font-medium">Fecha</th>
-                    <th className="py-3 pr-4 font-medium">Tipo</th>
-                    <th className="py-3 pr-4 font-medium text-right">Acciones</th>
-                    <th className="py-3 pr-4 font-medium text-right">Precio/accion</th>
+                  <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                    <th className="py-3 pr-4 font-medium">Date</th>
+                    <th className="py-3 pr-4 font-medium">Type</th>
+                    <th className="py-3 pr-4 font-medium text-right">Shares</th>
+                    <th className="py-3 pr-4 font-medium text-right">Price/share</th>
                     <th className="py-3 font-medium text-right">Total</th>
                   </tr>
                 </thead>
@@ -308,8 +301,8 @@ export default function RecipientDashboard() {
                   {portfolio.transactions.map((tx, i) => {
                     const badge = TYPE_BADGES[tx.type] || TYPE_BADGES.BUY;
                     return (
-                      <tr key={i} className="border-b border-gray-50">
-                        <td className="py-3 pr-4 text-gray-700">
+                      <tr key={i} className="border-b border-gray-50 dark:border-gray-700/50">
+                        <td className="py-3 pr-4 text-gray-700 dark:text-gray-300">
                           {new Date(tx.date).toLocaleDateString()}
                         </td>
                         <td className="py-3 pr-4">
@@ -317,9 +310,9 @@ export default function RecipientDashboard() {
                             {tx.type}
                           </span>
                         </td>
-                        <td className="py-3 pr-4 text-right text-gray-700">{tx.shares.toFixed(4)}</td>
-                        <td className="py-3 pr-4 text-right text-gray-700">${tx.pricePerShare.toFixed(2)}</td>
-                        <td className="py-3 text-right font-medium text-gray-900">${tx.total.toFixed(2)}</td>
+                        <td className="py-3 pr-4 text-right text-gray-700 dark:text-gray-300">{tx.shares.toFixed(4)}</td>
+                        <td className="py-3 pr-4 text-right text-gray-700 dark:text-gray-300">${tx.pricePerShare.toFixed(2)}</td>
+                        <td className="py-3 text-right font-medium text-gray-900 dark:text-white">${tx.total.toFixed(2)}</td>
                       </tr>
                     );
                   })}
@@ -329,46 +322,46 @@ export default function RecipientDashboard() {
           )}
         </Card>
 
-        {/* Card 4 - Sell investment */}
+        {/* Sell investment */}
         {sellSuccess ? (
-          <Card className="p-6 bg-green-50 border-green-200">
+          <Card className="p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
             <div className="flex items-center gap-3 mb-2">
-              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <h2 className="text-lg font-bold text-green-800">Venta exitosa</h2>
+              <h2 className="text-lg font-bold text-green-800 dark:text-green-400">Sale successful</h2>
             </div>
-            <p className="text-green-700">{sellSuccess.message}</p>
-            <p className="text-green-800 font-semibold mt-2">
-              Monto recibido: ${sellSuccess.amountReturned.toFixed(2)}
+            <p className="text-green-700 dark:text-green-300">{sellSuccess.message}</p>
+            <p className="text-green-800 dark:text-green-400 font-semibold mt-2">
+              Amount received: ${sellSuccess.amountReturned.toFixed(2)}
             </p>
           </Card>
         ) : portfolio.isRedeemed ? (
-          <Card className="p-6 bg-yellow-50 border-yellow-200">
+          <Card className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700">
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
               <div>
-                <h2 className="text-lg font-bold text-yellow-800">Inversion vendida</h2>
-                <p className="text-yellow-700 text-sm">Esta inversion ya fue vendida. Los fondos estan siendo procesados.</p>
+                <h2 className="text-lg font-bold text-yellow-800 dark:text-yellow-400">Investment sold</h2>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm">This investment has already been sold. Funds are being processed.</p>
               </div>
             </div>
           </Card>
         ) : (
           <Card className="p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Vender mi inversion</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Al vender, los fondos seran transferidos a tu cuenta en 1-3 dias habiles.
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Sell my investment</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              When you sell, funds will be transferred to your account within 1-3 business days.
             </p>
-            <p className="text-gray-700 mb-4">
-              Recibiras aproximadamente: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              You will receive approximately: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
             </p>
             <Button
               onClick={() => setShowSellModal(true)}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Vender mi inversion
+              Sell my investment
             </Button>
           </Card>
         )}
@@ -380,24 +373,24 @@ export default function RecipientDashboard() {
             onClick={(e) => { if (e.target === e.currentTarget) setShowSellModal(false); }}
             role="dialog"
             aria-modal="true"
-            aria-label="Confirmar venta"
+            aria-label="Confirm sale"
           >
             <Card className="w-full max-w-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmas la venta?</h3>
-              <p className="text-gray-700 mb-1">
-                Recibiras: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Confirm sale?</h3>
+              <p className="text-gray-700 dark:text-gray-300 mb-1">
+                You will receive: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
               </p>
-              <p className="text-sm text-red-500 mb-6">Esta accion no se puede deshacer.</p>
+              <p className="text-sm text-red-500 mb-6">This action cannot be undone.</p>
               <div className="flex gap-3">
                 <Button
                   onClick={handleSell}
                   loading={sellLoading}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                 >
-                  Confirmar venta
+                  Confirm sale
                 </Button>
                 <Button variant="secondary" onClick={() => setShowSellModal(false)} disabled={sellLoading}>
-                  Cancelar
+                  Cancel
                 </Button>
               </div>
             </Card>
@@ -410,16 +403,16 @@ export default function RecipientDashboard() {
 
 function Header() {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-4">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
       <div className="max-w-4xl mx-auto flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true">
             <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
-        <span className="font-bold text-gray-900">WealthGift</span>
+        <span className="font-bold text-gray-900 dark:text-white">WealthGift</span>
         <span className="text-gray-400 mx-2">|</span>
-        <span className="text-gray-500 text-sm">Tu Portafolio de Regalo</span>
+        <span className="text-gray-500 dark:text-gray-400 text-sm">Your Gift Portfolio</span>
       </div>
     </header>
   );

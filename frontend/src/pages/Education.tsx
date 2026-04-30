@@ -4,40 +4,40 @@ import { Card } from '../components/ui/Card';
 
 const ARTICLES = [
   {
-    id: 1, emoji: '📈', category: 'Fundamentos',
-    title: '¿Qué es un ETF?',
-    summary: 'Un ETF (Exchange-Traded Fund) es un fondo de inversión que cotiza en bolsa como una acción. Agrupa múltiples activos en un solo instrumento.',
-    content: `Un ETF combina las ventajas de los fondos mutuos con la flexibilidad de las acciones. Al comprar un ETF como el VOO (S&P 500), estás invirtiendo en las 500 empresas más grandes de EE.UU. con una sola transacción.\n\n**Ventajas:**\n• Diversificación instantánea\n• Bajos costos (comisiones desde 0.03%)\n• Liquidez — se compra y vende durante el horario de mercado\n• Transparencia — sabes exactamente qué tienes\n\n**Ejemplo:** Si giftas $100 en VOO, ese dinero queda invertido en Apple, Microsoft, Amazon y otras 497 empresas al mismo tiempo.`,
+    id: 1, emoji: '📈', category: 'Fundamentals',
+    title: 'What is an ETF?',
+    summary: 'An ETF (Exchange-Traded Fund) is an investment fund that trades on stock exchanges like a stock. It bundles multiple assets into a single instrument.',
+    content: `An ETF combines the advantages of mutual funds with the flexibility of stocks. By buying an ETF like VOO (S&P 500), you are investing in the 500 largest U.S. companies with a single transaction.\n\n**Advantages:**\n• Instant diversification\n• Low costs (fees from 0.03%)\n• Liquidity — bought and sold during market hours\n• Transparency — you know exactly what you hold\n\n**Example:** If you gift $100 in VOO, that money is invested in Apple, Microsoft, Amazon, and 497 other companies simultaneously.`,
   },
   {
-    id: 2, emoji: '🔄', category: 'Fundamentos',
-    title: 'El Poder del Interés Compuesto',
-    summary: 'El interés compuesto es cuando tus ganancias generan más ganancias. Einstein lo llamó "la octava maravilla del mundo".',
-    content: `El interés compuesto funciona así: si inviertes $100 y ganas 10%, tienes $110. El siguiente año ganas 10% sobre $110, no sobre $100 — son $11 de ganancia, no $10.\n\n**Con el tiempo, la diferencia es enorme:**\n• $100 a 10% anual durante 10 años = $259\n• $100 a 10% anual durante 20 años = $672\n• $100 a 10% anual durante 30 años = $1,745\n\nPor eso regalar inversiones a niños y jóvenes es tan poderoso — tienen décadas por delante.`,
+    id: 2, emoji: '🔄', category: 'Fundamentals',
+    title: 'The Power of Compound Interest',
+    summary: 'Compound interest is when your earnings generate more earnings. Einstein called it "the eighth wonder of the world".',
+    content: `Compound interest works like this: if you invest $100 and earn 10%, you have $110. The next year you earn 10% on $110, not $100 — that is $11 in earnings, not $10.\n\n**Over time, the difference is enormous:**\n• $100 at 10% per year for 10 years = $259\n• $100 at 10% per year for 20 years = $672\n• $100 at 10% per year for 30 years = $1,745\n\nThat is why gifting investments to children and young people is so powerful — they have decades ahead of them.`,
   },
   {
-    id: 3, emoji: '🛡️', category: 'Estrategia',
-    title: 'Diversificación 101',
-    summary: 'No pongas todos los huevos en la misma canasta. La diversificación reduce el riesgo sin sacrificar rentabilidad.',
-    content: `La diversificación significa distribuir tu inversión entre diferentes activos para que si uno cae, los otros te protejan.\n\n**Tipos de diversificación:**\n• **Por sector:** Tecnología (QQQ), Bonos (AGG), Internacional (VEA)\n• **Por tamaño:** Grandes empresas (VOO), Pequeñas (IWM)\n• **Por geografía:** EEUU (VTI), Mercados emergentes (VWO)\n\nUn portafolio diversificado típico para un regalo de largo plazo podría ser 80% acciones (VOO) + 20% bonos (BND).`,
+    id: 3, emoji: '🛡️', category: 'Strategy',
+    title: 'Diversification 101',
+    summary: 'Do not put all your eggs in one basket. Diversification reduces risk without sacrificing returns.',
+    content: `Diversification means spreading your investment across different assets so that if one falls, the others protect you.\n\n**Types of diversification:**\n• **By sector:** Technology (QQQ), Bonds (AGG), International (VEA)\n• **By size:** Large companies (VOO), Small companies (IWM)\n• **By geography:** USA (VTI), Emerging markets (VWO)\n\nA typical diversified portfolio for a long-term gift might be 80% equities (VOO) + 20% bonds (BND).`,
   },
   {
-    id: 4, emoji: '📅', category: 'Estrategia',
-    title: 'Cuándo es el Mejor Momento para Invertir',
-    summary: 'La respuesta que nadie quiere escuchar: el mejor momento fue ayer. El segundo mejor es hoy.',
-    content: `Tratar de "cronometrar el mercado" — esperar la caída perfecta para comprar — es una estrategia que casi siempre falla, incluso para profesionales.\n\n**Lo que los datos dicen:**\n• El mercado de EE.UU. ha subido en promedio ~10% anual en los últimos 100 años\n• Incluso si compras justo antes de una crisis, históricamente recuperas la inversión en 3-5 años\n• Cada año que esperas sin invertir es un año de capitalización perdida\n\n**Conclusión:** La consistencia y el tiempo en el mercado importan más que el momento perfecto de entrada.`,
+    id: 4, emoji: '📅', category: 'Strategy',
+    title: 'When is the Best Time to Invest?',
+    summary: 'The answer nobody wants to hear: the best time was yesterday. The second best time is today.',
+    content: `Trying to "time the market" — waiting for the perfect dip to buy — is a strategy that almost always fails, even for professionals.\n\n**What the data says:**\n• The U.S. market has averaged ~10% per year over the last 100 years\n• Even if you buy right before a crash, historically you recover within 3-5 years\n• Every year you wait without investing is a year of lost compounding\n\n**Conclusion:** Consistency and time in the market matter more than the perfect entry point.`,
   },
   {
     id: 5, emoji: '🎁', category: 'WealthGift',
-    title: 'Por Qué Regalar Inversiones',
-    summary: 'Los regalos en efectivo se gastan. Los regalos en juguetes se olvidan. Las inversiones crecen.',
-    content: `Cuando regalas $100 en un ETF a un niño de 10 años que lo mantiene hasta los 40:\n\n• A una tasa histórica del 10% anual, esos $100 se convierten en **$1,745**\n• El regalo inicial ya no importa — importa el tiempo\n\n**Casos de uso perfectos:**\n• Cumpleaños de sobrinos/ahijados\n• Baby showers — el bebé tiene 18 años para que crezca\n• Graduaciones — empieza el camino financiero con el pie derecho\n• Aniversarios — un regalo que representa el futuro juntos\n\nRegalar inversiones es regalar educación financiera y oportunidad al mismo tiempo.`,
+    title: 'Why Gift Investments?',
+    summary: 'Cash gifts get spent. Toy gifts get forgotten. Investments grow.',
+    content: `When you gift $100 in an ETF to a 10-year-old who holds it until age 40:\n\n• At the historical rate of 10% per year, those $100 become **$1,745**\n• The original gift no longer matters — what matters is time\n\n**Perfect use cases:**\n• Birthdays for nephews, nieces, or godchildren\n• Baby showers — the baby has 18 years for it to grow\n• Graduations — start the financial journey on the right foot\n• Anniversaries — a gift that represents the future together\n\nGifting investments means gifting financial education and opportunity at the same time.`,
   },
   {
-    id: 6, emoji: '🔢', category: 'ETFs Disponibles',
-    title: 'Guía de los ETFs en WealthGift',
-    summary: 'Conoce cada uno de los 9 ETFs disponibles: qué contienen, su riesgo y para quién son ideales.',
-    content: `**Acciones Grandes (baja volatilidad, largo plazo):**\n• VOO — S&P 500: Las 500 empresas más grandes de EE.UU.\n• VTI — Mercado total: Todo el mercado accionario americano (~4,000 empresas)\n\n**Tecnología (mayor crecimiento, mayor riesgo):**\n• QQQ — Nasdaq 100: Apple, Microsoft, Nvidia, Google...\n• VGT — Solo tecnología: Más concentrado que QQQ\n\n**Otros:**\n• IWM — Empresas pequeñas: Mayor potencial, más volatilidad\n• AGG / BND — Bonos: Bajo riesgo, para perfiles conservadores\n• VEA — Mercados desarrollados: Europa, Japón, Australia\n• VWO — Mercados emergentes: China, India, Brasil`,
+    id: 6, emoji: '🔢', category: 'Available ETFs',
+    title: 'Guide to WealthGift ETFs',
+    summary: 'Get to know each of the 9 available ETFs: what they contain, their risk level, and who they are ideal for.',
+    content: `**Large Cap Equities (low volatility, long term):**\n• VOO — S&P 500: The 500 largest U.S. companies\n• VTI — Total Market: The entire U.S. stock market (~4,000 companies)\n\n**Technology (higher growth, higher risk):**\n• QQQ — Nasdaq 100: Apple, Microsoft, Nvidia, Google...\n• VGT — Technology only: More concentrated than QQQ\n\n**Others:**\n• IWM — Small companies: Higher potential, more volatility\n• AGG / BND — Bonds: Low risk, for conservative profiles\n• VEA — Developed markets: Europe, Japan, Australia\n• VWO — Emerging markets: China, India, Brazil`,
   },
 ];
 
@@ -46,12 +46,12 @@ export default function Education() {
   const categories = [...new Set(ARTICLES.map(a => a.category))];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Centro de Educación</h1>
-          <p className="text-gray-500 mb-8">Todo lo que necesitas saber sobre inversiones y ETFs.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Education Center</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Everything you need to know about investments and ETFs.</p>
 
           {categories.map(cat => (
             <div key={cat} className="mb-8">
@@ -60,13 +60,13 @@ export default function Education() {
                 {ARTICLES.filter(a => a.category === cat).map(article => (
                   <Card key={article.id} className="overflow-hidden">
                     <button
-                      className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       onClick={() => setOpenId(openId === article.id ? null : article.id)}
                     >
                       <span className="text-3xl flex-shrink-0">{article.emoji}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900">{article.title}</div>
-                        <div className="text-sm text-gray-500 mt-0.5">{article.summary}</div>
+                        <div className="font-semibold text-gray-900 dark:text-white">{article.title}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{article.summary}</div>
                       </div>
                       <svg
                         className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${openId === article.id ? 'rotate-180' : ''}`}
@@ -76,8 +76,8 @@ export default function Education() {
                       </svg>
                     </button>
                     {openId === article.id && (
-                      <div className="px-5 pb-5 border-t border-gray-100">
-                        <div className="pt-4 text-sm text-gray-700 space-y-2 whitespace-pre-line leading-relaxed">
+                      <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700">
+                        <div className="pt-4 text-sm text-gray-700 dark:text-gray-300 space-y-2 whitespace-pre-line leading-relaxed">
                           {article.content}
                         </div>
                       </div>

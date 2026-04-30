@@ -39,17 +39,17 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <Logo size="lg" />
         </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Create your account</h1>
-          <p className="text-gray-500 text-center mb-8">Start gifting investments to loved ones</p>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">Create your account</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-8">Start gifting investments to loved ones</p>
 
           {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6" role="alert">
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6" role="alert">
               {error}
             </div>
           )}
@@ -88,7 +88,7 @@ export default function Register() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Already have an account?{' '}
             <Link to="/login" className="text-[#F5C518] font-semibold hover:underline">Sign in</Link>
           </p>

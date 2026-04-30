@@ -55,7 +55,7 @@ export default function ClaimGift() {
   const handleStart = async () => {
     if (!claimToken) return;
     if (isSender) {
-      setError('No puedes reclamar un regalo que tu mismo enviaste.');
+      setError('You cannot claim a gift you sent yourself.');
       return;
     }
     setStarting(true);
@@ -138,8 +138,8 @@ export default function ClaimGift() {
 
         {isSender ? (
           <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-xl text-sm text-center">
-            <strong>No puedes reclamar este regalo.</strong><br />
-            Eres quien lo envio. Solo el destinatario puede reclamarlo.
+            <strong>You cannot claim this gift.</strong><br />
+            You are the sender. Only the recipient can claim it.
           </div>
         ) : (
           <>
@@ -148,14 +148,14 @@ export default function ClaimGift() {
             )}
             <div className="space-y-4">
               <Button onClick={handleStart} loading={starting} className="w-full" size="lg">
-                Tengo 18 anos o mas - Continuar
+                I am 18 or older - Continue
               </Button>
               <Button onClick={handleStart} loading={starting} variant="secondary" className="w-full" size="lg">
-                Tengo menos de 18 - Continuar con tutor
+                I am under 18 - Continue with guardian
               </Button>
             </div>
             <p className="text-center text-xs text-gray-400 mt-6">
-              Al continuar, aceptas verificar tu identidad para recibir este regalo de inversion.
+              By continuing, you agree to verify your identity to receive this investment gift.
             </p>
           </>
         )}
