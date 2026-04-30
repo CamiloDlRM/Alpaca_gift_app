@@ -17,6 +17,7 @@ export interface RecipientPortfolioResponse {
   shares: number;
   investedAt: string;
   isRedeemed: boolean;
+  redeemedAmount?: number;
   transactions: RecipientTransaction[];
 }
 

@@ -24,6 +24,7 @@ interface RecipientPortfolio {
   shares: number;
   investedAt: string;
   isRedeemed: boolean;
+  redeemedAmount?: number;
   transactions: RecipientTransaction[];
 }
 
@@ -158,15 +159,36 @@ export default function RecipientDashboard() {
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Redeemed banner — shown when investment has been sold */}
+        {portfolio.isRedeemed && portfolio.redeemedAmount != null && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 mb-6 flex items-center gap-4">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-semibold text-green-800">Inversion vendida exitosamente</div>
+              <div className="text-sm text-green-700">
+                Monto recibido: <span className="font-bold">${portfolio.redeemedAmount.toFixed(2)}</span>
+                {' '}&middot; Ganancia: <span className="font-bold">{portfolio.gainLoss >= 0 ? '+' : ''}${portfolio.gainLoss.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Card 1 - Portfolio value */}
         <Card className="p-6 sm:p-8 mb-6">
           <div className="mb-1 text-sm text-gray-500">{portfolio.etfSymbol} &middot; {portfolio.recipientName}</div>
           <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-1">
-            ${portfolio.totalValue.toFixed(2)}
+            {portfolio.isRedeemed && portfolio.redeemedAmount != null
+              ? `$${portfolio.redeemedAmount.toFixed(2)}`
+              : `$${portfolio.totalValue.toFixed(2)}`}
           </div>
           <div className={`text-lg font-semibold flex items-center gap-2 mb-6 ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
             <span>{isPositive ? '+' : ''}${portfolio.gainLoss.toFixed(2)}</span>
             <span className="text-sm">({isPositive ? '+' : ''}{portfolio.gainLossPercent.toFixed(2)}%)</span>
+            {portfolio.isRedeemed && <span className="text-xs font-normal text-gray-400 ml-1">al momento de la venta</span>}
           </div>
 
           {/* Period tabs */}

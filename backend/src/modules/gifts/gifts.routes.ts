@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authMiddleware } from '../../shared/middleware/auth.middleware';
+import { authMiddleware, optionalAuthMiddleware } from '../../shared/middleware/auth.middleware';
 import { validate } from '../../shared/middleware/validate.middleware';
 import {
   createGiftHandler, listGiftsHandler, getGiftHandler,
@@ -23,7 +23,7 @@ router.post('/', authMiddleware, validate(createGiftSchema), createGiftHandler);
 router.get('/', authMiddleware, listGiftsHandler);
 router.get('/received', authMiddleware, listReceivedGiftsHandler);
 router.get('/claim/:claimToken', getGiftByClaimTokenHandler);
-router.patch('/claim/:claimToken/start', startClaimingHandler);
+router.patch('/claim/:claimToken/start', optionalAuthMiddleware, startClaimingHandler);
 router.get('/:id', authMiddleware, getGiftHandler);
 
 export default router;

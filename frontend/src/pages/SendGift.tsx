@@ -340,6 +340,7 @@ export default function SendGift() {
           </Card>
         ) : step === 1 ? (
           /* Step 1 - Gift form */
+          <>
           <Card className="p-6 sm:p-8">
             <form onSubmit={handleContinueToPayment} className="space-y-6">
               <Input
@@ -431,21 +432,6 @@ export default function SendGift() {
                 )}
               </div>
 
-              {etfSymbol && (
-                <div>
-                  {(() => {
-                    const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
-                    return selectedEtf ? (
-                      <ETFRatingWidget
-                        etfSymbol={etfSymbol}
-                        etfName={selectedEtf.name}
-                        isAuthenticated={!!user}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-              )}
-
               <div className="grid sm:grid-cols-2 gap-6">
                 <Input
                   label="Monto ($)"
@@ -490,6 +476,19 @@ export default function SendGift() {
               </Button>
             </form>
           </Card>
+
+          {/* ETF Rating Widget — OUTSIDE the form to avoid nested-form HTML issues */}
+          {etfSymbol && (() => {
+            const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
+            return selectedEtf ? (
+              <ETFRatingWidget
+                etfSymbol={etfSymbol}
+                etfName={selectedEtf.name}
+                isAuthenticated={!!user}
+              />
+            ) : null;
+          })()}
+          </>
         ) : paymentData ? (
           /* Step 2 - Payment */
           <Elements stripe={stripePromise}>

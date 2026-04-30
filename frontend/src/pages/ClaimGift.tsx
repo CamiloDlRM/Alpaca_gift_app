@@ -4,6 +4,7 @@ import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useGiftStore } from '../store/gift.store';
+import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
 interface GiftResponse {
@@ -25,6 +26,7 @@ export default function ClaimGift() {
   const { claimToken } = useParams<{ claimToken: string }>();
   const navigate = useNavigate();
   const { setClaimToken, setGiftData } = useGiftStore();
+  const { user } = useAuthStore();
   const [gift, setGift] = useState<GiftResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,14 +50,25 @@ export default function ClaimGift() {
     fetchGift();
   }, [fetchGift]);
 
+  const isSender = !!user && !!gift && user.id === gift.senderId;
+
   const handleStart = async () => {
     if (!claimToken) return;
+    if (isSender) {
+      setError('No puedes reclamar un regalo que tu mismo enviaste.');
+      return;
+    }
     setStarting(true);
     try {
       await apiClient.patch(`/gifts/claim/${claimToken}/start`);
       navigate(`/claim/${claimToken}/kyc/personal`);
-    } catch {
-      // If already claiming, still proceed
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        const msg = axiosErr.response?.data?.error ?? '';
+        if (msg) { setError(msg); setStarting(false); return; }
+      }
+      // Any other error: still proceed (may already be CLAIMING)
       navigate(`/claim/${claimToken}/kyc/personal`);
     } finally {
       setStarting(false);
@@ -123,18 +136,29 @@ export default function ClaimGift() {
           </div>
         </Card>
 
-        <div className="space-y-4">
-          <Button onClick={handleStart} loading={starting} className="w-full" size="lg">
-            I'm 18 or older - Continue as Adult
-          </Button>
-          <Button onClick={handleStart} loading={starting} variant="secondary" className="w-full" size="lg">
-            I'm under 18 - Continue with Guardian
-          </Button>
-        </div>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          By continuing, you agree to verify your identity to receive this investment gift.
-        </p>
+        {isSender ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-xl text-sm text-center">
+            <strong>No puedes reclamar este regalo.</strong><br />
+            Eres quien lo envio. Solo el destinatario puede reclamarlo.
+          </div>
+        ) : (
+          <>
+            {error && (
+              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm text-center" role="alert">{error}</div>
+            )}
+            <div className="space-y-4">
+              <Button onClick={handleStart} loading={starting} className="w-full" size="lg">
+                Tengo 18 anos o mas - Continuar
+              </Button>
+              <Button onClick={handleStart} loading={starting} variant="secondary" className="w-full" size="lg">
+                Tengo menos de 18 - Continuar con tutor
+              </Button>
+            </div>
+            <p className="text-center text-xs text-gray-400 mt-6">
+              Al continuar, aceptas verificar tu identidad para recibir este regalo de inversion.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

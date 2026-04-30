@@ -52,9 +52,13 @@ export async function getGiftByClaimToken(claimToken: string): Promise<GiftRespo
   return toGiftResponse(gift);
 }
 
-export async function startClaiming(claimToken: string): Promise<GiftResponse> {
+export async function startClaiming(claimToken: string, claimingUserId?: string): Promise<GiftResponse> {
   const gift = await giftsRepo.findGiftByClaimToken(claimToken);
   if (!gift) throw new NotFoundError('Gift not found');
+
+  if (claimingUserId && claimingUserId === gift.senderId) {
+    throw new ForbiddenError('No puedes reclamar tu propio regalo.');
+  }
 
   const valid = VALID_TRANSITIONS[gift.status];
   if (!valid.includes('CLAIMING' as GiftStatus)) {

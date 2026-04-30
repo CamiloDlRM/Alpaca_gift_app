@@ -43,21 +43,37 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
   } catch { /* use currentPrice as fallback */ }
 
   const shares = purchasePrice > 0 ? gift.amount / purchasePrice : 0;
-  const totalValue = shares * currentPrice;
+
+  // If gift was already redeemed and we persisted the sell amount, use that exact value.
+  const isRedeemed = gift.status === 'REDEEMED';
+  const totalValue = isRedeemed && gift.redeemedAmount != null
+    ? gift.redeemedAmount
+    : shares * currentPrice;
+
   const gainLoss = totalValue - gift.amount;
   const gainLossPercent = gift.amount > 0 ? (gainLoss / gift.amount) * 100 : 0;
 
   const investedAt = gift.updatedAt.toISOString();
 
-  const transactions = [
+  const transactions: { date: string; type: 'BUY' | 'SELL' | 'DIVIDEND'; shares: number; pricePerShare: number; total: number }[] = [
     {
       date: investedAt,
-      type: 'BUY' as const,
+      type: 'BUY',
       shares,
       pricePerShare: purchasePrice,
       total: gift.amount,
     },
   ];
+
+  if (isRedeemed && gift.redeemedAmount != null) {
+    transactions.push({
+      date: gift.updatedAt.toISOString(),
+      type: 'SELL',
+      shares,
+      pricePerShare: shares > 0 ? gift.redeemedAmount / shares : 0,
+      total: gift.redeemedAmount,
+    });
+  }
 
   return {
     giftId: gift.id,
@@ -69,7 +85,8 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
     gainLossPercent,
     shares,
     investedAt,
-    isRedeemed: gift.status === 'REDEEMED',
+    isRedeemed,
+    redeemedAmount: gift.redeemedAmount ?? undefined,
     transactions,
   };
 }
@@ -107,10 +124,10 @@ export async function sellRecipientInvestment(
   const snapshot = await alpacaService.getPortfolio(accountId);
   const amountReturned = snapshot.totalValue;
 
-  // Actualizar estado a REDEEMED
+  // Persistir monto y marcar como REDEEMED
   await prisma.gift.update({
     where: { id: gift.id },
-    data: { status: 'REDEEMED' },
+    data: { status: 'REDEEMED', redeemedAmount: amountReturned },
   });
 
   return {
