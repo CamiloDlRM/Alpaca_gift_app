@@ -18,7 +18,6 @@ export function Nav() {
       </Link>
       <div className="flex items-center gap-3 sm:gap-6 text-sm font-medium text-gray-600">
         <Link to="/" className="hover:text-gray-900 hidden sm:inline">Home</Link>
-        {user && <Link to="/dashboard" className="hover:text-gray-900">Activity</Link>}
         {user && <Link to="/dashboard" className="hover:text-gray-900 hidden sm:inline">Profile</Link>}
         {!user ? (
           <Link to="/login" className="bg-[#F5C518] text-black font-bold px-5 py-2 rounded-full hover:bg-yellow-400 transition-colors">Login</Link>
