@@ -147,10 +147,10 @@ export async function verifyClaimPin(claimToken: string, pin: string): Promise<{
 
   await kycRepo.verifyKYC(kycRecord.id);
 
-  if (gift.status === 'PENDING') {
+  if (gift.status === GiftStatus.PENDING) {
     await transitionStatus(gift.id, GiftStatus.CLAIMING);
   }
-  if (gift.status === 'PENDING' || gift.status === 'CLAIMING') {
+  if (gift.status === GiftStatus.PENDING || gift.status === GiftStatus.CLAIMING) {
     await transitionStatus(gift.id, GiftStatus.KYC_SUBMITTED);
     await transitionStatus(gift.id, GiftStatus.KYC_VERIFIED);
   }

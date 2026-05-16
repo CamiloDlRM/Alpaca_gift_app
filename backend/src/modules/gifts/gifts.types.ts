@@ -23,6 +23,9 @@ export interface GiftResponse {
   claimToken: string;
   claimLink: string;
   createdAt: Date;
+  recipientEmail?: string | null;
+  claimPin?: string | null;
+  claimPinExpiry?: Date | null;
 }
 
 export const VALID_TRANSITIONS: Record<GiftStatus, GiftStatus[]> = {
