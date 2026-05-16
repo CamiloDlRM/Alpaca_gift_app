@@ -110,11 +110,11 @@ export default function MyGifts() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {filtered.map(gift => {
+              {filtered.map((gift, gi) => {
                 const st = STATUS_COLORS[gift.status] || STATUS_COLORS.PENDING;
                 const emoji = OCCASION_EMOJIS[gift.occasion] ?? '🎁';
                 return (
-                  <Card key={gift.id} className="p-5">
+                  <Card key={gift.id} className="p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 animate-slideUp" style={{ animationDelay: `${gi * 50}ms`, animationFillMode: 'both' }}>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <div className="w-12 h-12 bg-[#F5C518]/10 rounded-full flex items-center justify-center text-2xl flex-shrink-0">

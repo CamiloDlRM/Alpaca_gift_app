@@ -305,8 +305,10 @@ export default function RecipientPortfolioPage() {
                     </h2>
                     <span className="text-xs text-gray-400">Click each ETF to see details</span>
                   </div>
-                  {data.positions.map((pos) => (
-                    <PositionCard key={pos.etfSymbol} pos={pos} onSold={fetchData} />
+                  {data.positions.map((pos, pi) => (
+                    <div key={pos.etfSymbol} className="animate-slideUp" style={{ animationDelay: `${pi * 70}ms`, animationFillMode: 'both' }}>
+                      <PositionCard pos={pos} onSold={fetchData} />
+                    </div>
                   ))}
                 </div>
               )}

@@ -29,16 +29,19 @@ export default function ScheduleGifts() {
 
   useEffect(() => { fetchGifts(); }, [fetchGifts]);
 
-  // Group gifts by month of delivery date
-  const currentYear = new Date().getFullYear();
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const date = new Date(currentYear, i, 1);
+  // Group gifts by month — only show current month and future months
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const months = Array.from({ length: 12 - currentMonth }, (_, i) => {
+    const idx = i + currentMonth;
+    const date = new Date(currentYear, idx, 1);
     return {
       label: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
-      monthIndex: i,
+      monthIndex: idx,
       gifts: gifts.filter(g => {
         const d = new Date(g.deliveryDate);
-        return d.getMonth() === i && d.getFullYear() === currentYear;
+        return d.getMonth() === idx && d.getFullYear() === currentYear;
       }),
     };
   });
@@ -48,12 +51,12 @@ export default function ScheduleGifts() {
       <Sidebar />
       <main className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 animate-slideUp">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Gift Schedule</h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">Plan and track gifts throughout the year</p>
             </div>
-            <Link to="/send">
+            <Link to="/send?type=SCHEDULED">
               <Button>Schedule a Gift</Button>
             </Link>
           </div>
@@ -66,8 +69,8 @@ export default function ScheduleGifts() {
             </div>
           ) : (
             <div className="space-y-6">
-              {months.map(month => (
-                <div key={month.monthIndex}>
+              {months.map((month, mi) => (
+                <div key={month.monthIndex} className="animate-fadeIn" style={{ animationDelay: `${mi * 60}ms`, animationFillMode: 'both' }}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-3 h-3 rounded-full ${month.gifts.length > 0 ? 'bg-[#F5C518]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     <h2 className={`text-sm font-bold uppercase tracking-wider ${month.gifts.length > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
@@ -80,8 +83,8 @@ export default function ScheduleGifts() {
 
                   {month.gifts.length > 0 ? (
                     <div className="space-y-2 ml-6">
-                      {month.gifts.map(gift => (
-                        <Card key={gift.id} className="p-4 flex items-center justify-between gap-4">
+                      {month.gifts.map((gift, gi) => (
+                        <Card key={gift.id} className="p-4 flex items-center justify-between gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200" style={{ animationDelay: `${gi * 40}ms` }}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 bg-[#F5C518]/10 rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-bold text-[#F5C518]">{new Date(gift.deliveryDate).getDate()}</span>
@@ -103,7 +106,7 @@ export default function ScheduleGifts() {
                     </div>
                   ) : (
                     <div className="ml-6">
-                      <Link to="/send" className="text-sm text-gray-400 hover:text-[#F5C518] transition-colors">
+                      <Link to="/send?type=SCHEDULED" className="text-sm text-gray-400 hover:text-[#F5C518] transition-colors">
                         + Schedule a gift for {month.label.split(' ')[0]}
                       </Link>
                     </div>

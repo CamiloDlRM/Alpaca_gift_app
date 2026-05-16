@@ -163,7 +163,7 @@ export default function Dashboard() {
 
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl">
           {/* Welcome header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-slideUp">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
@@ -188,12 +188,13 @@ export default function Dashboard() {
           {/* Received gifts */}
           {visibleGifts.length > 0 && (
             <div className="mb-8 space-y-3">
-              {paginatedGifts.map((gift) => {
+              {paginatedGifts.map((gift, gi) => {
                 const isClaimed = !['PENDING', 'CLAIMING'].includes(gift.status);
                 return (
                   <div
                     key={gift.id}
-                    className="relative flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 dark:to-yellow-900/10 border border-[#F5C518]/40 rounded-xl px-5 py-4"
+                    className="relative flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 dark:to-yellow-900/10 border border-[#F5C518]/40 rounded-xl px-5 py-4 animate-slideUp hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                    style={{ animationDelay: `${gi * 60}ms`, animationFillMode: 'both' }}
                   >
                     <button
                       onClick={() => dismissGift(gift.id)}
@@ -271,20 +272,20 @@ export default function Dashboard() {
           )}
 
           {/* Stats row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Card className="p-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-slideUp" style={{ animationDelay: '80ms', animationFillMode: 'both' }}>
+            <Card className="p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Gifted</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">${totalGifted.toFixed(2)}</div>
             </Card>
-            <Card className="p-5">
+            <Card className="p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Gifts Sent</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">{gifts.length}</div>
             </Card>
-            <Card className="p-5">
+            <Card className="p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Invested</div>
               <div className="text-2xl font-bold text-green-600">{investedGifts.length}</div>
             </Card>
-            <Card className="p-5">
+            <Card className="p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Pending</div>
               <div className="text-2xl font-bold text-yellow-600">{pendingGifts.length}</div>
             </Card>
@@ -322,10 +323,10 @@ export default function Dashboard() {
                 )}
 
                 <div className="space-y-3">
-                  {gifts.map((gift) => {
+                  {gifts.map((gift, gi) => {
                     const statusStyle = STATUS_COLORS[gift.status] || STATUS_COLORS.PENDING;
                     return (
-                      <Card key={gift.id} className="p-5 hover:shadow-md transition-shadow">
+                      <Card key={gift.id} className="p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 animate-slideUp" style={{ animationDelay: `${gi * 50}ms`, animationFillMode: 'both' }}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-[#F5C518]/10 rounded-full flex items-center justify-center flex-shrink-0">

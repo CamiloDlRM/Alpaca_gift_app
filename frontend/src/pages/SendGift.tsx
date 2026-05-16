@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Card } from '../components/ui/Card';
@@ -197,6 +197,7 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
 
 export default function SendGift() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
   const [etfs, setEtfs] = useState<ETF[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -205,8 +206,10 @@ export default function SendGift() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form state
-  const [giftType, setGiftType] = useState<GiftType>('INSTANT');
+  // Form state — initialize from ?type= URL param (SCHEDULED link from schedule view)
+  const [giftType, setGiftType] = useState<GiftType>(() =>
+    searchParams.get('type') === 'SCHEDULED' ? 'SCHEDULED' : 'INSTANT'
+  );
   const [recipientName, setRecipientName] = useState('');
   const [occasion, setOccasion] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -297,8 +300,8 @@ export default function SendGift() {
         </div>
       </header>
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <Card className="p-8">
-            <div className="text-5xl mb-4">{selectedOccasion?.emoji ?? '🎁'}</div>
+          <Card className="p-8 animate-bounceIn">
+            <div className="text-5xl mb-4 animate-bounceIn" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>{selectedOccasion?.emoji ?? '🎁'}</div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Gift sent!</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               {giftType === 'INSTANT' && recipientEmail
@@ -339,8 +342,8 @@ export default function SendGift() {
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Send a Gift</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8">Choose an investment and send it to someone special.</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 animate-slideUp">Send a Gift</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8 animate-slideUp" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>Choose an investment and send it to someone special.</p>
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
@@ -415,14 +418,15 @@ export default function SendGift() {
               <div className="flex flex-col gap-3">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Occasion</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {OCCASIONS.map((o) => {
+                  {OCCASIONS.map((o, oi) => {
                     const selected = occasion === o.value;
                     return (
                       <button
                         type="button"
                         key={o.value}
                         onClick={() => setOccasion(o.value)}
-                        className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all text-center ${
+                        style={{ animationDelay: `${oi * 30}ms`, animationFillMode: 'both' }}
+                        className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all text-center animate-scaleIn ${
                           selected
                             ? `${o.border} ${o.bg} shadow-md scale-[1.03]`
                             : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
@@ -466,12 +470,13 @@ export default function SendGift() {
                   <p className="text-sm text-gray-400 py-3">No ETFs available for this category.</p>
                 ) : (
                   <div className="grid gap-3">
-                    {filteredEtfs.map((etf) => (
+                    {filteredEtfs.map((etf, ei) => (
                       <button
                         type="button"
                         key={etf.symbol}
                         onClick={() => setEtfSymbol(etf.symbol)}
-                        className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left ${
+                        style={{ animationDelay: `${ei * 40}ms`, animationFillMode: 'both' }}
+                        className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left animate-slideUp ${
                           etfSymbol === etf.symbol
                             ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20'
                             : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-800'

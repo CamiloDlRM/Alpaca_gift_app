@@ -135,10 +135,10 @@ export default function Activity() {
             <div className="relative">
               <div className="absolute left-6 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
               <div className="space-y-4">
-                {events.map(event => {
+                {events.map((event, ei) => {
                   const style = EVENT_STYLES[event.type];
                   return (
-                    <div key={event.id} className="flex gap-4 relative">
+                    <div key={event.id} className="flex gap-4 relative animate-slideUp" style={{ animationDelay: `${ei * 55}ms`, animationFillMode: 'both' }}>
                       <div className={`w-12 h-12 rounded-full ${style.bg} flex items-center justify-center text-xl flex-shrink-0 z-10 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700`}>
                         {style.icon}
                       </div>
