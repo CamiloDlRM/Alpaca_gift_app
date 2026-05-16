@@ -303,7 +303,7 @@ export default function SendGift() {
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               {giftType === 'INSTANT' && recipientEmail
                 ? <>We've emailed the claim link to <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientEmail}</span>. You can also share it manually:</>
-                : <>Share this link with <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientName}</span>. {recipientEmail && 'They'll also receive it by email on the delivery date.'}</>
+                : <>Share this link with <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientName}</span>.{recipientEmail && " They'll also receive it by email on the delivery date."}</>
               }
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono break-all mb-4 text-left">
