@@ -40,6 +40,16 @@ export async function createPaymentIntent(
     throw new BadRequestError('Recipient email is required for instant gifts.');
   }
 
+  // Scheduled gifts cannot have a past delivery date.
+  if (dto.giftData.deliveryDate) {
+    const delivery = new Date(dto.giftData.deliveryDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (delivery < today) {
+      throw new BadRequestError('The delivery date cannot be in the past.');
+    }
+  }
+
   // Validate that the recipient email (if provided) belongs to a registered user.
   if (dto.giftData.recipientEmail) {
     const registered = await isEmailRegistered(dto.giftData.recipientEmail);

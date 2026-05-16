@@ -8,7 +8,7 @@ export function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
           <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
-      <span className={`font-bold text-gray-900 ${textSizes[size]}`}>WealthGift</span>
+      <span className={`font-bold text-gray-900 dark:text-white ${textSizes[size]}`}>WealthGift</span>
     </div>
   );
 }

@@ -516,6 +516,7 @@ export default function SendGift() {
                   <Input
                     label="Delivery date"
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
                     required
