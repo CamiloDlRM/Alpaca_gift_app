@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../../shared/middleware/validate.middleware';
-import { submitKYCHandler, confirmSSNHandler, getQuestionsHandler, verifyAnswersHandler } from './kyc.controller';
+import { submitKYCHandler, confirmSSNHandler, getQuestionsHandler, verifyAnswersHandler, checkReturningHandler, generatePinHandler, verifyPinHandler } from './kyc.controller';
 
 const router = Router();
 
@@ -21,5 +21,8 @@ router.post('/submit', validate(submitKYCSchema), submitKYCHandler);
 router.post('/confirm-ssn', confirmSSNHandler);
 router.get('/questions/:claimToken', getQuestionsHandler);
 router.post('/verify-answers', verifyAnswersHandler);
+router.get('/returning-check/:claimToken', checkReturningHandler);
+router.post('/generate-pin/:claimToken', generatePinHandler);
+router.post('/verify-pin/:claimToken', verifyPinHandler);
 
 export default router;

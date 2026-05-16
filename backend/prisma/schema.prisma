@@ -39,6 +39,8 @@ model Gift {
   paymentIntentId String?
   recipientEmail  String?
   redeemedAmount  Float?
+  claimPin        String?
+  claimPinExpiry  DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   kyc             KYC?

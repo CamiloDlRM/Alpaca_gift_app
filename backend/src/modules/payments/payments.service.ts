@@ -9,7 +9,7 @@ import { CreatePaymentIntentDto, PaymentIntentResponse } from './payments.types'
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Flat sending fee charged to BASIC users on each gift (replaces the 2.5% commission).
-export const BASIC_SENDING_FEE = 0.99;
+export const BASIC_SENDING_FEE = 5.99;
 
 async function getOrCreateStripeCustomer(userId: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });

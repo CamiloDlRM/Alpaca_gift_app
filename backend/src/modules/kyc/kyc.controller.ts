@@ -36,3 +36,30 @@ export async function verifyAnswersHandler(req: Request, res: Response, next: Ne
     next(err);
   }
 }
+
+export async function checkReturningHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await kycService.checkReturningRecipient(req.params.claimToken);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function generatePinHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await kycService.generateClaimPin(req.params.claimToken);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function verifyPinHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await kycService.verifyClaimPin(req.params.claimToken, req.body.pin);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}

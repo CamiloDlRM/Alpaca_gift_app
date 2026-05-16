@@ -61,7 +61,18 @@ export default function ClaimGift() {
     setStarting(true);
     try {
       await apiClient.patch(`/gifts/claim/${claimToken}/start`);
-      navigate(`/claim/${claimToken}/kyc/personal`);
+      // Check if returning recipient
+      try {
+        const checkRes = await apiClient.get<{ isReturning: boolean }>(`/kyc/returning-check/${claimToken}`);
+        if (checkRes.data.isReturning) {
+          navigate(`/claim/${claimToken}/verify-pin`);
+        } else {
+          navigate(`/claim/${claimToken}/kyc/personal`);
+        }
+      } catch {
+        // If the returning-check endpoint fails, fall back to standard KYC flow
+        navigate(`/claim/${claimToken}/kyc/personal`);
+      }
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } };
@@ -69,6 +80,13 @@ export default function ClaimGift() {
         if (msg) { setError(msg); setStarting(false); return; }
       }
       // Any other error: still proceed (may already be CLAIMING)
+      try {
+        const checkRes = await apiClient.get<{ isReturning: boolean }>(`/kyc/returning-check/${claimToken}`);
+        if (checkRes.data.isReturning) {
+          navigate(`/claim/${claimToken}/verify-pin`);
+          return;
+        }
+      } catch { /* fall through */ }
       navigate(`/claim/${claimToken}/kyc/personal`);
     } finally {
       setStarting(false);

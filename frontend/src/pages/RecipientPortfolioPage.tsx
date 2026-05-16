@@ -45,10 +45,32 @@ function ChangeTag({ value, showSign = true }: { value: number; showSign?: boole
   );
 }
 
-function PositionCard({ pos }: { pos: ConsolidatedPositionItem }) {
+function PositionCard({ pos, onSold }: { pos: ConsolidatedPositionItem; onSold: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [sellGiftToken, setSellGiftToken] = useState<string | null>(null);
+  const [sellLoading, setSellLoading] = useState(false);
+  const [sellError, setSellError] = useState('');
   const isPositive = pos.gainLoss >= 0;
   const allRedeemed = pos.gifts.every((g) => g.isRedeemed);
+
+  const handleSell = async (claimToken: string) => {
+    setSellLoading(true);
+    setSellError('');
+    try {
+      await apiClient.post(`/recipient/portfolio/${claimToken}/sell`);
+      setSellGiftToken(null);
+      onSold();
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        setSellError(axiosErr.response?.data?.error || 'Could not complete the sale.');
+      } else {
+        setSellError('Could not complete the sale. Please try again.');
+      }
+    } finally {
+      setSellLoading(false);
+    }
+  };
 
   return (
     <Card className={`overflow-hidden ${allRedeemed ? 'opacity-75' : ''}`}>
@@ -126,17 +148,56 @@ function PositionCard({ pos }: { pos: ConsolidatedPositionItem }) {
                     </div>
                   </div>
                   {!gift.isRedeemed && (
-                    <Link
-                      to={`/recipient/${gift.claimToken}/dashboard`}
-                      className="text-xs font-semibold text-[#F5C518] hover:underline whitespace-nowrap"
-                    >
-                      View detail
-                    </Link>
+                    <>
+                      <Link
+                        to={`/recipient/${gift.claimToken}/dashboard`}
+                        className="text-xs font-semibold text-[#F5C518] hover:underline whitespace-nowrap"
+                      >
+                        View detail
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setSellGiftToken(gift.claimToken)}
+                        className="text-xs font-semibold text-red-500 hover:text-red-700 whitespace-nowrap"
+                      >
+                        Sell
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {sellGiftToken && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Confirm Sale</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This action cannot be undone. Funds will be transferred within 1-3 business days.</p>
+            {sellError && (
+              <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-xs mb-3" role="alert">{sellError}</div>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => handleSell(sellGiftToken)}
+                disabled={sellLoading}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm disabled:opacity-50"
+              >
+                {sellLoading ? 'Processing...' : 'Confirm Sale'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSellGiftToken(null); setSellError(''); }}
+                disabled={sellLoading}
+                className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-2 px-4 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Card>
@@ -241,7 +302,7 @@ export default function RecipientPortfolioPage() {
                     <span className="text-xs text-gray-400">Click each ETF to see details</span>
                   </div>
                   {data.positions.map((pos) => (
-                    <PositionCard key={pos.etfSymbol} pos={pos} />
+                    <PositionCard key={pos.etfSymbol} pos={pos} onSold={fetchData} />
                   ))}
                 </div>
               )}

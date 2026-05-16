@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import apiClient from '../api/client';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -54,9 +53,6 @@ export default function RecipientDashboard() {
   const [period, setPeriod] = useState<Period>('1M');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [sellLoading, setSellLoading] = useState(false);
-  const [sellSuccess, setSellSuccess] = useState<{ amountReturned: number; message: string } | null>(null);
-  const [showSellModal, setShowSellModal] = useState(false);
 
   const fetchPortfolio = useCallback(async () => {
     if (!claimToken) return;
@@ -91,28 +87,6 @@ export default function RecipientDashboard() {
     const interval = setInterval(() => { fetchPortfolio(); }, 30000);
     return () => clearInterval(interval);
   }, [fetchPortfolio]);
-
-  const handleSell = async () => {
-    if (!claimToken) return;
-    setSellLoading(true);
-    try {
-      const res = await apiClient.post<{ success: boolean; amountReturned: number; message: string }>(
-        `/recipient/portfolio/${claimToken}/sell`
-      );
-      setSellSuccess({ amountReturned: res.data.amountReturned, message: res.data.message });
-      setShowSellModal(false);
-      fetchPortfolio();
-    } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const axiosErr = err as { response?: { data?: { error?: string } } };
-        setError(axiosErr.response?.data?.error || 'Error selling the investment.');
-      } else {
-        setError('Error selling the investment. Please try again.');
-      }
-    } finally {
-      setSellLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -322,80 +296,6 @@ export default function RecipientDashboard() {
           )}
         </Card>
 
-        {/* Sell investment */}
-        {sellSuccess ? (
-          <Card className="p-6 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
-            <div className="flex items-center gap-3 mb-2">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <h2 className="text-lg font-bold text-green-800 dark:text-green-400">Sale successful</h2>
-            </div>
-            <p className="text-green-700 dark:text-green-300">{sellSuccess.message}</p>
-            <p className="text-green-800 dark:text-green-400 font-semibold mt-2">
-              Amount received: ${sellSuccess.amountReturned.toFixed(2)}
-            </p>
-          </Card>
-        ) : portfolio.isRedeemed ? (
-          <Card className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-              <div>
-                <h2 className="text-lg font-bold text-yellow-800 dark:text-yellow-400">Investment sold</h2>
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm">This investment has already been sold. Funds are being processed.</p>
-              </div>
-            </div>
-          </Card>
-        ) : (
-          <Card className="p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Sell my investment</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              When you sell, funds will be transferred to your account within 1-3 business days.
-            </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
-              You will receive approximately: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
-            </p>
-            <Button
-              onClick={() => setShowSellModal(true)}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Sell my investment
-            </Button>
-          </Card>
-        )}
-
-        {/* Sell confirmation modal */}
-        {showSellModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-            onClick={(e) => { if (e.target === e.currentTarget) setShowSellModal(false); }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Confirm sale"
-          >
-            <Card className="w-full max-w-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Confirm sale?</h3>
-              <p className="text-gray-700 dark:text-gray-300 mb-1">
-                You will receive: <span className="font-bold">${portfolio.totalValue.toFixed(2)}</span>
-              </p>
-              <p className="text-sm text-red-500 mb-6">This action cannot be undone.</p>
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleSell}
-                  loading={sellLoading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Confirm sale
-                </Button>
-                <Button variant="secondary" onClick={() => setShowSellModal(false)} disabled={sellLoading}>
-                  Cancel
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -405,6 +305,15 @@ function Header() {
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
       <div className="max-w-4xl mx-auto flex items-center gap-3">
+        <a
+          href="/dashboard"
+          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          aria-label="Back to home"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </a>
         <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true">
             <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

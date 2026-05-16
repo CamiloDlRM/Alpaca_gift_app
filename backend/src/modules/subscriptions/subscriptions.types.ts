@@ -7,6 +7,8 @@ export interface CreateSubscriptionDto {
    * Which paid plan to subscribe to. Defaults to 'PRO' for backward compatibility.
    */
   plan?: PaidPlanName;
+  /** Billing interval. Defaults to 'month'. Annual PRO_PLUS costs $49/year. */
+  billingInterval?: 'month' | 'year';
 }
 
 export interface SubscriptionStatusResponse {
@@ -15,6 +17,9 @@ export interface SubscriptionStatusResponse {
   currentPeriodEnd: string | null;
   stripeSubscriptionId?: string | null;
 }
+
+/** Annual PRO_PLUS price: $49/year */
+export const PRO_PLUS_ANNUAL_PRICE_CENTS = 4900;
 
 /**
  * Pricing in USD (charged via Stripe in cents).

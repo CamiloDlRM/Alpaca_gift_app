@@ -9,6 +9,7 @@ import KYCPersonal from './pages/kyc/KYCPersonal';
 import KYCSSN from './pages/kyc/KYCSSN';
 import KYCQuestions from './pages/kyc/KYCQuestions';
 import KYCSuccess from './pages/kyc/KYCSuccess';
+import KYCPin from './pages/kyc/KYCPin';
 import Agreement from './pages/Agreement';
 import GiftDashboard from './pages/GiftDashboard';
 import Dashboard from './pages/Dashboard';
@@ -20,6 +21,7 @@ import Education from './pages/Education';
 import Profile from './pages/Profile';
 import Support from './pages/Support';
 import RecipientPortfolioPage from './pages/RecipientPortfolioPage';
+import ScheduleGifts from './pages/ScheduleGifts';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -40,6 +42,7 @@ export default function App() {
         <Route path="/claim/:claimToken/kyc/ssn" element={<KYCSSN />} />
         <Route path="/claim/:claimToken/kyc/questions" element={<KYCQuestions />} />
         <Route path="/claim/:claimToken/kyc/success" element={<KYCSuccess />} />
+        <Route path="/claim/:claimToken/verify-pin" element={<KYCPin />} />
         <Route path="/claim/:claimToken/agreement" element={<Agreement />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/recipient/:claimToken/dashboard" element={<RecipientDashboard />} />
@@ -51,6 +54,7 @@ export default function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
         <Route path="/my-portfolio" element={<ProtectedRoute><RecipientPortfolioPage /></ProtectedRoute>} />
+        <Route path="/schedule" element={<ProtectedRoute><ScheduleGifts /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

@@ -74,12 +74,30 @@ function PlanBadge({ status, giftsCount }: { status: string; giftsCount: number 
   );
 }
 
+const NOTIFS_PER_PAGE = 3;
+
 export default function Dashboard() {
   const { user, updateUser } = useAuthStore();
   const [gifts, setGifts] = useState<GiftResponse[]>([]);
   const [receivedGifts, setReceivedGifts] = useState<GiftResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notifPage, setNotifPage] = useState(0);
+  const [dismissedGifts, setDismissedGifts] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('dismissed_gift_notifs');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const dismissGift = (id: string) => {
+    setDismissedGifts(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem('dismissed_gift_notifs', JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -113,6 +131,15 @@ export default function Dashboard() {
   const totalGifted = gifts.reduce((sum, g) => sum + g.amount, 0);
   const investedGifts = gifts.filter((g) => g.status === 'INVESTED');
   const pendingGifts = gifts.filter((g) => g.status === 'PENDING');
+
+  const visibleGifts = receivedGifts.filter((g) => !dismissedGifts.has(g.id));
+  const totalNotifPages = Math.max(1, Math.ceil(visibleGifts.length / NOTIFS_PER_PAGE));
+  const safeNotifPage = Math.min(notifPage, totalNotifPages - 1);
+  const paginatedGifts = visibleGifts.slice(
+    safeNotifPage * NOTIFS_PER_PAGE,
+    safeNotifPage * NOTIFS_PER_PAGE + NOTIFS_PER_PAGE,
+  );
+  const hasPortfolioGift = visibleGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED');
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -152,28 +179,22 @@ export default function Dashboard() {
           </div>
 
           {/* Received gifts */}
-          {receivedGifts.length > 0 && (
+          {visibleGifts.length > 0 && (
             <div className="mb-8 space-y-3">
-              {receivedGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED') && (
-                <div className="flex justify-end mb-1">
-                  <Link
-                    to="/my-portfolio"
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b8960c] hover:underline"
-                  >
-                    View my full portfolio
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </Link>
-                </div>
-              )}
-              {receivedGifts.map((gift) => {
+              {paginatedGifts.map((gift, idx) => {
                 const isClaimed = !['PENDING', 'CLAIMING'].includes(gift.status);
                 return (
                   <div
                     key={gift.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 dark:to-yellow-900/10 border border-[#F5C518]/40 rounded-xl px-5 py-4"
+                    className="relative flex flex-col sm:flex-row sm:items-center gap-4 bg-gradient-to-r from-[#F5C518]/10 to-yellow-50 dark:to-yellow-900/10 border border-[#F5C518]/40 rounded-xl px-5 py-4"
                   >
+                    <button
+                      onClick={() => dismissGift(gift.id)}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none"
+                      aria-label="Cerrar notificación"
+                    >
+                      ×
+                    </button>
                     <div className="text-3xl flex-shrink-0">🎁</div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 dark:text-white">
@@ -183,34 +204,73 @@ export default function Dashboard() {
                         {gift.occasion} &middot; {isClaimed ? `Status: ${STATUS_LABELS[gift.status] ?? gift.status}` : 'Pending claim'}
                       </p>
                     </div>
-                    {gift.status === 'INVESTED' || gift.status === 'REDEEMED' ? (
-                      <Link
-                        to={`/recipient/${gift.claimToken}/dashboard`}
-                        className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
-                      >
-                        View portfolio
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </Link>
-                    ) : !isClaimed ? (
-                      <a
-                        href={gift.claimLink}
-                        className="flex-shrink-0 inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
-                      >
-                        Claim gift
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </a>
-                    ) : (
-                      <span className="flex-shrink-0 text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                        {STATUS_LABELS[gift.status] ?? gift.status}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {gift.status === 'INVESTED' || gift.status === 'REDEEMED' ? (
+                        <Link
+                          to={`/recipient/${gift.claimToken}/dashboard`}
+                          className="inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+                        >
+                          View portfolio
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </Link>
+                      ) : !isClaimed ? (
+                        <a
+                          href={gift.claimLink}
+                          className="inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+                        >
+                          Claim gift
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+                          {STATUS_LABELS[gift.status] ?? gift.status}
+                        </span>
+                      )}
+                      {idx === 0 && hasPortfolioGift && (
+                        <Link
+                          to="/my-portfolio"
+                          className="inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+                        >
+                          View my portfolio
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 );
               })}
+
+              {totalNotifPages > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setNotifPage((p) => Math.max(0, p - 1))}
+                    disabled={safeNotifPage === 0}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous notifications page"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Page {safeNotifPage + 1} of {totalNotifPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setNotifPage((p) => Math.min(totalNotifPages - 1, p + 1))}
+                    disabled={safeNotifPage >= totalNotifPages - 1}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next notifications page"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

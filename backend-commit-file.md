@@ -4,6 +4,43 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-05-15] - KYC bypass con PIN dinámico, fee BASIC $5.99, precio anual Pro Plus $49
+
+### Cambios realizados
+
+**1. Fee BASIC actualizado a $5.99**
+- `src/modules/payments/payments.service.ts`: `BASIC_SENDING_FEE` de `0.99` → `5.99`
+
+**2. Schema Prisma — campos PIN dinámico en Gift**
+- `prisma/schema.prisma`: nuevos campos opcionales en `Gift`:
+  - `claimPin String?`
+  - `claimPinExpiry DateTime?`
+- `prisma/migrations/20260515120000_add_claim_pin_to_gift/migration.sql`: migración SQL
+
+**3. KYC Bypass — destinatarios recurrentes con PIN dinámico**
+- `src/modules/kyc/kyc.service.ts`: 3 nuevas funciones + imports de prisma/hash
+- `src/modules/kyc/kyc.controller.ts`: 3 nuevos handlers
+- `src/modules/kyc/kyc.routes.ts`: 3 nuevas rutas:
+  - `GET /kyc/returning-check/:claimToken` → `{ isReturning: boolean }`
+  - `POST /kyc/generate-pin/:claimToken` → `{ pin: string }` (PIN 6 dígitos, válido 15 min)
+  - `POST /kyc/verify-pin/:claimToken` body: `{ pin: string }` → `{ success: boolean }`
+
+**4. Precio anual Pro Plus — $49/año**
+- `src/modules/subscriptions/subscriptions.types.ts`:
+  - nueva constante `PRO_PLUS_ANNUAL_PRICE_CENTS = 4900`
+  - `CreateSubscriptionDto` tiene nuevo campo `billingInterval?: 'month' | 'year'`
+- `src/modules/subscriptions/subscriptions.service.ts`:
+  - Si `billingInterval === 'year'` y plan `PRO_PLUS`, usa $49 en Stripe
+  - Para todo lo demás, mantiene precio mensual original
+
+### Migración a ejecutar en servidor remoto
+```sql
+ALTER TABLE "Gift" ADD COLUMN "claimPin" TEXT;
+ALTER TABLE "Gift" ADD COLUMN "claimPinExpiry" TIMESTAMP(3);
+```
+
+---
+
 ## [2026-04-29 12:00] - [SCHEMA PRISMA] + [MIGRACIÓN] + [NUEVO MÓDULO] + [MODIFICACIÓN] x4
 
 **Acción**: Cuatro cambios coordinados: (1) sistema de calificación de ETFs, (2) validación de email del destinatario, (3) tres planes de suscripción (BASIC, PRO, PRO_PLUS), (4) endpoint de overview del portfolio.

@@ -148,3 +148,78 @@ Implemented the full monetization and recipient experience frontend. The Pricing
 - Chunk size increased to ~686KB due to Stripe.js additions; code-splitting on routes would reduce initial load.
 - All new components handle loading, error, and empty states with proper aria attributes.
 ---
+
+## [2026-05-15] - Notifications UX, Recipient Sell Refactor, Annual Billing, KYC PIN & Schedule View
+
+### Files Created
+- `frontend/src/pages/kyc/KYCPin.tsx` — Nueva pagina para verificacion de PIN de seguridad para destinatarios recurrentes. Al montarse llama a `POST /api/kyc/generate-pin/:claimToken` y muestra el PIN generado (simulando envio por email). El usuario ingresa un codigo de 6 digitos que se valida con `POST /api/kyc/verify-pin/:claimToken`. En exito, redirige a `/claim/:claimToken/agreement`. Maneja estados loading/error/verifying con accesibilidad (role="status", aria-label, role="alert").
+
+- `frontend/src/pages/ScheduleGifts.tsx` — Vista de calendario de regalos programados. Carga regalos del usuario con `GET /api/gifts`, los agrupa por mes del año actual y los muestra en una linea temporal. Cada mes muestra el conteo de regalos (o un link para programar uno nuevo si no hay). Cada regalo aparece como una `Card` con dia, destinatario, ocasion, ETF, monto y badge de status. Boton "Schedule a Gift" en el header que enlaza a `/send`.
+
+### Files Modified
+- `frontend/src/pages/Dashboard.tsx` — Mejoras en notificaciones de regalos recibidos:
+  - **Paginacion**: Estado `notifPage` con `NOTIFS_PER_PAGE = 3`. Solo se muestran 3 notificaciones por pagina. Controles "Previous/Next" con conteo "Page X of Y" debajo de la lista. Auto-clamp a la ultima pagina valida si se descartan items.
+  - **Boton cerrar**: Cada notificacion tiene un boton "×" en `absolute top-2 right-2` (div con `relative`) para descartar. Estado `dismissedGifts: Set<string>` persistido en `localStorage` bajo la clave `dismissed_gift_notifs`. Funcion `dismissGift(id)`. Se filtra `visibleGifts = receivedGifts.filter(g => !dismissedGifts.has(g.id))`.
+  - **Boton "View my portfolio"**: Movido para aparecer en la misma fila de la primera notificacion (al lado derecho) con el mismo estilo que los botones "Claim gift"/"View portfolio" (`bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg`). Solo aparece si hay algun regalo `INVESTED` o `REDEEMED`.
+
+- `frontend/src/pages/RecipientDashboard.tsx` — Refactor de venta:
+  - Eliminados los estados `sellLoading`, `sellSuccess`, `showSellModal` y la funcion `handleSell`. Eliminado el import de `Button` (ya no se usaba).
+  - Eliminada la tarjeta "Sell my investment" y el modal de confirmacion de venta. El banner informativo de "Investment sold successfully" se mantiene (solo lectura).
+  - **Header**: Agregado boton de regreso (icono flecha izquierda) que enlaza a `/dashboard` con `aria-label="Back to home"`. Posicionado a la izquierda del logo de WealthGift.
+
+- `frontend/src/pages/RecipientPortfolioPage.tsx` — Funcionalidad de venta movida aqui:
+  - `PositionCard` ahora recibe prop `onSold: () => void` para refrescar el portafolio consolidado tras una venta exitosa.
+  - Estados locales: `sellGiftToken: string | null`, `sellLoading: boolean`, `sellError: string`.
+  - Funcion `handleSell(claimToken: string)` que llama a `POST /api/recipient/portfolio/:claimToken/sell`.
+  - En cada gift no redimido del card expandido, junto al link "View detail" se agrega un boton "Sell" pequeño en rojo (`text-red-500 hover:text-red-700 text-xs font-semibold`).
+  - Modal de confirmacion con boton "Confirm Sale" (rojo) y "Cancel". Maneja error display dentro del modal.
+  - En el callback `onSold`, se re-fetchea `/recipient/portfolio/consolidated` para actualizar la UI.
+
+- `frontend/src/pages/Pricing.tsx` — Precio BASIC y billing anual:
+  - Cambiado el texto de la feature "$0.99 sending fee per gift" a "$5.99 sending fee per gift" (Cambio 4a).
+  - Footer note actualizado: "* The Basic plan sending fee ($5.99) is charged once per gift sent."
+  - **Toggle Monthly/Annual** agregado encima del grid de 3 planes con estado `billing: 'monthly' | 'annual'`. Estilo: switch redondeado con bg-[#F5C518] cuando annual, slider animado.
+  - Card de **PRO+**: precio dinamico — `$19.99/month` para monthly, `$49/year` para annual. Texto adicional "Save 80% vs monthly" cuando annual.
+  - Nuevo tipo `BillingInterval = 'month' | 'year'`. `SubscribeModal` y `SubscribeModalInner` reciben prop `billingInterval` y muestran "$X/year" o "$X/month" en el header del modal.
+  - `apiClient.post('/subscriptions', { paymentMethodId, plan, billingInterval })` ahora incluye `billingInterval` en el body.
+  - El modal se invoca con `price` calculado dinamicamente y `billingInterval` derivado de `modalPlan` + `billing`.
+
+- `frontend/src/pages/ClaimGift.tsx` — Deteccion de destinatario recurrente:
+  - Tras llamar a `PATCH /api/gifts/claim/:claimToken/start` exitosamente, se hace `GET /api/kyc/returning-check/:claimToken` para determinar si el usuario es recurrente.
+  - Si `isReturning: true`, redirige a `/claim/:claimToken/verify-pin`. Si no, redirige a `/claim/:claimToken/kyc/personal`.
+  - Fallback: si el endpoint `/kyc/returning-check` falla (por ejemplo, no esta implementado todavia), se procede al flujo KYC estandar.
+  - Misma logica aplicada al branch "any other error" del catch (cuando el gift ya esta CLAIMING).
+
+- `frontend/src/App.tsx` — Nuevas rutas:
+  - Import: `KYCPin from './pages/kyc/KYCPin'` y `ScheduleGifts from './pages/ScheduleGifts'`.
+  - Ruta publica: `<Route path="/claim/:claimToken/verify-pin" element={<KYCPin />} />`
+  - Ruta protegida: `<Route path="/schedule" element={<ProtectedRoute><ScheduleGifts /></ProtectedRoute>} />`
+
+- `frontend/src/components/layout/Sidebar.tsx` — Nuevo item de navegacion "Schedule" en el array `navItems`, ubicado entre "My Portfolio" y "Activity". Icono de calendario SVG (path `M8 7V3m8 4V3...`).
+
+### Backend Dependencies (de `backend-commit-file.md`)
+- `GET /api/gifts` — Lista de regalos enviados (usado en Dashboard, ScheduleGifts). Shape: `GiftResponse[]` con `id, recipientName, occasion, etfSymbol, amount, deliveryDate, status, claimToken, claimLink, ...`.
+- `GET /api/gifts/received` — Regalos recibidos (Dashboard). Mismo shape `GiftResponse`.
+- `POST /api/recipient/portfolio/:claimToken/sell` — Venta de inversion (RecipientPortfolioPage). Documentado en backend-commit-file.md.
+- `POST /api/subscriptions` — Ahora acepta opcionalmente `billingInterval: 'month' | 'year'` ademas de `paymentMethodId` y `plan`.
+- `PATCH /api/gifts/claim/:claimToken/start` — Inicia el proceso de claim (ClaimGift).
+
+### Backend Dependencies NO documentadas en backend-commit-file.md (flagged)
+Los siguientes endpoints son consumidos por la implementacion de CAMBIO 5 y CAMBIO 6 pero NO aparecen en `backend-commit-file.md`. El frontend asume su existencia segun la especificacion del usuario:
+- `GET /api/kyc/returning-check/:claimToken` → response `{ isReturning: boolean }`.
+- `POST /api/kyc/generate-pin/:claimToken` → response `{ pin: string }` (6 digitos).
+- `POST /api/kyc/verify-pin/:claimToken` → body `{ pin: string }`, response 200/400.
+
+La logica del frontend incluye try/catch para que si estos endpoints no existen (404) el flujo de claim continue por la ruta estandar KYC personal, evitando dejar al usuario bloqueado. El backend debe implementarlos para que el flujo de PIN sea completamente funcional.
+
+Adicionalmente, el endpoint `POST /api/subscriptions` con `billingInterval: 'year'` debe ser soportado por el backend para que el plan anual PRO+ ($49/year) cobre correctamente. Segun `backend-commit-file.md` actual, solo se documenta `PRO_PLUS` a $19.99/mes.
+
+### Notes
+- Se preservaron las animaciones, transiciones de tema dark/light, y patrones existentes (gradientes amarillos para notificaciones de regalo, colores Tailwind semanticos, `role`/`aria-label` para accesibilidad).
+- La paginacion de notificaciones usa `safeNotifPage` clamped al maximo valido para evitar pagina vacia si se descarta el ultimo item visible.
+- El boton de cierre "×" usa `&times;` Unicode (caracter literal) para evitar parsing de entidad HTML.
+- La key del localStorage (`dismissed_gift_notifs`) es global por usuario del navegador; si se requiere por-usuario deberia incluir el `userId`.
+- En `RecipientPortfolioPage`, el sell modal usa `bg-white dark:bg-gray-800` directo en vez de `Card` para evitar conflictos de borde.
+- En `KYCPin`, mostrar el PIN al usuario es una simulacion de envio por email (apto solo para desarrollo).
+- `ScheduleGifts` solo muestra el año actual; futura mejora seria un selector de año.
+---

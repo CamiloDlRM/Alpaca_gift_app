@@ -16,15 +16,17 @@ const CHECK_ICON = (
 );
 
 type PaidPlan = 'PRO' | 'PRO_PLUS';
+type BillingInterval = 'month' | 'year';
 
 interface SubscribeModalProps {
   plan: PaidPlan;
   price: string;
+  billingInterval: BillingInterval;
   onClose: () => void;
   onSuccess: (plan: PaidPlan) => void;
 }
 
-function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModalProps) {
+function SubscribeModalInner({ plan, price, billingInterval, onClose, onSuccess }: SubscribeModalProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -57,6 +59,7 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
       await apiClient.post('/subscriptions', {
         paymentMethodId: paymentMethod.id,
         plan,
+        billingInterval,
       });
 
       onSuccess(plan);
@@ -73,6 +76,7 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
   };
 
   const planLabel = plan === 'PRO_PLUS' ? 'PRO+' : 'PRO';
+  const intervalLabel = billingInterval === 'year' ? 'year' : 'month';
 
   return (
     <div
@@ -84,7 +88,7 @@ function SubscribeModalInner({ plan, price, onClose, onSuccess }: SubscribeModal
     >
       <Card className="w-full max-w-md p-6 sm:p-8">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscribe to WealthGift {planLabel}</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{price}/month &middot; Cancel anytime</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{price}/{intervalLabel} &middot; Cancel anytime</p>
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{error}</div>
@@ -131,6 +135,7 @@ export default function Pricing() {
   const [modalPlan, setModalPlan] = useState<PaidPlan | null>(null);
   const [successBanner, setSuccessBanner] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
 
   const currentPlan = user?.subscriptionStatus ?? 'BASIC';
   const isAuthenticated = !!token;
@@ -188,6 +193,24 @@ export default function Pricing() {
           <p className="text-gray-500 dark:text-gray-400 text-lg">Choose the plan that best fits your needs</p>
         </div>
 
+        {/* Monthly / Annual toggle */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <span className={`text-sm font-medium ${billing === 'monthly' ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>Monthly</span>
+          <button
+            type="button"
+            onClick={() => setBilling(b => b === 'monthly' ? 'annual' : 'monthly')}
+            className={`relative w-12 h-6 rounded-full transition-colors ${billing === 'annual' ? 'bg-[#F5C518]' : 'bg-gray-300 dark:bg-gray-600'}`}
+            role="switch"
+            aria-checked={billing === 'annual'}
+            aria-label="Toggle annual billing"
+          >
+            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${billing === 'annual' ? 'translate-x-7' : 'translate-x-1'}`} />
+          </button>
+          <span className={`text-sm font-medium ${billing === 'annual' ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+            Annual <span className="text-xs text-green-600 font-semibold">(Save with PRO+!)</span>
+          </span>
+        </div>
+
         {/* 3-plan grid */}
         <div className="grid md:grid-cols-3 gap-6">
 
@@ -205,7 +228,7 @@ export default function Pricing() {
             <ul className="space-y-3 mb-8 flex-1">
               {[
                 'Up to 5 investment gifts',
-                '$0.99 sending fee per gift',
+                '$5.99 sending fee per gift',
                 'Portfolio dashboard',
                 'Access to all ETFs',
                 'ETF ratings',
@@ -285,8 +308,15 @@ export default function Pricing() {
               </span>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">$19.99</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                {billing === 'annual' ? '$49' : '$19.99'}
+              </span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">
+                / {billing === 'annual' ? 'year' : 'month'}
+              </span>
+              {billing === 'annual' && (
+                <div className="text-xs text-green-600 font-semibold mt-1">Save 80% vs monthly</div>
+              )}
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
@@ -323,14 +353,19 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
-          * The Basic plan sending fee ($0.99) is charged once per gift sent. No additional commissions on any plan.
+          * The Basic plan sending fee ($5.99) is charged once per gift sent. No additional commissions on any plan.
         </p>
       </div>
 
       {modalPlan && (
         <SubscribeModal
           plan={modalPlan}
-          price={modalPlan === 'PRO_PLUS' ? '$19.99' : '$9.99'}
+          price={
+            modalPlan === 'PRO_PLUS'
+              ? (billing === 'annual' ? '$49' : '$19.99')
+              : '$9.99'
+          }
+          billingInterval={modalPlan === 'PRO_PLUS' && billing === 'annual' ? 'year' : 'month'}
           onClose={() => setModalPlan(null)}
           onSuccess={handleSubscribeSuccess}
         />

@@ -6,6 +6,7 @@ import {
   CreateSubscriptionDto,
   PaidPlanName,
   PLAN_PRICING,
+  PRO_PLUS_ANNUAL_PRICE_CENTS,
   SubscriptionPlanName,
   SubscriptionStatusResponse,
 } from './subscriptions.types';
@@ -68,12 +69,16 @@ export async function createSubscription(
   });
 
   const pricing = PLAN_PRICING[requestedPlan];
+  const billingInterval = dto.billingInterval === 'year' ? 'year' : 'month';
+  const unitAmount = (billingInterval === 'year' && requestedPlan === 'PRO_PLUS')
+    ? PRO_PLUS_ANNUAL_PRICE_CENTS
+    : pricing.unitAmountCents;
 
   // Create a price inline for the requested plan
   const price = await stripe.prices.create({
-    unit_amount: pricing.unitAmountCents,
+    unit_amount: unitAmount,
     currency: 'usd',
-    recurring: { interval: 'month' },
+    recurring: { interval: billingInterval },
     product_data: { name: pricing.productName },
   });
 
