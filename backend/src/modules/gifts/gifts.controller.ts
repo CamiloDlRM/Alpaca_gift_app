@@ -50,7 +50,7 @@ export async function listReceivedGiftsHandler(req: Request, res: Response, next
 
 export async function startClaimingHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const gift = await giftsService.startClaiming(req.params.claimToken, req.user?.id);
+    const gift = await giftsService.startClaiming(req.params.claimToken, req.user!.id);
     res.json(gift);
   } catch (err) {
     next(err);
