@@ -173,15 +173,22 @@ export default function Dashboard() {
               </div>
               <p className="text-gray-500 dark:text-gray-400 mt-1">Your investment gifts overview</p>
             </div>
-            <Link to="/send" className="hidden lg:block">
-              <Button>Send a Gift</Button>
-            </Link>
+            <div className="hidden lg:flex items-center gap-3">
+              {hasPortfolioGift && (
+                <Link to="/my-portfolio">
+                  <Button variant="secondary">View My Portfolio</Button>
+                </Link>
+              )}
+              <Link to="/send">
+                <Button>Send a Gift</Button>
+              </Link>
+            </div>
           </div>
 
           {/* Received gifts */}
           {visibleGifts.length > 0 && (
             <div className="mb-8 space-y-3">
-              {paginatedGifts.map((gift, idx) => {
+              {paginatedGifts.map((gift) => {
                 const isClaimed = !['PENDING', 'CLAIMING'].includes(gift.status);
                 return (
                   <div
@@ -229,17 +236,6 @@ export default function Dashboard() {
                         <span className="text-xs font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
                           {STATUS_LABELS[gift.status] ?? gift.status}
                         </span>
-                      )}
-                      {idx === 0 && hasPortfolioGift && (
-                        <Link
-                          to="/my-portfolio"
-                          className="inline-flex items-center gap-2 bg-[#F5C518] text-black font-semibold text-sm px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
-                        >
-                          View my portfolio
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </Link>
                       )}
                     </div>
                   </div>
