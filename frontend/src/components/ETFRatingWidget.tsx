@@ -25,6 +25,7 @@ interface ETFRatingWidgetProps {
   etfSymbol: string;
   etfName: string;
   isAuthenticated: boolean;
+  readOnly?: boolean;
 }
 
 interface StarsDisplayProps {
@@ -33,7 +34,7 @@ interface StarsDisplayProps {
   ariaLabel?: string;
 }
 
-function StarsDisplay({ value, size = 'md', ariaLabel }: StarsDisplayProps) {
+export function StarsDisplay({ value, size = 'md', ariaLabel }: StarsDisplayProps) {
   const dim =
     size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-6 h-6' : 'w-5 h-5';
   return (
@@ -62,7 +63,7 @@ interface StarPickerProps {
   disabled?: boolean;
 }
 
-function StarPicker({ value, onChange, disabled }: StarPickerProps) {
+export function StarPicker({ value, onChange, disabled }: StarPickerProps) {
   const [hover, setHover] = useState<number>(0);
   const display = hover || value;
   return (
@@ -108,7 +109,7 @@ function formatDate(iso: string): string {
   }
 }
 
-export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRatingWidgetProps) {
+export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly = false }: ETFRatingWidgetProps) {
   const [data, setData] = useState<ETFRatingsAggregate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -234,8 +235,8 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
         </div>
       )}
 
-      {/* Rating form */}
-      {isAuthenticated && (
+      {/* Rating form — hidden in readOnly mode */}
+      {!readOnly && isAuthenticated && (
         <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
           <div>
             <h4 className="font-bold text-gray-900 dark:text-white mb-3">Rate this ETF</h4>
@@ -268,7 +269,7 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated }: ETFRati
         </form>
       )}
 
-      {!isAuthenticated && (
+      {!readOnly && !isAuthenticated && (
         <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
           Sign in to rate this ETF.
         </div>

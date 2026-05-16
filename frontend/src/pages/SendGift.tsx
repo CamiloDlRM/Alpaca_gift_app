@@ -550,15 +550,19 @@ export default function SendGift() {
             </form>
           </Card>
 
-          {/* ETF Rating Widget — OUTSIDE the form to avoid nested-form HTML issues */}
+          {/* Community Reviews — read-only, shown when an ETF is selected */}
           {etfSymbol && (() => {
             const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
             return selectedEtf ? (
-              <ETFRatingWidget
-                etfSymbol={etfSymbol}
-                etfName={selectedEtf.name}
-                isAuthenticated={!!user}
-              />
+              <div className="mt-6">
+                <h2 className="text-base font-bold text-gray-700 dark:text-gray-300 mb-3">Community Reviews</h2>
+                <ETFRatingWidget
+                  etfSymbol={etfSymbol}
+                  etfName={selectedEtf.name}
+                  isAuthenticated={false}
+                  readOnly
+                />
+              </div>
             ) : null;
           })()}
           </>
