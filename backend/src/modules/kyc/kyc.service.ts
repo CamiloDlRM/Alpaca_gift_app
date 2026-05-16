@@ -6,6 +6,7 @@ import { GiftStatus } from '@prisma/client';
 import type { SubmitKYCDto, KYCQuestion } from './kyc.types';
 import { prisma } from '../../shared/db/prisma.client';
 import { hashPassword, comparePassword } from '../../shared/utils/hash';
+import { sendClaimPinEmail } from '../../shared/email/email.service';
 
 const QUESTION_POOL: KYCQuestion[] = [
   { id: 'q1', question: 'Which of these cars have you owned?', options: ['Toyota Camry', 'Ford F-150', 'Honda Civic', 'BMW 3 Series', 'None of the above'] },
@@ -92,7 +93,7 @@ export async function checkReturningRecipient(claimToken: string): Promise<{ isR
   return { isReturning: !!previousVerified };
 }
 
-export async function generateClaimPin(claimToken: string): Promise<{ pin: string }> {
+export async function generateClaimPin(claimToken: string): Promise<{ sent: boolean }> {
   const gift = await findGiftByClaimToken(claimToken);
   if (!gift.recipientEmail) throw new BadRequestError('This gift has no recipient email.');
 
@@ -108,7 +109,13 @@ export async function generateClaimPin(claimToken: string): Promise<{ pin: strin
     data: { claimPin: hashedPin, claimPinExpiry: expiry },
   });
 
-  return { pin };
+  await sendClaimPinEmail({
+    recipientEmail: gift.recipientEmail,
+    recipientName: gift.recipientName,
+    pin,
+  });
+
+  return { sent: true };
 }
 
 export async function verifyClaimPin(claimToken: string, pin: string): Promise<{ success: boolean }> {

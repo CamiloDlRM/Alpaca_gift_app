@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -280,7 +279,17 @@ export default function SendGift() {
     const selectedOccasion = OCCASIONS.find((o) => o.value === occasion);
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Nav />
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" aria-label="Back to dashboard">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          </Link>
+          <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <span className="font-bold text-gray-900 dark:text-white">WealthGift</span>
+        </div>
+      </header>
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <Card className="p-8">
             <div className="text-5xl mb-4">{selectedOccasion?.emoji ?? '🎁'}</div>
@@ -309,7 +318,17 @@ export default function SendGift() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Nav />
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" aria-label="Back to dashboard">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          </Link>
+          <div className="w-8 h-8 rounded-full bg-[#F5C518] flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <span className="font-bold text-gray-900 dark:text-white">WealthGift</span>
+        </div>
+      </header>
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Send a Gift</h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8">Choose an investment and send it to someone special.</p>

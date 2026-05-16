@@ -1,4 +1,5 @@
 import * as giftsRepo from './gifts.repository';
+import { prisma } from '../../shared/db/prisma.client';
 import { eventBus, EVENTS } from '../../shared/events/event-bus';
 import { NotFoundError, ConflictError, ForbiddenError, BadRequestError } from '../../shared/errors/http-errors';
 import { GiftStatus } from '@prisma/client';
@@ -52,16 +53,24 @@ export async function getGiftByClaimToken(claimToken: string): Promise<GiftRespo
   return toGiftResponse(gift);
 }
 
-export async function startClaiming(claimToken: string, claimingUserId?: string): Promise<GiftResponse> {
+export async function startClaiming(claimToken: string, claimingUserId: string): Promise<GiftResponse> {
   const gift = await giftsRepo.findGiftByClaimToken(claimToken);
   if (!gift) throw new NotFoundError('Gift not found');
 
-  if (claimingUserId && claimingUserId === gift.senderId) {
+  if (claimingUserId === gift.senderId) {
     throw new ForbiddenError('No puedes reclamar tu propio regalo.');
   }
 
+  // If gift has a designated recipient, verify the logged-in user is that recipient
+  if (gift.recipientEmail) {
+    const claimingUser = await prisma.user.findUnique({ where: { id: claimingUserId } });
+    if (!claimingUser || claimingUser.email.toLowerCase() !== gift.recipientEmail.toLowerCase()) {
+      throw new ForbiddenError('Este regalo no fue enviado a tu cuenta.');
+    }
+  }
+
   const valid = VALID_TRANSITIONS[gift.status];
-  if (!valid.includes('CLAIMING' as GiftStatus)) {
+  if (!valid.includes(GiftStatus.CLAIMING)) {
     throw new ConflictError(`Cannot transition from ${gift.status} to CLAIMING`);
   }
 

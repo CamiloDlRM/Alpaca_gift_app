@@ -7,16 +7,24 @@ import { useAuthStore } from '../store/auth.store';
 import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 
+type PwdStep = 'idle' | 'code_sent' | 'new_password' | 'done';
+
 export default function Profile() {
   const { user, updateUser } = useAuthStore();
   const [name, setName] = useState(user?.name ?? '');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
-  const [savingPwd, setSavingPwd] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Password change flow
+  const [pwdStep, setPwdStep] = useState<PwdStep>('idle');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwdError, setPwdError] = useState('');
+  const [changingPwd, setChangingPwd] = useState(false);
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,23 +43,53 @@ export default function Profile() {
     }
   };
 
+  const handleSendCode = async () => {
+    setSendingCode(true);
+    setPwdError('');
+    try {
+      await apiClient.post('/auth/password-code/send');
+      setPwdStep('code_sent');
+    } catch {
+      setPwdError('Could not send verification code. Please try again.');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (code.length !== 6) return;
+    setVerifying(true);
+    setPwdError('');
+    // We verify the code together with the new password in the final step.
+    // Here we just advance the UI step — actual verification happens on submit.
+    setPwdStep('new_password');
+    setVerifying(false);
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) { setErrorMsg('Passwords do not match.'); return; }
-    if (newPassword.length < 6) { setErrorMsg('Password must be at least 6 characters.'); return; }
-    setSavingPwd(true);
-    setSuccessMsg('');
-    setErrorMsg('');
+    if (newPassword !== confirmPassword) { setPwdError('Passwords do not match.'); return; }
+    if (newPassword.length < 6) { setPwdError('Password must be at least 6 characters.'); return; }
+    setChangingPwd(true);
+    setPwdError('');
     try {
-      await apiClient.patch('/auth/password', { currentPassword, newPassword });
-      setSuccessMsg('Password updated successfully.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch {
-      setErrorMsg('Could not change password. Please verify your current password.');
+      await apiClient.post('/auth/password-code/confirm', { code, newPassword });
+      setPwdStep('done');
+      setTimeout(() => {
+        setPwdStep('idle');
+        setCode('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }, 3000);
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const e = err as { response?: { data?: { error?: string } } };
+        setPwdError(e.response?.data?.error || 'Invalid or expired code.');
+      } else {
+        setPwdError('Could not update password. Please try again.');
+      }
     } finally {
-      setSavingPwd(false);
+      setChangingPwd(false);
     }
   };
 
@@ -115,31 +153,83 @@ export default function Profile() {
 
           {/* Password */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change password</h2>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <Input
-                label="Current password"
-                type="password"
-                value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
-                required
-              />
-              <Input
-                label="New password"
-                type="password"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                required
-              />
-              <Input
-                label="Confirm new password"
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                required
-              />
-              <Button type="submit" loading={savingPwd}>Change password</Button>
-            </form>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Change password</h2>
+
+            {pwdStep === 'idle' && (
+              <>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">We'll send a verification code to <strong>{user?.email}</strong>.</p>
+                {pwdError && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{pwdError}</div>}
+                <Button onClick={handleSendCode} loading={sendingCode}>Send verification code</Button>
+              </>
+            )}
+
+            {pwdStep === 'code_sent' && (
+              <>
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-4 py-3 mb-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    We sent a 6-digit code to <strong>{user?.email}</strong>. It expires in 15 minutes.
+                  </p>
+                </div>
+                {pwdError && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{pwdError}</div>}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Enter verification code</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={code}
+                      onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 text-center text-2xl font-mono tracking-widest bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F5C518]"
+                      placeholder="000000"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button onClick={handleVerifyCode} loading={verifying} disabled={code.length !== 6}>Continue</Button>
+                    <button onClick={() => { setPwdStep('idle'); setCode(''); setPwdError(''); }} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Cancel</button>
+                  </div>
+                  <button onClick={handleSendCode} disabled={sendingCode} className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50">
+                    {sendingCode ? 'Sending...' : "Didn't receive it? Resend"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {pwdStep === 'new_password' && (
+              <>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Code verified. Now set your new password.</p>
+                {pwdError && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{pwdError}</div>}
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <Input
+                    label="New password"
+                    type="password"
+                    placeholder="At least 6 characters"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Confirm new password"
+                    type="password"
+                    placeholder="Repeat your new password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <div className="flex gap-3">
+                    <Button type="submit" loading={changingPwd}>Update password</Button>
+                    <button type="button" onClick={() => { setPwdStep('idle'); setCode(''); setNewPassword(''); setConfirmPassword(''); setPwdError(''); }} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">Cancel</button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {pwdStep === 'done' && (
+              <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm">
+                Password updated successfully.
+              </div>
+            )}
           </Card>
         </div>
       </main>

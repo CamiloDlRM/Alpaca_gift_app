@@ -16,6 +16,7 @@ import { errorMiddleware } from './shared/middleware/error.middleware';
 // Import modules that register event listeners
 import './modules/alpaca/alpaca.service';
 import './modules/notifications/notifications.service';
+import './shared/email/email.listeners';
 
 const app = express();
 

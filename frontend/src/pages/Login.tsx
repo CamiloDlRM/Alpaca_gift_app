@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import { Logo } from '../components/ui/Logo';
 import { Input } from '../components/ui/Input';
@@ -12,6 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +20,8 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      const next = searchParams.get('next');
+      navigate(next || '/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
       if (typeof err === 'object' && err !== null && 'response' in err) {

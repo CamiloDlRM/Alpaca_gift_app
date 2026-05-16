@@ -18,3 +18,22 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
     next(err);
   }
 }
+
+export async function sendPasswordCodeHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.sendPasswordResetCode((req as any).user.id);
+    res.json({ sent: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function confirmPasswordResetHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { code, newPassword } = req.body;
+    await authService.confirmPasswordReset((req as any).user.id, code, newPassword);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
