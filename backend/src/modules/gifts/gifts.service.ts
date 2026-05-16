@@ -29,7 +29,7 @@ export async function createGift(senderId: string, dto: CreateGiftDto): Promise<
   const gift = await giftsRepo.createGift({
     ...dto,
     senderId,
-    deliveryDate: new Date(dto.deliveryDate),
+    deliveryDate: dto.deliveryDate ? new Date(dto.deliveryDate) : null,
   });
   eventBus.emit(EVENTS.GIFT_CREATED, { giftId: gift.id });
   return toGiftResponse(gift);

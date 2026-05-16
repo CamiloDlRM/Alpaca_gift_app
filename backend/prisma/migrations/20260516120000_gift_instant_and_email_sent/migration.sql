@@ -1,0 +1,2 @@
+ALTER TABLE "Gift" ALTER COLUMN "deliveryDate" DROP NOT NULL;
+ALTER TABLE "Gift" ADD COLUMN "claimEmailSentAt" TIMESTAMP(3);

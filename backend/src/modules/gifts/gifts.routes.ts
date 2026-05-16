@@ -15,7 +15,7 @@ const createGiftSchema = z.object({
   etfSymbol: z.string().min(1),
   amount: z.number().positive(),
   note: z.string().optional(),
-  deliveryDate: z.string(),
+  deliveryDate: z.string().optional(),
   recipientEmail: z.string().email().optional(),
 });
 

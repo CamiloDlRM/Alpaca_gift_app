@@ -35,6 +35,11 @@ export async function createPaymentIntent(
 ): Promise<PaymentIntentResponse> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
+  // Instant gifts (no delivery date) require a recipient email.
+  if (!dto.giftData.deliveryDate && !dto.giftData.recipientEmail) {
+    throw new BadRequestError('Recipient email is required for instant gifts.');
+  }
+
   // Validate that the recipient email (if provided) belongs to a registered user.
   if (dto.giftData.recipientEmail) {
     const registered = await isEmailRegistered(dto.giftData.recipientEmail);
@@ -122,7 +127,7 @@ export async function confirmGift(
       amount: amountVal,
       commission: commissionVal,
       note: parsedGiftData.note || null,
-      deliveryDate: new Date(parsedGiftData.deliveryDate),
+      deliveryDate: parsedGiftData.deliveryDate ? new Date(parsedGiftData.deliveryDate) : null,
       recipientEmail: parsedGiftData.recipientEmail || null,
       paymentIntentId: pi.id,
       status: 'PENDING',
@@ -181,7 +186,7 @@ export async function handleWebhook(rawBody: Buffer, signature: string): Promise
           amount: amountVal,
           commission: commissionVal,
           note: parsedGiftData.note || null,
-          deliveryDate: new Date(parsedGiftData.deliveryDate),
+          deliveryDate: parsedGiftData.deliveryDate ? new Date(parsedGiftData.deliveryDate) : null,
           recipientEmail: parsedGiftData.recipientEmail || null,
           paymentIntentId: pi.id,
           status: 'PENDING',

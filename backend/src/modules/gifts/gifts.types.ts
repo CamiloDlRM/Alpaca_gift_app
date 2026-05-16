@@ -6,7 +6,7 @@ export interface CreateGiftDto {
   etfSymbol: string;
   amount: number;
   note?: string;
-  deliveryDate: string;
+  deliveryDate?: string;
   recipientEmail?: string;
 }
 
@@ -18,7 +18,7 @@ export interface GiftResponse {
   etfSymbol: string;
   amount: number;
   note?: string | null;
-  deliveryDate: Date;
+  deliveryDate?: Date | null;
   status: GiftStatus;
   claimToken: string;
   claimLink: string;
@@ -26,6 +26,7 @@ export interface GiftResponse {
   recipientEmail?: string | null;
   claimPin?: string | null;
   claimPinExpiry?: Date | null;
+  claimEmailSentAt?: Date | null;
 }
 
 export const VALID_TRANSITIONS: Record<GiftStatus, GiftStatus[]> = {

@@ -29,6 +29,8 @@ interface PaymentIntentResponse {
   total: number;
 }
 
+type GiftType = 'INSTANT' | 'SCHEDULED';
+
 interface GiftFormData {
   recipientName: string;
   occasion: string;
@@ -37,6 +39,7 @@ interface GiftFormData {
   deliveryDate: string;
   note: string;
   recipientEmail: string;
+  giftType: GiftType;
 }
 
 const OCCASIONS = [
@@ -119,8 +122,10 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
             <span className="text-gray-900 dark:text-white font-medium">${paymentData.amount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Delivery date</span>
-            <span className="text-gray-900 dark:text-white font-medium">{formData.deliveryDate}</span>
+            <span className="text-gray-500 dark:text-gray-400">Delivery</span>
+            <span className="text-gray-900 dark:text-white font-medium">
+              {formData.giftType === 'INSTANT' ? '⚡ Instant' : formData.deliveryDate}
+            </span>
           </div>
         </div>
       </Card>
@@ -201,6 +206,7 @@ export default function SendGift() {
   const [error, setError] = useState('');
 
   // Form state
+  const [giftType, setGiftType] = useState<GiftType>('INSTANT');
   const [recipientName, setRecipientName] = useState('');
   const [occasion, setOccasion] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -256,7 +262,7 @@ export default function SendGift() {
           etfSymbol,
           amount: parseFloat(amount),
           note: note || undefined,
-          deliveryDate,
+          deliveryDate: giftType === 'SCHEDULED' ? deliveryDate : undefined,
           recipientEmail: recipientEmail || undefined,
         },
       });
@@ -295,7 +301,10 @@ export default function SendGift() {
             <div className="text-5xl mb-4">{selectedOccasion?.emoji ?? '🎁'}</div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Gift sent!</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Share this link with <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientName}</span> so they can claim their gift.
+              {giftType === 'INSTANT' && recipientEmail
+                ? <>We've emailed the claim link to <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientEmail}</span>. You can also share it manually:</>
+                : <>Share this link with <span className="font-semibold text-gray-700 dark:text-gray-300">{recipientName}</span>. {recipientEmail && 'They'll also receive it by email on the delivery date.'}</>
+              }
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-mono break-all mb-4 text-left">
               {claimLink}
@@ -361,6 +370,40 @@ export default function SendGift() {
           <>
           <Card className="p-6 sm:p-8">
             <form onSubmit={handleContinueToPayment} className="space-y-6">
+              {/* Gift type toggle */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Gift type</label>
+                <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => setGiftType('INSTANT')}
+                    className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                      giftType === 'INSTANT'
+                        ? 'bg-[#F5C518] text-black'
+                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    ⚡ Instant
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGiftType('SCHEDULED')}
+                    className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                      giftType === 'SCHEDULED'
+                        ? 'bg-[#F5C518] text-black'
+                        : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    📅 Scheduled
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                  {giftType === 'INSTANT'
+                    ? 'The recipient gets the claim link by email right away.'
+                    : 'The claim link is emailed to the recipient on the delivery date.'}
+                </p>
+              </div>
+
               <Input
                 label="Recipient name"
                 placeholder="Who is this gift for?"
@@ -450,7 +493,7 @@ export default function SendGift() {
                 )}
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${giftType === 'SCHEDULED' ? 'sm:grid-cols-2' : ''}`}>
                 <Input
                   label="Amount ($)"
                   type="number"
@@ -461,21 +504,24 @@ export default function SendGift() {
                   onChange={(e) => setAmount(e.target.value)}
                   required
                 />
-                <Input
-                  label="Delivery date"
-                  type="date"
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  required
-                />
+                {giftType === 'SCHEDULED' && (
+                  <Input
+                    label="Delivery date"
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    required
+                  />
+                )}
               </div>
 
               <Input
-                label="Recipient email (must be registered on the platform)"
+                label={giftType === 'INSTANT' ? 'Recipient email (required)' : 'Recipient email (must be registered on the platform)'}
                 type="email"
                 placeholder="email@example.com"
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
+                required={giftType === 'INSTANT'}
               />
 
               <div className="flex flex-col gap-1">
@@ -489,7 +535,16 @@ export default function SendGift() {
                 />
               </div>
 
-              <Button type="submit" loading={loading} className="w-full" disabled={!occasion || !etfSymbol || !amount}>
+              <Button
+                type="submit"
+                loading={loading}
+                className="w-full"
+                disabled={
+                  !occasion || !etfSymbol || !amount ||
+                  (giftType === 'INSTANT' && !recipientEmail) ||
+                  (giftType === 'SCHEDULED' && !deliveryDate)
+                }
+              >
                 Continue to payment
               </Button>
             </form>
@@ -519,6 +574,7 @@ export default function SendGift() {
                 deliveryDate,
                 note,
                 recipientEmail,
+                giftType,
               }}
               paymentData={paymentData}
               isPro={isPro}

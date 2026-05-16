@@ -5,7 +5,7 @@ export interface CreatePaymentIntentDto {
     etfSymbol: string;
     amount: number;
     note?: string;
-    deliveryDate: string;
+    deliveryDate?: string;
     recipientEmail?: string;
   };
 }

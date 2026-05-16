@@ -17,6 +17,7 @@ import { errorMiddleware } from './shared/middleware/error.middleware';
 import './modules/alpaca/alpaca.service';
 import './modules/notifications/notifications.service';
 import './shared/email/email.listeners';
+import './shared/cron/gift-delivery.cron';
 
 const app = express();
 

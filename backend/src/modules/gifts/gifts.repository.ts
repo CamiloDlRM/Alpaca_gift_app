@@ -8,10 +8,14 @@ export async function createGift(data: {
   etfSymbol: string;
   amount: number;
   note?: string;
-  deliveryDate: Date;
+  deliveryDate?: Date | null;
   recipientEmail?: string;
 }) {
   return prisma.gift.create({ data });
+}
+
+export async function markClaimEmailSent(id: string) {
+  return prisma.gift.update({ where: { id }, data: { claimEmailSentAt: new Date() } });
 }
 
 export async function findGiftsByUser(userId: string) {

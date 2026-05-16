@@ -8,7 +8,9 @@ eventBus.on<{ giftId: string }>(EVENTS.GIFT_CREATED, async ({ giftId }) => {
       where: { id: giftId },
       include: { sender: true },
     });
-    if (!gift?.recipientEmail || !gift.sender) return;
+    // Only send immediately for instant gifts (no deliveryDate).
+    // Scheduled gifts are handled by the daily cron job.
+    if (!gift?.recipientEmail || !gift.sender || gift.deliveryDate) return;
 
     await sendGiftReceivedEmail({
       recipientEmail: gift.recipientEmail,
@@ -18,6 +20,11 @@ eventBus.on<{ giftId: string }>(EVENTS.GIFT_CREATED, async ({ giftId }) => {
       etfSymbol: gift.etfSymbol,
       occasion: gift.occasion,
       claimToken: gift.claimToken,
+    });
+
+    await prisma.gift.update({
+      where: { id: gift.id },
+      data: { claimEmailSentAt: new Date() },
     });
   } catch (err) {
     console.error('[EMAIL] gift.created listener error:', err);

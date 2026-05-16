@@ -33,7 +33,7 @@ model Gift {
   amount          Float
   commission      Float      @default(0)
   note            String?
-  deliveryDate    DateTime
+  deliveryDate    DateTime?
   status          GiftStatus @default(PENDING)
   claimToken      String     @unique @default(uuid())
   alpacaAccountId String?
@@ -43,6 +43,7 @@ model Gift {
   redeemedAmount  Float?
   claimPin        String?
   claimPinExpiry  DateTime?
+  claimEmailSentAt DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   kyc             KYC?
