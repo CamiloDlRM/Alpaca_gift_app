@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Card } from '../components/ui/Card';
 
@@ -42,8 +43,23 @@ const ARTICLES = [
 ];
 
 export default function Education() {
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [searchParams] = useSearchParams();
+  const [openId, setOpenId] = useState<number | null>(() => {
+    const param = searchParams.get('open');
+    return param ? Number(param) : null;
+  });
   const categories = [...new Set(ARTICLES.map(a => a.category))];
+
+  useEffect(() => {
+    const param = searchParams.get('open');
+    if (!param) return;
+    const id = Number(param);
+    setOpenId(id);
+    // scroll to the card after a brief paint delay
+    setTimeout(() => {
+      document.getElementById(`article-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [searchParams]);
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -58,7 +74,8 @@ export default function Education() {
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">{cat}</h2>
               <div className="space-y-3">
                 {ARTICLES.filter(a => a.category === cat).map(article => (
-                  <Card key={article.id} className="overflow-hidden">
+                  <Card key={article.id} className="overflow-hidden" style={{ scrollMarginTop: '1rem' }}>
+                    <div id={`article-${article.id}`} />
                     <button
                       className="w-full flex items-center gap-4 p-5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       onClick={() => setOpenId(openId === article.id ? null : article.id)}

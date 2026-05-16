@@ -75,6 +75,7 @@ function PlanBadge({ status, giftsCount }: { status: string; giftsCount: number 
 }
 
 const NOTIFS_PER_PAGE = 3;
+const GIFTS_PER_PAGE = 5;
 
 export default function Dashboard() {
   const { user, updateUser } = useAuthStore();
@@ -83,6 +84,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notifPage, setNotifPage] = useState(0);
+  const [giftsPage, setGiftsPage] = useState(0);
   const [dismissedGifts, setDismissedGifts] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('dismissed_gift_notifs');
@@ -131,6 +133,10 @@ export default function Dashboard() {
   const totalGifted = gifts.reduce((sum, g) => sum + g.amount, 0);
   const investedGifts = gifts.filter((g) => g.status === 'INVESTED');
   const pendingGifts = gifts.filter((g) => g.status === 'PENDING');
+
+  const totalGiftPages = Math.max(1, Math.ceil(gifts.length / GIFTS_PER_PAGE));
+  const safeGiftsPage = Math.min(giftsPage, totalGiftPages - 1);
+  const pagedGifts = gifts.slice(safeGiftsPage * GIFTS_PER_PAGE, safeGiftsPage * GIFTS_PER_PAGE + GIFTS_PER_PAGE);
 
   const visibleGifts = receivedGifts.filter((g) => !dismissedGifts.has(g.id));
   const totalNotifPages = Math.max(1, Math.ceil(visibleGifts.length / NOTIFS_PER_PAGE));
@@ -323,7 +329,7 @@ export default function Dashboard() {
                 )}
 
                 <div className="space-y-3">
-                  {gifts.map((gift, gi) => {
+                  {pagedGifts.map((gift, gi) => {
                     const statusStyle = STATUS_COLORS[gift.status] || STATUS_COLORS.PENDING;
                     return (
                       <Card key={gift.id} className="p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 animate-slideUp" style={{ animationDelay: `${gi * 50}ms`, animationFillMode: 'both' }}>
@@ -353,6 +359,30 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
+
+                {totalGiftPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <button
+                      type="button"
+                      onClick={() => setGiftsPage((p) => Math.max(0, p - 1))}
+                      disabled={safeGiftsPage === 0}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Page {safeGiftsPage + 1} of {totalGiftPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setGiftsPage((p) => Math.min(totalGiftPages - 1, p + 1))}
+                      disabled={safeGiftsPage >= totalGiftPages - 1}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -384,27 +414,17 @@ export default function Dashboard() {
                 <h3 className="font-bold text-gray-900 dark:text-white mb-4">Education Center</h3>
                 <div className="space-y-4">
                   {[
-                    { title: 'What is an ETF?', desc: 'Learn the basics of exchange-traded funds.' },
-                    { title: 'The power of compound interest', desc: 'How small gifts grow into great wealth.' },
-                    { title: 'Diversification 101', desc: 'Why spreading risk matters.' },
+                    { id: 1, title: 'What is an ETF?', desc: 'Learn the basics of exchange-traded funds.' },
+                    { id: 2, title: 'The power of compound interest', desc: 'How small gifts grow into great wealth.' },
+                    { id: 3, title: 'Diversification 101', desc: 'Why spreading risk matters.' },
                   ].map((article) => (
-                    <div key={article.title} className="group cursor-pointer">
+                    <Link key={article.title} to={`/education?open=${article.id}`} className="group block">
                       <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-[#F5C518] transition-colors">{article.title}</div>
                       <div className="text-xs text-gray-400">{article.desc}</div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </Card>
-
-              <div className="bg-gradient-to-br from-[#F5C518] to-yellow-400 rounded-xl p-6 text-black">
-                <h3 className="font-bold mb-2">Gift an ETF today</h3>
-                <p className="text-sm text-black/70 mb-4">The best time to invest was yesterday. The second best time is today.</p>
-                <Link to="/send">
-                  <Button variant="secondary" size="sm" className="bg-black text-white border-black hover:bg-gray-800">
-                    Send Gift
-                  </Button>
-                </Link>
-              </div>
             </div>
           </div>
         </div>
