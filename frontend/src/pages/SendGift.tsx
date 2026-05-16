@@ -5,7 +5,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { ETFRatingWidget } from '../components/ETFRatingWidget';
+import { ETFCommunityReviews } from '../components/ETFCommunityReviews';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
@@ -493,6 +493,14 @@ export default function SendGift() {
                 )}
               </div>
 
+              {/* Community Reviews — inline, between ETF selection and amount */}
+              {etfSymbol && (() => {
+                const sel = etfs.find((e) => e.symbol === etfSymbol);
+                return sel ? (
+                  <ETFCommunityReviews key={etfSymbol} etfSymbol={etfSymbol} etfName={sel.name} />
+                ) : null;
+              })()}
+
               <div className={`grid gap-6 ${giftType === 'SCHEDULED' ? 'sm:grid-cols-2' : ''}`}>
                 <Input
                   label="Amount ($)"
@@ -550,21 +558,6 @@ export default function SendGift() {
             </form>
           </Card>
 
-          {/* Community Reviews — read-only, shown when an ETF is selected */}
-          {etfSymbol && (() => {
-            const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
-            return selectedEtf ? (
-              <div className="mt-6">
-                <h2 className="text-base font-bold text-gray-700 dark:text-gray-300 mb-3">Community Reviews</h2>
-                <ETFRatingWidget
-                  etfSymbol={etfSymbol}
-                  etfName={selectedEtf.name}
-                  isAuthenticated={false}
-                  readOnly
-                />
-              </div>
-            ) : null;
-          })()}
           </>
         ) : paymentData ? (
           /* Step 2 - Payment */
