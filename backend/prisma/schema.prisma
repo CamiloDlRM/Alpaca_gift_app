@@ -28,7 +28,7 @@ model User {
 model Gift {
   id              String     @id @default(uuid())
   senderId        String
-  sender          User       @relation(fields: [senderId], references: [id])
+  sender          User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
   recipientName   String
   occasion        String
   etfSymbol       String
@@ -56,7 +56,7 @@ model Gift {
 model KYC {
   id         String    @id @default(uuid())
   giftId     String    @unique
-  gift       Gift      @relation(fields: [giftId], references: [id])
+  gift       Gift      @relation(fields: [giftId], references: [id], onDelete: Cascade)
   fullName   String
   dob        String
   ssnLast4   String
@@ -72,7 +72,7 @@ model KYC {
 model Agreement {
   id              String   @id @default(uuid())
   giftId          String   @unique
-  gift            Gift     @relation(fields: [giftId], references: [id])
+  gift            Gift     @relation(fields: [giftId], references: [id], onDelete: Cascade)
   signatureBase64 String
   agreedToTerms   Boolean  @default(true)
   signedAt        DateTime @default(now())
@@ -81,7 +81,7 @@ model Agreement {
 model Subscription {
   id                   String           @id @default(uuid())
   userId               String           @unique
-  user                 User             @relation(fields: [userId], references: [id])
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan                 SubscriptionPlan @default(BASIC)
   stripeSubscriptionId String?
   stripeCustomerId     String?
@@ -94,7 +94,7 @@ model Subscription {
 model Payment {
   id                    String        @id @default(uuid())
   giftId                String        @unique
-  gift                  Gift          @relation(fields: [giftId], references: [id])
+  gift                  Gift          @relation(fields: [giftId], references: [id], onDelete: Cascade)
   stripePaymentIntentId String        @unique
   amount                Float
   commission            Float         @default(0)
@@ -106,7 +106,7 @@ model Payment {
 model ETFRating {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   etfSymbol String
   stars     Int
   comment   String?
