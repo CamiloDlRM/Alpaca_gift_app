@@ -199,12 +199,12 @@ export default function Pricing() {
           <button
             type="button"
             onClick={() => setBilling(b => b === 'monthly' ? 'annual' : 'monthly')}
-            className={`relative w-12 h-6 rounded-full transition-colors ${billing === 'annual' ? 'bg-[#F5C518]' : 'bg-gray-300 dark:bg-gray-600'}`}
+            className={`relative w-12 h-6 rounded-full overflow-hidden transition-colors ${billing === 'annual' ? 'bg-[#F5C518]' : 'bg-gray-300 dark:bg-gray-600'}`}
             role="switch"
             aria-checked={billing === 'annual'}
             aria-label="Toggle annual billing"
           >
-            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${billing === 'annual' ? 'translate-x-7' : 'translate-x-1'}`} />
+            <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${billing === 'annual' ? 'translate-x-7' : 'translate-x-1'}`} />
           </button>
           <span className={`text-sm font-medium ${billing === 'annual' ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
             Annual <span className="text-xs text-green-600 font-semibold">(Save with PRO+!)</span>

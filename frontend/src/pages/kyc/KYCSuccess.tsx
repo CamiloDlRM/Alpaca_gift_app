@@ -7,7 +7,7 @@ export default function KYCSuccess() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-lg mx-auto px-4 py-16 text-center relative">
         {/* Progress bar */}
@@ -15,7 +15,7 @@ export default function KYCSuccess() {
           {['Personal Info', 'Verify SSN', 'Questions', 'Done'].map((step, i) => (
             <div key={step} className="flex-1">
               <div className="h-1.5 rounded-full bg-[#F5C518]" />
-              <div className={`text-xs mt-1 ${i === 3 ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>{step}</div>
+              <div className={`text-xs mt-1 ${i === 3 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{step}</div>
             </div>
           ))}
         </div>
@@ -50,8 +50,8 @@ export default function KYCSuccess() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Identity Verified!</h1>
-        <p className="text-lg text-gray-500 mb-10 max-w-sm mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Identity Verified!</h1>
+        <p className="text-lg text-gray-500 dark:text-gray-400 mb-10 max-w-sm mx-auto">
           Your identity has been successfully verified. Just one more step to claim your gift.
         </p>
 

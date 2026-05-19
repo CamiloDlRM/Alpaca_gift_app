@@ -38,29 +38,29 @@ export default function KYCSSN() {
   const giftEtf = giftData ? (giftData as Record<string, unknown>).etfSymbol as string : '';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-lg mx-auto px-4 py-8 sm:py-12">
         {/* Progress bar */}
         <div className="flex items-center gap-2 mb-8">
           {['Personal Info', 'Verify SSN', 'Questions', 'Done'].map((step, i) => (
             <div key={step} className="flex-1">
-              <div className={`h-1.5 rounded-full ${i <= 1 ? 'bg-[#F5C518]' : 'bg-gray-200'}`} />
-              <div className={`text-xs mt-1 ${i === 1 ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>{step}</div>
+              <div className={`h-1.5 rounded-full ${i <= 1 ? 'bg-[#F5C518]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+              <div className={`text-xs mt-1 ${i === 1 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{step}</div>
             </div>
           ))}
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Confirm Your SSN</h1>
-        <p className="text-gray-500 mb-8">Please re-enter the last 4 digits to confirm your identity.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Confirm Your SSN</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">Please re-enter the last 4 digits to confirm your identity.</p>
 
         {/* Gift summary */}
         {giftData && (
-          <Card className="p-5 mb-8 bg-yellow-50 border-yellow-100">
+          <Card className="p-5 mb-8 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-800">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-500">Your Gift</div>
-                <div className="text-lg font-bold text-gray-900">${giftAmount.toFixed(2)}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Your Gift</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">${giftAmount.toFixed(2)}</div>
               </div>
               <div className="bg-[#F5C518] text-black font-bold px-4 py-2 rounded-full text-sm">
                 {giftEtf}

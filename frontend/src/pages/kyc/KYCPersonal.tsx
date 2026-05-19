@@ -55,21 +55,21 @@ export default function KYCPersonal() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         {/* Progress bar */}
         <div className="flex items-center gap-2 mb-8">
           {['Personal Info', 'Verify SSN', 'Questions', 'Done'].map((step, i) => (
             <div key={step} className="flex-1">
-              <div className={`h-1.5 rounded-full ${i === 0 ? 'bg-[#F5C518]' : 'bg-gray-200'}`} />
-              <div className={`text-xs mt-1 ${i === 0 ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>{step}</div>
+              <div className={`h-1.5 rounded-full ${i === 0 ? 'bg-[#F5C518]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+              <div className={`text-xs mt-1 ${i === 0 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{step}</div>
             </div>
           ))}
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Identity</h1>
-        <p className="text-gray-500 mb-8">We need a few details to set up your brokerage account.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Verify Your Identity</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">We need a few details to set up your brokerage account.</p>
 
         {error && (
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
@@ -120,9 +120,9 @@ export default function KYCPersonal() {
                 autoComplete="address-level2"
               />
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">State</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">State</label>
                 <select
-                  className="rounded-lg border border-gray-200 py-3 px-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white"
+                  className="rounded-lg border border-gray-200 dark:border-gray-600 py-3 px-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white dark:bg-gray-700"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   required

@@ -65,7 +65,7 @@ export default function KYCQuestions() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Nav />
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
@@ -77,21 +77,21 @@ export default function KYCQuestions() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-lg mx-auto px-4 py-8 sm:py-12">
         {/* Progress bar */}
         <div className="flex items-center gap-2 mb-8">
           {['Personal Info', 'Verify SSN', 'Questions', 'Done'].map((step, i) => (
             <div key={step} className="flex-1">
-              <div className={`h-1.5 rounded-full ${i <= 2 ? 'bg-[#F5C518]' : 'bg-gray-200'}`} />
-              <div className={`text-xs mt-1 ${i === 2 ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>{step}</div>
+              <div className={`h-1.5 rounded-full ${i <= 2 ? 'bg-[#F5C518]' : 'bg-gray-200 dark:bg-gray-700'}`} />
+              <div className={`text-xs mt-1 ${i === 2 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-400 dark:text-gray-500'}`}>{step}</div>
             </div>
           ))}
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Identity Questions</h1>
-        <p className="text-gray-500 mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Identity Questions</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">
           Question {currentIndex + 1} of {questions.length}
         </p>
 
@@ -101,7 +101,7 @@ export default function KYCQuestions() {
 
         {currentQuestion && (
           <Card className="p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">{currentQuestion.question}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">{currentQuestion.question}</h2>
             <div className="space-y-3 mb-8" role="radiogroup" aria-label={currentQuestion.question}>
               {currentQuestion.options.map((option) => (
                 <button
@@ -110,8 +110,8 @@ export default function KYCQuestions() {
                   onClick={() => setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))}
                   className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                     selectedAnswer === option
-                      ? 'border-[#F5C518] bg-yellow-50'
-                      : 'border-gray-100 hover:border-gray-200'
+                      ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20'
+                      : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
                   }`}
                   role="radio"
                   aria-checked={selectedAnswer === option}
@@ -122,7 +122,7 @@ export default function KYCQuestions() {
                     }`}>
                       {selectedAnswer === option && <div className="w-2.5 h-2.5 rounded-full bg-[#F5C518]" />}
                     </div>
-                    <span className="text-gray-900">{option}</span>
+                    <span className="text-gray-900 dark:text-white">{option}</span>
                   </div>
                 </button>
               ))}
