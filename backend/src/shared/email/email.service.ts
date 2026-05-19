@@ -195,6 +195,77 @@ export async function sendPasswordCodeEmail(opts: {
   await send(opts.email, `${opts.code} — your WealthGift password change code`, html);
 }
 
+interface VerificationEmailOpts {
+  recipientEmail: string;
+  recipientName: string;
+  verificationUrl: string;
+}
+
+export async function sendVerificationEmail(opts: VerificationEmailOpts) {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0b0b0f;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0f;padding:40px 16px">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#16161d;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.4)">
+        <tr>
+          <td style="background:#F5C518;padding:28px 40px;text-align:center">
+            <div style="display:inline-flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;background:rgba(0,0,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <span style="font-size:20px;font-weight:700;color:#000">WealthGift</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px">
+            <div style="text-align:center;margin-bottom:24px">
+              <div style="width:60px;height:60px;background:rgba(245,197,24,.12);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#ffffff">Verify your email</h1>
+              <p style="margin:0;font-size:15px;color:#9ca3af">Hi ${opts.recipientName}, welcome to WealthGift!</p>
+            </div>
+            <p style="margin:0 0 28px;font-size:16px;color:#d1d5db;line-height:1.6;text-align:center">
+              Confirm your email address to activate your account and start gifting investments.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <a href="${opts.verificationUrl}" style="display:inline-block;background:#F5C518;color:#000;font-size:16px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:100px">
+                    Verify my email
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 40px 32px">
+            <p style="margin:0;font-size:13px;color:#6b7280;text-align:center">
+              If you can't click the button, copy this link:<br>
+              <a href="${opts.verificationUrl}" style="color:#F5C518;word-break:break-all">${opts.verificationUrl}</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#0f0f15;padding:20px 40px;text-align:center;border-top:1px solid #1f1f29">
+            <p style="margin:0;font-size:12px;color:#6b7280">If you didn't create a WealthGift account, you can safely ignore this email.</p>
+            <p style="margin:8px 0 0;font-size:12px;color:#6b7280">© ${new Date().getFullYear()} WealthGift. All rights reserved.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await send(opts.recipientEmail, 'Verify your WealthGift email', html);
+}
+
 export async function sendGiftClaimedEmail(opts: {
   senderEmail: string;
   senderName: string;

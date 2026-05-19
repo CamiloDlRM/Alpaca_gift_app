@@ -223,3 +223,29 @@ Adicionalmente, el endpoint `POST /api/subscriptions` con `billingInterval: 'yea
 - En `KYCPin`, mostrar el PIN al usuario es una simulacion de envio por email (apto solo para desarrollo).
 - `ScheduleGifts` solo muestra el año actual; futura mejora seria un selector de año.
 ---
+
+## [2026-05-19] - Email verification flow (register / verify-email / login)
+
+### Files Modified/Created
+- `src/store/auth.store.ts` — `register` now returns `Promise<string>` (the backend confirmation message) and no longer stores a token; added `setAuth(token, user)` helper to store the JWT consistently after email verification.
+- `src/pages/Register.tsx` — On successful registration, switches to an inline "check your email" state instead of redirecting; shows the destination email and a "Resend email" button calling `POST /auth/resend-verification`.
+- `src/pages/VerifyEmail.tsx` — NEW. Reads `token` from query params, calls `GET /auth/verify-email?token=xxx` on mount, shows loading/success/error states, stores the JWT via `setAuth` on success and redirects to `/dashboard` after 2s; error state offers a "Back to register" button.
+- `src/pages/Login.tsx` — Detects 403 responses (unverified email) and shows a contextual amber alert with an inline "resend the verification email" flow.
+- `src/App.tsx` — Added the `/verify-email` public route.
+
+### Changes Summary
+Implemented the full email-verification gate. Registration no longer logs the user in directly; instead it triggers a verification email and the UI prompts the user to check their inbox. The `/verify-email` page consumes the link token, exchanges it for a JWT + user, and logs the user in. Login surfaces a specific, actionable message when the account is unverified, with an inline resend option.
+
+### Backend Dependencies
+- `POST /api/auth/register` → `{ message: string }` (no token; verification email sent).
+- `POST /api/auth/login` → 403 `{ error: 'Please verify your email before logging in' }` when unverified.
+- `GET /api/auth/verify-email?token=xxx` → `{ token, user }` (JWT + user object).
+- `POST /api/auth/resend-verification` body `{ email }` → resends the verification email.
+
+### Notes
+- JWT is stored exactly like login: `localStorage` key `wealthgift_token` plus the zustand `auth.store` persisted state (`setAuth` centralizes this).
+- `VerifyEmail` uses a `useRef` guard so React StrictMode's double effect invocation does not consume the single-use token twice.
+- Login treats any 403 as "unverified"; if the backend later returns 403 for other reasons, the message would need to branch on `response.data.error`.
+- These backend endpoints were provided in the task brief but are NOT yet documented in `backend-commit-file.md` — recommend the backend agent add an entry for the email-verification work.
+- Could not run `tsc` to verify types (TypeScript not installed locally and npm commands are disallowed); types were reviewed manually.
+---

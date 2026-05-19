@@ -1,21 +1,40 @@
+import { randomUUID } from 'crypto';
 import { prisma } from '../../shared/db/prisma.client';
 import { hashPassword, comparePassword } from '../../shared/utils/hash';
 import { signToken } from '../../shared/utils/jwt';
-import { BadRequestError, UnauthorizedError, NotFoundError } from '../../shared/errors/http-errors';
-import { sendPasswordCodeEmail } from '../../shared/email/email.service';
-import type { RegisterDto, LoginDto, AuthResponse } from './auth.types';
+import { BadRequestError, UnauthorizedError, NotFoundError, ForbiddenError } from '../../shared/errors/http-errors';
+import { sendPasswordCodeEmail, sendVerificationEmail } from '../../shared/email/email.service';
+import type { RegisterDto, LoginDto, AuthResponse, RegisterResponse } from './auth.types';
 
-export async function register(dto: RegisterDto): Promise<AuthResponse> {
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+function buildVerificationUrl(token: string): string {
+  return `${FRONTEND_URL}/verify-email?token=${token}`;
+}
+
+export async function register(dto: RegisterDto): Promise<RegisterResponse> {
   const existing = await prisma.user.findUnique({ where: { email: dto.email } });
   if (existing) throw new BadRequestError('Email already in use');
 
   const password = await hashPassword(dto.password);
+  const verificationToken = randomUUID();
   const user = await prisma.user.create({
-    data: { email: dto.email, password, name: dto.name },
+    data: {
+      email: dto.email,
+      password,
+      name: dto.name,
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+    },
   });
 
-  const token = signToken({ id: user.id, email: user.email });
-  return { token, user: { id: user.id, email: user.email, name: user.name } };
+  await sendVerificationEmail({
+    recipientEmail: user.email,
+    recipientName: user.name,
+    verificationUrl: buildVerificationUrl(verificationToken),
+  });
+
+  return { message: 'Check your email to verify your account' };
 }
 
 export async function login(dto: LoginDto): Promise<AuthResponse> {
@@ -25,8 +44,45 @@ export async function login(dto: LoginDto): Promise<AuthResponse> {
   const valid = await comparePassword(dto.password, user.password);
   if (!valid) throw new UnauthorizedError('Invalid credentials');
 
+  if (!user.emailVerified) {
+    throw new ForbiddenError('Please verify your email before logging in');
+  }
+
   const token = signToken({ id: user.id, email: user.email });
   return { token, user: { id: user.id, email: user.email, name: user.name } };
+}
+
+export async function verifyEmail(token: string): Promise<AuthResponse> {
+  if (!token) throw new BadRequestError('Invalid or expired verification token');
+
+  const user = await prisma.user.findUnique({ where: { emailVerificationToken: token } });
+  if (!user) throw new BadRequestError('Invalid or expired verification token');
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: true, emailVerificationToken: null },
+  });
+
+  const jwt = signToken({ id: user.id, email: user.email });
+  return { token: jwt, user: { id: user.id, email: user.email, name: user.name } };
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  const user = await findUserByEmail(email);
+  if (!user) return;
+  if (user.emailVerified) return;
+
+  const verificationToken = randomUUID();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerificationToken: verificationToken },
+  });
+
+  await sendVerificationEmail({
+    recipientEmail: user.email,
+    recipientName: user.name,
+    verificationUrl: buildVerificationUrl(verificationToken),
+  });
 }
 
 export async function findUserByEmail(email: string) {

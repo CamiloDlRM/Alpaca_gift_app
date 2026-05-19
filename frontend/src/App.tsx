@@ -3,6 +3,7 @@ import { useAuthStore } from './store/auth.store';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import SendGift from './pages/SendGift';
 import ClaimGift from './pages/ClaimGift';
 import KYCPersonal from './pages/kyc/KYCPersonal';
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/send" element={<ProtectedRoute><SendGift /></ProtectedRoute>} />
         <Route path="/claim/:claimToken" element={<ClaimGift />} />
         <Route path="/claim/:claimToken/kyc/personal" element={<KYCPersonal />} />

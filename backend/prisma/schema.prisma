@@ -17,6 +17,8 @@ model User {
   stripeCustomerId   String?
   passwordResetCode   String?
   passwordResetExpiry DateTime?
+  emailVerified          Boolean   @default(false)
+  emailVerificationToken String?   @unique
   createdAt          DateTime           @default(now())
   gifts              Gift[]
   subscription       Subscription?

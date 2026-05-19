@@ -13,7 +13,8 @@ interface AuthState {
   token: string | null;
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<string>;
+  setAuth: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (partial: Partial<User>) => void;
 }
@@ -32,11 +33,17 @@ export const useAuthStore = create<AuthState>()(
         });
       },
       register: async (email, password, name) => {
+        // Backend no longer returns a token here — the user must verify
+        // their email before they can authenticate. We surface the
+        // confirmation message so the UI can show a "check your email" state.
         const res = await apiClient.post('/auth/register', { email, password, name });
-        localStorage.setItem('wealthgift_token', res.data.token);
+        return res.data.message as string;
+      },
+      setAuth: (token, user) => {
+        localStorage.setItem('wealthgift_token', token);
         set({
-          token: res.data.token,
-          user: { ...res.data.user, subscriptionStatus: res.data.user.subscriptionStatus ?? 'BASIC' },
+          token,
+          user: { ...user, subscriptionStatus: user.subscriptionStatus ?? 'BASIC' },
         });
       },
       logout: () => {
