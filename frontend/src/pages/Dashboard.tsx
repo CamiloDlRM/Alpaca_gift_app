@@ -145,7 +145,7 @@ export default function Dashboard() {
     safeNotifPage * NOTIFS_PER_PAGE,
     safeNotifPage * NOTIFS_PER_PAGE + NOTIFS_PER_PAGE,
   );
-  const hasPortfolioGift = visibleGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED');
+  const hasPortfolioGift = receivedGifts.some((g) => g.status === 'INVESTED' || g.status === 'REDEEMED');
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
