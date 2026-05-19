@@ -105,8 +105,7 @@ export default function MyGifts() {
             <Card className="p-12 text-center">
               <div className="text-5xl mb-4">🎁</div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No gifts here</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">Send your first investment gift.</p>
-              <Link to="/send"><Button>Send gift</Button></Link>
+              <p className="text-gray-500 dark:text-gray-400">Send your first investment gift.</p>
             </Card>
           ) : (
             <div className="space-y-3">
