@@ -69,7 +69,7 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
   const [error, setError] = useState('');
 
   const handlePay = async () => {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || loading) return;
     setLoading(true);
     setError('');
 

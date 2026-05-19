@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Nav } from '../components/layout/Nav';
+import { useAuthStore } from '../store/auth.store';
 
 const testimonials = [
   {
@@ -15,6 +16,9 @@ const testimonials = [
 ];
 
 export default function Landing() {
+  const { token } = useAuthStore();
+  const isLoggedIn = !!token;
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <Nav />
@@ -41,12 +45,21 @@ export default function Landing() {
                 Skip the gift cards. Give your loved ones real investments — ETFs that grow over time. Start building their wealth today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register" className="inline-flex items-center justify-center bg-[#F5C518] hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-xl text-lg transition-colors">
-                  Get Started
-                </Link>
-                <Link to="/login" className="inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold px-8 py-4 rounded-xl text-lg transition-colors">
-                  Sign In
-                </Link>
+                {!isLoggedIn && (
+                  <Link to="/register" className="inline-flex items-center justify-center bg-[#F5C518] hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-xl text-lg transition-colors">
+                    Get Started
+                  </Link>
+                )}
+                {!isLoggedIn && (
+                  <Link to="/login" className="inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold px-8 py-4 rounded-xl text-lg transition-colors">
+                    Sign In
+                  </Link>
+                )}
+                {isLoggedIn && (
+                  <Link to="/dashboard" className="inline-flex items-center justify-center bg-[#F5C518] hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-xl text-lg transition-colors">
+                    Go to Dashboard
+                  </Link>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                 {['SEC Regulated', 'SIPC Protected', 'No Hidden Fees'].map((label) => (
@@ -153,12 +166,21 @@ export default function Landing() {
             A gift that grows. Start building generational wealth today with just a few clicks.
           </p>
           <div className="flex justify-center">
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center bg-black text-white font-bold px-10 py-4 rounded-xl text-lg hover:bg-gray-800 transition-colors"
-            >
-              Get Started Free
-            </Link>
+            {!isLoggedIn ? (
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center bg-black text-white font-bold px-10 py-4 rounded-xl text-lg hover:bg-gray-800 transition-colors"
+              >
+                Get Started Free
+              </Link>
+            ) : (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center justify-center bg-black text-white font-bold px-10 py-4 rounded-xl text-lg hover:bg-gray-800 transition-colors"
+              >
+                Go to Dashboard
+              </Link>
+            )}
           </div>
         </div>
       </section>
