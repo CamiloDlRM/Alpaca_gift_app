@@ -29,19 +29,22 @@ export default function ScheduleGifts() {
 
   useEffect(() => { fetchGifts(); }, [fetchGifts]);
 
-  // Group gifts by month — only show current month and future months
+  // Show current month through end of next year (up to 2 years ahead)
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  const months = Array.from({ length: 12 - currentMonth }, (_, i) => {
-    const idx = i + currentMonth;
-    const date = new Date(currentYear, idx, 1);
+  const months = Array.from({ length: (12 - currentMonth) + 12 }, (_, i) => {
+    const totalMonthIndex = currentMonth + i;
+    const year = currentYear + Math.floor(totalMonthIndex / 12);
+    const month = totalMonthIndex % 12;
+    const date = new Date(year, month, 1);
     return {
       label: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
-      monthIndex: idx,
+      month,
+      year,
       gifts: gifts.filter(g => {
         const d = new Date(g.deliveryDate);
-        return d.getMonth() === idx && d.getFullYear() === currentYear;
+        return d.getMonth() === month && d.getFullYear() === year;
       }),
     };
   });
@@ -70,7 +73,7 @@ export default function ScheduleGifts() {
           ) : (
             <div className="space-y-6">
               {months.map((month, mi) => (
-                <div key={month.monthIndex} className="animate-fadeIn" style={{ animationDelay: `${mi * 60}ms`, animationFillMode: 'both' }}>
+                <div key={`${month.year}-${month.month}`} className="animate-fadeIn" style={{ animationDelay: `${mi * 60}ms`, animationFillMode: 'both' }}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-3 h-3 rounded-full ${month.gifts.length > 0 ? 'bg-[#F5C518]' : 'bg-gray-200 dark:bg-gray-700'}`} />
                     <h2 className={`text-sm font-bold uppercase tracking-wider ${month.gifts.length > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
@@ -106,7 +109,10 @@ export default function ScheduleGifts() {
                     </div>
                   ) : (
                     <div className="ml-6">
-                      <Link to="/send?type=SCHEDULED" className="text-sm text-gray-400 hover:text-[#F5C518] transition-colors">
+                      <Link
+                        to={`/send?type=SCHEDULED&month=${month.month}&year=${month.year}`}
+                        className="text-sm text-gray-400 hover:text-[#F5C518] transition-colors"
+                      >
                         + Schedule a gift for {month.label.split(' ')[0]}
                       </Link>
                     </div>

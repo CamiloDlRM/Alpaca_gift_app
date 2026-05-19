@@ -206,10 +206,22 @@ export default function SendGift() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form state — initialize from ?type= URL param (SCHEDULED link from schedule view)
+  // Form state — initialize from URL params (from schedule view)
   const [giftType, setGiftType] = useState<GiftType>(() =>
     searchParams.get('type') === 'SCHEDULED' ? 'SCHEDULED' : 'INSTANT'
   );
+
+  // If coming from schedule view with a specific month/year, lock the date picker to that month
+  const lockedMonth = searchParams.get('month') !== null ? parseInt(searchParams.get('month')!) : null;
+  const lockedYear = searchParams.get('year') !== null ? parseInt(searchParams.get('year')!) : null;
+  const hasLockedMonth = lockedMonth !== null && lockedYear !== null;
+  const lockedMinDate = hasLockedMonth
+    ? new Date(lockedYear!, lockedMonth!, 1).toISOString().split('T')[0]
+    : new Date().toISOString().split('T')[0];
+  const lockedMaxDate = hasLockedMonth
+    ? new Date(lockedYear!, lockedMonth! + 1, 0).toISOString().split('T')[0]
+    : undefined;
+
   const [recipientName, setRecipientName] = useState('');
   const [occasion, setOccasion] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -519,9 +531,10 @@ export default function SendGift() {
                 />
                 {giftType === 'SCHEDULED' && (
                   <Input
-                    label="Delivery date"
+                    label={hasLockedMonth ? `Delivery date (${new Date(lockedYear!, lockedMonth!).toLocaleString('default', { month: 'long', year: 'numeric' })})` : 'Delivery date'}
                     type="date"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={lockedMinDate}
+                    max={lockedMaxDate}
                     value={deliveryDate}
                     onChange={(e) => setDeliveryDate(e.target.value)}
                     required
