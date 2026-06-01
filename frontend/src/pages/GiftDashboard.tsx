@@ -3,6 +3,102 @@ import { useParams } from 'react-router-dom';
 import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import apiClient from '../api/client';
+
+// Inline sender rating card — lets the gift sender rate the ETF as SENDER
+function SenderRatingCard({ symbol }: { symbol: string }) {
+  const [hover, setHover] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    apiClient
+      .get<{ userSenderRating: { stars: number } | null }>(`/etf-ratings/${symbol}`)
+      .then(res => {
+        const r = res.data.userSenderRating;
+        if (r) { setRating(r.stars); setSaved(true); }
+      })
+      .catch(() => {});
+  }, [symbol]);
+
+  const handleRate = async (stars: number) => {
+    if (saving) return;
+    setRating(stars);
+    setSaving(true);
+    try {
+      await apiClient.post(`/etf-ratings/${symbol}`, { stars, role: 'SENDER' });
+      setSaved(true);
+    } catch { /* non-blocking */ }
+    finally { setSaving(false); }
+  };
+
+  const display = hover || rating;
+
+  return (
+    <Card className="p-6 mb-6">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-9 h-9 rounded-full bg-[#F5C518]/15 flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 text-[#F5C518]" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 className="font-bold text-gray-900 dark:text-white text-base">Rate {symbol} as a gift</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            Your rating as the sender · helps others choose great ETF gifts
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="flex gap-1" role="radiogroup" aria-label={`Rate ${symbol}`}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <button
+              key={i}
+              type="button"
+              role="radio"
+              aria-checked={rating === i}
+              aria-label={`${i} star${i === 1 ? '' : 's'}`}
+              disabled={saving}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => handleRate(i)}
+              className={`transition-all duration-100 hover:scale-125 active:scale-95 disabled:cursor-not-allowed ${
+                i <= display ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'
+              }`}
+            >
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            </button>
+          ))}
+        </div>
+        <div className="ml-2 text-sm min-w-0">
+          {saved && rating > 0 && (
+            <span className="text-gray-600 dark:text-gray-300 font-medium">
+              {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]} · {rating}/5
+            </span>
+          )}
+          {!saved && (
+            <span className="text-gray-400 dark:text-gray-500 text-xs">Tap to rate instantly</span>
+          )}
+          {saved && saving && (
+            <span className="text-gray-400 text-xs">Saving…</span>
+          )}
+        </div>
+      </div>
+
+      {saved && !saving && (
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          Rating saved — you can update it anytime
+        </div>
+      )}
+    </Card>
+  );
+}
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PortfolioData {
@@ -201,6 +297,9 @@ export default function GiftDashboard() {
             </div>
           </div>
         </Card>
+
+        {/* Sender rating */}
+        <SenderRatingCard symbol={portfolio.symbol} />
 
         {/* Disclaimer */}
         <div className="text-xs text-gray-400 text-center leading-relaxed max-w-2xl mx-auto">

@@ -296,6 +296,9 @@ export default function SendGift() {
   const [etfPage, setEtfPage] = useState(0);
   const ETF_PAGE_SIZE = 6;
 
+  // ETF ratings map (symbol → {avg, total})
+  const [etfRatingsMap, setEtfRatingsMap] = useState<Record<string, { avg: number; total: number }>>({});
+
   // Step state
   const [step, setStep] = useState<1 | 2>(1);
   const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
@@ -303,10 +306,44 @@ export default function SendGift() {
   const [createdGiftId, setCreatedGiftId] = useState<string>('');
   const [claimLink, setClaimLink] = useState<string>('');
 
+  // Sender quick-rating on success screen
+  const [senderRating, setSenderRating] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingHover, setRatingHover] = useState(0);
+
   const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
 
   useEffect(() => { setEtfPage(0); }, [selectedCategory]);
+
+  // Fetch community ratings for selected category ETFs
+  useEffect(() => {
+    if (!selectedCategory) return;
+    const controller = new AbortController();
+    apiClient
+      .get<{ topETFs: Array<{ symbol: string; averageRating: number; totalRatings: number }> }>(
+        `/rankings/etfs/${encodeURIComponent(selectedCategory)}`,
+        { signal: controller.signal }
+      )
+      .then(res => {
+        const map: Record<string, { avg: number; total: number }> = {};
+        for (const e of res.data.topETFs ?? []) {
+          map[e.symbol] = { avg: e.averageRating, total: e.totalRatings };
+        }
+        setEtfRatingsMap(map);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [selectedCategory]);
+
+  const handleSenderRating = async (stars: number) => {
+    if (!etfSymbol || ratingSubmitted) return;
+    setSenderRating(stars);
+    setRatingSubmitted(true);
+    try {
+      await apiClient.post(`/etf-ratings/${etfSymbol}`, { stars, role: 'SENDER' });
+    } catch { /* non-blocking */ }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -406,6 +443,43 @@ export default function SendGift() {
             >
               Copy link
             </Button>
+
+            {/* Quick sender rating */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
+              {ratingSubmitted ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  Thanks for rating <strong>{etfSymbol}</strong>!
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    How good was <span className="font-semibold text-gray-700 dark:text-gray-200">{etfSymbol}</span> as a gift choice?
+                  </p>
+                  <div className="flex items-center justify-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseEnter={() => setRatingHover(i)}
+                        onMouseLeave={() => setRatingHover(0)}
+                        onClick={() => handleSenderRating(i)}
+                        aria-label={`Rate ${i} star${i === 1 ? '' : 's'}`}
+                        className={`transition-all duration-100 hover:scale-125 active:scale-95 ${
+                          i <= (ratingHover || senderRating) ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'
+                        }`}
+                      >
+                        <svg className="w-9 h-9" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tap a star — no comment needed</p>
+                </div>
+              )}
+            </div>
+
             <Button className="w-full" onClick={() => navigate('/dashboard')}>
               View my gifts
             </Button>
@@ -608,12 +682,31 @@ export default function SendGift() {
                                 )}
                                 <div className="font-bold text-gray-900 dark:text-white text-sm pr-5">{etf.symbol}</div>
                                 <div className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 mt-0.5 mb-2 leading-tight">{etf.name}</div>
-                                <div className="mt-auto flex items-end justify-between gap-1">
-                                  <span className="font-semibold text-gray-900 dark:text-white text-sm">${etf.price.toFixed(2)}</span>
-                                  <span className={`text-xs font-semibold ${etf.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                                    {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent.toFixed(2)}%
-                                  </span>
-                                </div>
+                                {(() => {
+                                  const r = etfRatingsMap[etf.symbol];
+                                  return r && r.total > 0 ? (
+                                    <div className="mt-auto flex items-center gap-1.5">
+                                      <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(i => (
+                                          <svg key={i} className={`w-3 h-3 ${i <= Math.round(r.avg) ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                          </svg>
+                                        ))}
+                                      </div>
+                                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.avg.toFixed(1)}</span>
+                                      <span className="text-[10px] text-gray-400">({r.total})</span>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-auto flex items-center gap-0.5">
+                                      {[1,2,3,4,5].map(i => (
+                                        <svg key={i} className="w-3 h-3 text-gray-200 dark:text-gray-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                      ))}
+                                      <span className="text-[10px] text-gray-300 dark:text-gray-600 ml-1">New</span>
+                                    </div>
+                                  );
+                                })()}
                               </button>
                             );
                           })}
