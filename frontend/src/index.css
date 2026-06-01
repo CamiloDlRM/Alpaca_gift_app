@@ -79,3 +79,58 @@ body {
   background-size: 200% 200%;
   animation: gradient-sweep 3s ease infinite;
 }
+
+/* Landing chart animations */
+@keyframes draw-chart-line {
+  from { stroke-dashoffset: 560; }
+  to   { stroke-dashoffset: 0;   }
+}
+.animate-draw-chart {
+  stroke-dasharray: 560;
+  stroke-dashoffset: 560;
+  animation: draw-chart-line 2.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes fill-chart {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fill-chart {
+  opacity: 0;
+  animation: fill-chart 1.2s ease-out 2s forwards;
+}
+
+@keyframes live-dot {
+  0%, 100% { r: 4; opacity: 1; }
+  50%       { r: 7; opacity: 0.6; }
+}
+.animate-live-dot {
+  animation: live-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker-scroll 22s linear infinite;
+}
+
+@keyframes float-card {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+.animate-float-card {
+  animation: float-card 3s ease-in-out infinite;
+}
+.animate-float-card-slow {
+  animation: float-card 4s ease-in-out 1s infinite;
+}
+
+@keyframes count-up-flash {
+  0%   { color: #F5C518; }
+  100% { color: inherit; }
+}
+.animate-count-flash {
+  animation: count-up-flash 0.15s ease-out forwards;
+}
