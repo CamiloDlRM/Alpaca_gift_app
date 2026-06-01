@@ -10,7 +10,7 @@ interface CategoryETFsResponse {
   topETFs: ETFRanking[];
 }
 
-const ETF_TABS = ['All', 'Large Cap', 'Technology', 'Small Cap', 'Bonds', 'International'] as const;
+const ETF_TABS = ['All', 'Leading Companies', 'Innovation & Technology', 'Emerging Growth', 'Stability & Income', 'Worldwide Growth'] as const;
 type ETFTab = (typeof ETF_TABS)[number];
 
 const MEDALS = ['🥇', '🥈', '🥉'];

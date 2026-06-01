@@ -662,7 +662,7 @@ export default function SendGift() {
               />
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Investment category</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">WealthGift category</label>
                 <select
                   className="rounded-lg border border-gray-200 dark:border-gray-600 py-3 px-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent bg-white dark:bg-gray-700"
                   value={selectedCategory}

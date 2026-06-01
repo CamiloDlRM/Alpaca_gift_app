@@ -34,7 +34,7 @@ const FAQS = [
   },
   {
     q: 'What ETFs are available?',
-    a: 'We currently offer 9 ETFs: VOO, VTI (Large Cap), QQQ, VGT (Technology), IWM (Small Cap), AGG, BND (Bonds), VEA, VWO (International). Visit the Education Center to learn about each one.',
+    a: 'We currently offer 100 ETFs across 5 WealthGift categories: Leading Companies, Innovation & Technology, Emerging Growth, Stability & Income, and Worldwide Growth. Visit the Education Center to learn about each one.',
   },
 ];
 

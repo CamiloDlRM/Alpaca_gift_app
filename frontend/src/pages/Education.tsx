@@ -20,7 +20,7 @@ const ARTICLES = [
     id: 3, emoji: '🛡️', category: 'Strategy',
     title: 'Diversification 101',
     summary: 'Do not put all your eggs in one basket. Diversification reduces risk without sacrificing returns.',
-    content: `Diversification means spreading your investment across different assets so that if one falls, the others protect you.\n\n**Types of diversification:**\n• **By sector:** Technology (QQQ), Bonds (AGG), International (VEA)\n• **By size:** Large companies (VOO), Small companies (IWM)\n• **By geography:** USA (VTI), Emerging markets (VWO)\n\nA typical diversified portfolio for a long-term gift might be 80% equities (VOO) + 20% bonds (BND).`,
+    content: `Diversification means spreading your investment across different assets so that if one falls, the others protect you.\n\n**Types of diversification:**\n• **By sector:** Innovation & Technology (QQQ), Stability & Income (AGG), Worldwide Growth (VEA)\n• **By size:** Leading Companies (VOO), Emerging Growth (IWM)\n• **By geography:** USA (VTI), Emerging markets (VWO)\n\nA typical diversified portfolio for a long-term gift might be 80% equities (VOO) + 20% stability (BND).`,
   },
   {
     id: 4, emoji: '📅', category: 'Strategy',
@@ -38,7 +38,7 @@ const ARTICLES = [
     id: 6, emoji: '🔢', category: 'Available ETFs',
     title: 'Guide to WealthGift ETFs',
     summary: 'Get to know each of the 9 available ETFs: what they contain, their risk level, and who they are ideal for.',
-    content: `**Large Cap Equities (low volatility, long term):**\n• VOO — S&P 500: The 500 largest U.S. companies\n• VTI — Total Market: The entire U.S. stock market (~4,000 companies)\n\n**Technology (higher growth, higher risk):**\n• QQQ — Nasdaq 100: Apple, Microsoft, Nvidia, Google...\n• VGT — Technology only: More concentrated than QQQ\n\n**Others:**\n• IWM — Small companies: Higher potential, more volatility\n• AGG / BND — Bonds: Low risk, for conservative profiles\n• VEA — Developed markets: Europe, Japan, Australia\n• VWO — Emerging markets: China, India, Brazil`,
+    content: `**Leading Companies (low volatility, long term):**\n• VOO — S&P 500: The 500 largest U.S. companies\n• VTI — Total Market: The entire U.S. stock market (~4,000 companies)\n\n**Innovation & Technology (higher growth, higher risk):**\n• QQQ — Nasdaq 100: Apple, Microsoft, Nvidia, Google...\n• VGT — Technology only: More concentrated than QQQ\n\n**Emerging Growth:**\n• IWM — Small companies: Higher potential, more volatility\n\n**Stability & Income:**\n• AGG / BND — Low risk, for conservative profiles\n\n**Worldwide Growth:**\n• VEA — Developed markets: Europe, Japan, Australia\n• VWO — Emerging markets: China, India, Brazil`,
   },
 ];
 

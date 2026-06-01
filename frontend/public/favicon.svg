@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Yellow circle background -->
+  <circle cx="32" cy="32" r="32" fill="#F5C518"/>
+  <!-- WealthGift chart/trend line — same path used throughout the app -->
+  <path
+    d="M10 34 L18 24 L26 36 L38 16 L54 28"
+    stroke="white"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>
