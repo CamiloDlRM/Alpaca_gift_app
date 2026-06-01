@@ -234,7 +234,7 @@ export default function GiftDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Nav />
+        <Nav backTo="/dashboard" backLabel="My Gifts" />
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
             <span className="sr-only">Loading</span>
@@ -247,7 +247,7 @@ export default function GiftDashboard() {
   if (error || !portfolio) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Nav />
+        <Nav backTo="/dashboard" backLabel="My Gifts" />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Portfolio Unavailable</h1>
           <p className="text-gray-500">{error || 'Could not load portfolio data.'}</p>
@@ -272,7 +272,7 @@ export default function GiftDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Nav />
+      <Nav backTo="/dashboard" backLabel="My Gifts" />
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Your Gift is Growing</h1>
 
