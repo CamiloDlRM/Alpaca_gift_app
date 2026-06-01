@@ -8,31 +8,42 @@ import apiClient from '../api/client';
 function SenderRatingCard({ symbol }: { symbol: string }) {
   const [hover, setHover] = useState(0);
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     apiClient
-      .get<{ userSenderRating: { stars: number } | null }>(`/etf-ratings/${symbol}`)
+      .get<{ userSenderRating: { stars: number; comment: string | null } | null }>(`/etf-ratings/${symbol}`)
       .then(res => {
         const r = res.data.userSenderRating;
-        if (r) { setRating(r.stars); setSaved(true); }
+        if (r) {
+          setRating(r.stars);
+          setComment(r.comment ?? '');
+          setSaved(true);
+        }
       })
       .catch(() => {});
   }, [symbol]);
 
-  const handleRate = async (stars: number) => {
-    if (saving) return;
-    setRating(stars);
+  const handleSubmit = async () => {
+    if (rating < 1 || saving) return;
     setSaving(true);
     try {
-      await apiClient.post(`/etf-ratings/${symbol}`, { stars, role: 'SENDER' });
+      await apiClient.post(`/etf-ratings/${symbol}`, {
+        stars: rating,
+        role: 'SENDER',
+        comment: comment.trim() || undefined,
+      });
       setSaved(true);
+      setEditing(false);
     } catch { /* non-blocking */ }
     finally { setSaving(false); }
   };
 
   const display = hover || rating;
+  const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'];
 
   return (
     <Card className="p-6 mb-6">
@@ -42,58 +53,115 @@ function SenderRatingCard({ symbol }: { symbol: string }) {
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
           </svg>
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h2 className="font-bold text-gray-900 dark:text-white text-base">Rate {symbol} as a gift</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
             Your rating as the sender · helps others choose great ETF gifts
           </p>
         </div>
+        {saved && !editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs text-[#F5C518] font-semibold hover:underline flex-shrink-0"
+          >
+            Edit
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex gap-1" role="radiogroup" aria-label={`Rate ${symbol}`}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <button
-              key={i}
-              type="button"
-              role="radio"
-              aria-checked={rating === i}
-              aria-label={`${i} star${i === 1 ? '' : 's'}`}
+      {/* Saved state (not editing) */}
+      {saved && !editing ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <svg key={i} className={`w-6 h-6 ${i <= rating ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+              ))}
+            </div>
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{labels[rating]}</span>
+          </div>
+          {comment && (
+            <p className="text-sm text-gray-600 dark:text-gray-300 italic border-l-2 border-[#F5C518]/40 pl-3">
+              "{comment}"
+            </p>
+          )}
+          <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            Saved · tap Edit to update
+          </div>
+        </div>
+      ) : (
+        /* Rating form */
+        <div className="space-y-3">
+          {/* Stars */}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1" role="radiogroup" aria-label={`Rate ${symbol}`}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === i}
+                  aria-label={`${i} star${i === 1 ? '' : 's'}`}
+                  disabled={saving}
+                  onMouseEnter={() => setHover(i)}
+                  onMouseLeave={() => setHover(0)}
+                  onClick={() => setRating(i)}
+                  className={`transition-all duration-100 hover:scale-125 active:scale-95 disabled:cursor-not-allowed ${
+                    i <= display ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'
+                  }`}
+                >
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                </button>
+              ))}
+            </div>
+            {display > 0 && (
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{labels[display]}</span>
+            )}
+          </div>
+
+          {/* Comment */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Comment <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 py-2.5 px-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
+              rows={3}
+              maxLength={500}
+              placeholder="What made this ETF a great (or not so great) gift?"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               disabled={saving}
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(0)}
-              onClick={() => handleRate(i)}
-              className={`transition-all duration-100 hover:scale-125 active:scale-95 disabled:cursor-not-allowed ${
-                i <= display ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'
-              }`}
-            >
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-            </button>
-          ))}
-        </div>
-        <div className="ml-2 text-sm min-w-0">
-          {saved && rating > 0 && (
-            <span className="text-gray-600 dark:text-gray-300 font-medium">
-              {['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]} · {rating}/5
-            </span>
-          )}
-          {!saved && (
-            <span className="text-gray-400 dark:text-gray-500 text-xs">Tap to rate instantly</span>
-          )}
-          {saved && saving && (
-            <span className="text-gray-400 text-xs">Saving…</span>
-          )}
-        </div>
-      </div>
+            />
+          </div>
 
-      {saved && !saving && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-          </svg>
-          Rating saved — you can update it anytime
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={rating < 1 || saving}
+              className="flex-1 py-2 rounded-lg bg-[#F5C518] hover:bg-yellow-400 text-black text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving…' : saved ? 'Update rating' : 'Save rating'}
+            </button>
+            {editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       )}
     </Card>

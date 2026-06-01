@@ -306,9 +306,11 @@ export default function SendGift() {
   const [createdGiftId, setCreatedGiftId] = useState<string>('');
   const [claimLink, setClaimLink] = useState<string>('');
 
-  // Sender quick-rating on success screen
+  // Sender rating on success screen
   const [senderRating, setSenderRating] = useState(0);
+  const [senderComment, setSenderComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingHover, setRatingHover] = useState(0);
 
   const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
@@ -336,13 +338,18 @@ export default function SendGift() {
     return () => controller.abort();
   }, [selectedCategory]);
 
-  const handleSenderRating = async (stars: number) => {
-    if (!etfSymbol || ratingSubmitted) return;
-    setSenderRating(stars);
-    setRatingSubmitted(true);
+  const handleSenderRating = async () => {
+    if (!etfSymbol || senderRating < 1 || ratingSubmitting) return;
+    setRatingSubmitting(true);
     try {
-      await apiClient.post(`/etf-ratings/${etfSymbol}`, { stars, role: 'SENDER' });
+      await apiClient.post(`/etf-ratings/${etfSymbol}`, {
+        stars: senderRating,
+        role: 'SENDER',
+        comment: senderComment.trim() || undefined,
+      });
+      setRatingSubmitted(true);
     } catch { /* non-blocking */ }
+    finally { setRatingSubmitting(false); }
   };
 
   const fetchData = useCallback(async () => {
@@ -444,18 +451,20 @@ export default function SendGift() {
               Copy link
             </Button>
 
-            {/* Quick sender rating */}
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4">
+            {/* Sender rating */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mb-4 text-left">
               {ratingSubmitted ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  Thanks for rating <strong>{etfSymbol}</strong>!
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium justify-center">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  Rating for <strong className="mx-1">{etfSymbol}</strong> saved — thanks!
                 </div>
               ) : (
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    How good was <span className="font-semibold text-gray-700 dark:text-gray-200">{etfSymbol}</span> as a gift choice?
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
+                    How good was <span className="text-[#b8960c] font-bold">{etfSymbol}</span> as a gift choice?
                   </p>
+
+                  {/* Stars */}
                   <div className="flex items-center justify-center gap-1">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <button
@@ -463,8 +472,8 @@ export default function SendGift() {
                         type="button"
                         onMouseEnter={() => setRatingHover(i)}
                         onMouseLeave={() => setRatingHover(0)}
-                        onClick={() => handleSenderRating(i)}
-                        aria-label={`Rate ${i} star${i === 1 ? '' : 's'}`}
+                        onClick={() => setSenderRating(i)}
+                        aria-label={`${i} star${i === 1 ? '' : 's'}`}
                         className={`transition-all duration-100 hover:scale-125 active:scale-95 ${
                           i <= (ratingHover || senderRating) ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'
                         }`}
@@ -475,7 +484,41 @@ export default function SendGift() {
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tap a star — no comment needed</p>
+
+                  {/* Comment textarea — slides in once stars selected */}
+                  {senderRating > 0 && (
+                    <div className="animate-fadeIn space-y-2">
+                      <textarea
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 py-2.5 px-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent resize-none"
+                        rows={2}
+                        maxLength={500}
+                        placeholder="Share your experience… (optional)"
+                        value={senderComment}
+                        onChange={(e) => setSenderComment(e.target.value)}
+                        disabled={ratingSubmitting}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSenderRating}
+                        disabled={ratingSubmitting}
+                        className="w-full py-2 rounded-lg bg-[#F5C518] hover:bg-yellow-400 text-black text-sm font-bold transition-colors disabled:opacity-60"
+                      >
+                        {ratingSubmitting ? 'Saving…' : 'Submit rating'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSenderRating(0); setSenderComment(''); }}
+                        className="w-full text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {senderRating === 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 text-center">Select stars to leave a rating</p>
+                  )}
                 </div>
               )}
             </div>
