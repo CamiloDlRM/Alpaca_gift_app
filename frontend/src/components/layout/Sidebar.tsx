@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Logo } from '../ui/Logo';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
 
@@ -17,35 +17,52 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const [open, setOpen] = useState(false);
   const { logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleTheme } = useThemeStore();
 
-  return (
-    <aside className="w-64 bg-[#1a2235] min-h-screen flex-col px-4 py-6 hidden lg:flex" role="navigation" aria-label="Sidebar navigation">
-      <div className="mb-10 px-2">
+  const close = () => setOpen(false);
+
+  const SidebarContent = (
+    <>
+      {/* Logo + close button row */}
+      <div className="mb-8 px-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-[#F5C518] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-[#F5C518] flex items-center justify-center flex-shrink-0">
             <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" aria-hidden="true">
               <path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <span className="font-bold text-white text-xl">WealthGift</span>
         </div>
+        {/* Close button — only on mobile */}
+        <button
+          onClick={close}
+          className="lg:hidden w-8 h-8 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors"
+          aria-label="Close navigation"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-      <nav className="flex flex-col gap-1 flex-1">
+
+      {/* Nav links */}
+      <nav className="flex flex-col gap-1 flex-1" aria-label="Main navigation">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to));
           return (
             <Link
               key={item.label}
               to={item.to}
+              onClick={close}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
                 isActive ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
               }`}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
               </svg>
               <span>{item.label}</span>
@@ -72,8 +89,9 @@ export function Sidebar() {
         <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
       </button>
 
+      {/* Log out */}
       <button
-        onClick={() => { logout(); navigate('/'); }}
+        onClick={() => { close(); logout(); navigate('/'); }}
         className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-colors text-sm font-medium"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -81,6 +99,54 @@ export function Sidebar() {
         </svg>
         <span>Log Out</span>
       </button>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Desktop sidebar (unchanged) ── */}
+      <aside
+        className="w-64 bg-[#1a2235] min-h-screen flex-col px-4 py-6 hidden lg:flex flex-shrink-0"
+        role="navigation"
+        aria-label="Sidebar navigation"
+      >
+        {SidebarContent}
+      </aside>
+
+      {/* ── Mobile: dark backdrop ── */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={close}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Mobile: slide-in drawer ── */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-72 bg-[#1a2235] flex flex-col px-4 py-6 z-50 lg:hidden
+          transform transition-transform duration-300 ease-in-out shadow-2xl
+          ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        role="navigation"
+        aria-label="Mobile navigation"
+        aria-hidden={!open}
+      >
+        {SidebarContent}
+      </aside>
+
+      {/* ── Mobile: floating menu button (bottom-right, thumb zone) ── */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-5 right-5 z-50 lg:hidden w-14 h-14 bg-[#1a2235] rounded-full shadow-xl flex items-center justify-center border border-white/10 active:scale-95 transition-transform"
+          aria-label="Open navigation menu"
+        >
+          {/* Hamburger icon */}
+          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
+    </>
   );
 }
