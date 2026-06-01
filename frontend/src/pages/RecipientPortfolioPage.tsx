@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Card } from '../components/ui/Card';
@@ -158,6 +158,166 @@ function PortfolioValueChart({ totalInvested, totalCurrentValue }: { totalInvest
   );
 }
 
+// Shows either "my $" (dollar-scaled) or "ETF price" (raw) for one position
+function PositionChart({
+  etfSymbol,
+  totalCurrentValue,
+}: {
+  etfSymbol: string;
+  totalCurrentValue: number;
+}) {
+  const [period, setPeriod] = useState<Period>('1M');
+  const [tab, setTab] = useState<'money' | 'price'>('money');
+  const [raw, setRaw] = useState<HistoryPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    apiClient
+      .get<{ symbol: string; period: string; data: HistoryPoint[] }>(
+        `/etfs/${etfSymbol}/history`,
+        { params: { period }, signal: controller.signal }
+      )
+      .then(res => setRaw(res.data.data ?? []))
+      .catch(() => setRaw([]))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [etfSymbol, period]);
+
+  const chartData = useMemo(() => {
+    if (!raw.length) return [];
+    if (tab === 'price') return raw;
+    const lastPrice = raw[raw.length - 1].value;
+    if (!lastPrice) return [];
+    return raw.map(p => ({
+      date: p.date,
+      value: Number(((p.value / lastPrice) * totalCurrentValue).toFixed(2)),
+    }));
+  }, [raw, tab, totalCurrentValue]);
+
+  const isPositive = chartData.length > 1
+    ? chartData[chartData.length - 1].value >= chartData[0].value
+    : true;
+  const lineColor = isPositive ? '#22c55e' : '#ef4444';
+
+  return (
+    <div className="px-5 pt-4 pb-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/40">
+      {/* View toggle */}
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setTab('money')}
+            className={`px-3 py-1.5 transition-colors ${
+              tab === 'money'
+                ? 'bg-[#F5C518] text-black'
+                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            My investment ($)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('price')}
+            className={`px-3 py-1.5 transition-colors ${
+              tab === 'price'
+                ? 'bg-[#F5C518] text-black'
+                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            {etfSymbol} price
+          </button>
+        </div>
+
+        {/* Period pills */}
+        <div className="flex gap-1">
+          {PERIODS.map(p => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPeriod(p)}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                period === p
+                  ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900'
+                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="h-44">
+        {loading ? (
+          <div className="h-full rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        ) : chartData.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-gray-400 text-sm">No data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
+              <defs>
+                <linearGradient id={`pos-grad-${etfSymbol}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={lineColor} stopOpacity={0.2} />
+                  <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                tickFormatter={(v: string) => { const d = new Date(v); return `${d.getMonth()+1}/${d.getDate()}`; }}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                tickFormatter={(v: number) => `$${v % 1 === 0 ? v : v.toFixed(tab === 'money' ? 0 : 2)}`}
+                domain={['dataMin - 1', 'dataMax + 1']}
+                width={50}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: 12,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                }}
+                formatter={(v: number) => [
+                  `$${v.toFixed(2)}`,
+                  tab === 'money' ? 'My investment' : `${etfSymbol} price`,
+                ]}
+                labelFormatter={(l: string) => new Date(l).toLocaleDateString()}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={lineColor}
+                strokeWidth={2}
+                fill={`url(#pos-grad-${etfSymbol})`}
+                dot={false}
+                activeDot={{ r: 3, fill: lineColor }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Contextual label */}
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
+        {tab === 'money'
+          ? `How your $${totalCurrentValue.toFixed(2)} in ${etfSymbol} has moved over this period`
+          : `${etfSymbol} share price — not your investment value`}
+      </p>
+    </div>
+  );
+}
+
 function ChangeTag({ value, showSign = true }: { value: number; showSign?: boolean }) {
   const pos = value >= 0;
   return (
@@ -291,6 +451,14 @@ function PositionCard({ pos, onSold }: { pos: ConsolidatedPositionItem; onSold: 
             );
           })}
         </div>
+      )}
+
+      {/* Per-position chart — visible when expanded */}
+      {expanded && (
+        <PositionChart
+          etfSymbol={pos.etfSymbol}
+          totalCurrentValue={pos.totalCurrentValue}
+        />
       )}
 
       {/* Review section — visible when expanded */}
