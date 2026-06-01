@@ -56,3 +56,16 @@ Plantilla HTML con fondo oscuro y branding WealthGift, botón "Verify my email" 
 Se reutilizó la clase `ForbiddenError` ya existente en `src/shared/errors/http-errors.ts` (no fue necesario crearla). El endpoint `resend-verification` no revela si el email existe: devuelve siempre el mismo mensaje. El token de verificación se regenera en cada reenvío. La ruta `verify-email` usa query param porque el middleware `validate` sólo valida `req.body`; la validación del token se hace dentro del handler/servicio.
 
 ---
+
+## [2026-06-01 15:42] - [MODIFICACIÓN]
+
+**Acción**: Nuevo endpoint de historial consolidado del portafolio del destinatario
+**Archivos afectados**:
+- `src/modules/recipient/recipient.service.ts` - Añadida función `getConsolidatedPortfolioHistory(userEmail, period)`
+- `src/modules/recipient/recipient.controller.ts` - Añadido `getConsolidatedHistoryHandler`
+- `src/modules/recipient/recipient.routes.ts` - Añadida ruta `GET /portfolio/consolidated/history`
+
+**Detalles**:
+Nuevo endpoint `GET /api/recipient/portfolio/consolidated/history?period=1M` que devuelve `{ period, data: [{ date, value }], totalInvested, totalCurrentValue }`. La serie `data` es el historial del portafolio escalado a dólares: para cada punto de la línea de tiempo (tomada del primer símbolo con historial) se suma, por cada posición activa, `(precio[i] / últimoPrecio) * totalCurrentValue` de esa posición. Sólo se consideran posiciones activas (donde NO todos los regalos están redimidos). Los precios se obtienen en paralelo vía `fetchPriceHistory` con captura de errores por símbolo. La ruta se registró ANTES de `/portfolio/consolidated` para evitar conflictos de matching. `period` se valida contra `['1D','1W','1M','1Y','ALL']` con default `1M`. Valores redondeados a 2 decimales.
+
+---

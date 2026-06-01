@@ -4,6 +4,7 @@ import { Sidebar } from '../components/layout/Sidebar';
 import { Card } from '../components/ui/Card';
 import { ETFReviewForm } from '../components/ETFReviewForm';
 import apiClient from '../api/client';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ConsolidatedGiftItem {
   giftId: string;
@@ -35,6 +36,126 @@ interface ConsolidatedPortfolio {
   totalGainLoss: number;
   totalGainLossPercent: number;
   positions: ConsolidatedPositionItem[];
+}
+
+const PERIODS = ['1D', '1W', '1M', '1Y', 'ALL'] as const;
+type Period = (typeof PERIODS)[number];
+
+interface HistoryPoint { date: string; value: number; }
+interface PortfolioHistoryResponse {
+  period: string;
+  data: HistoryPoint[];
+  totalInvested: number;
+  totalCurrentValue: number;
+}
+
+function PortfolioValueChart({ totalInvested, totalCurrentValue }: { totalInvested: number; totalCurrentValue: number }) {
+  const [period, setPeriod] = useState<Period>('1M');
+  const [chartData, setChartData] = useState<HistoryPoint[]>([]);
+  const [chartLoading, setChartLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setChartLoading(true);
+    apiClient
+      .get<PortfolioHistoryResponse>('/recipient/portfolio/consolidated/history', {
+        params: { period },
+        signal: controller.signal,
+      })
+      .then(res => setChartData(res.data.data))
+      .catch(() => setChartData([]))
+      .finally(() => setChartLoading(false));
+    return () => controller.abort();
+  }, [period]);
+
+  const isPositive = totalCurrentValue >= totalInvested;
+  const strokeColor = isPositive ? '#22c55e' : '#ef4444';
+  const gradientId = 'portfolioGradient';
+
+  return (
+    <div className="mt-6">
+      {/* Period tabs */}
+      <div className="flex gap-2 mb-4" role="tablist" aria-label="Time period">
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPeriod(p)}
+            role="tab"
+            aria-selected={period === p}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              period === p
+                ? 'bg-[#F5C518] text-black'
+                : 'bg-white/10 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <div className="h-52">
+        {chartLoading ? (
+          <div className="h-full bg-white/5 rounded-xl animate-pulse" />
+        ) : chartData.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+            No historical data available
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={strokeColor} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={strokeColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tickFormatter={(val: string) => {
+                  const d = new Date(val);
+                  return `${d.getMonth() + 1}/${d.getDate()}`;
+                }}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                tickFormatter={(val: number) => `$${val % 1 === 0 ? val : val.toFixed(0)}`}
+                domain={['dataMin - 2', 'dataMax + 2']}
+                width={55}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e2d45',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  fontSize: 13,
+                }}
+                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Portfolio value']}
+                labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={strokeColor}
+                strokeWidth={2}
+                fill={`url(#${gradientId})`}
+                dot={false}
+                activeDot={{ r: 4, fill: strokeColor }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ChangeTag({ value, showSign = true }: { value: number; showSign?: boolean }) {
@@ -264,16 +385,18 @@ export default function RecipientPortfolioPage() {
 
           {!loading && data && (
             <>
-              {/* Hero totals — plain div to avoid Card's bg-white conflict */}
+              {/* Hero totals + portfolio chart */}
               <div className="p-6 mb-6 bg-[#1a2235] text-white rounded-xl shadow-sm">
-                <div className="grid sm:grid-cols-3 gap-6">
+                <div className="grid sm:grid-cols-3 gap-6 mb-2">
                   <div>
                     <div className="text-sm text-gray-400 mb-1">Total invested</div>
                     <div className="text-3xl font-bold text-white">${data.totalInvested.toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-400 mb-1">Current value</div>
-                    <div className="text-3xl font-bold text-white">${data.totalCurrentValue.toFixed(2)}</div>
+                    <div className={`text-3xl font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                      ${data.totalCurrentValue.toFixed(2)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-400 mb-1">Total gain / loss</div>
@@ -285,6 +408,14 @@ export default function RecipientPortfolioPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Portfolio value chart — shows how total portfolio $$$ has moved */}
+                {hasPositions && (
+                  <PortfolioValueChart
+                    totalInvested={data.totalInvested}
+                    totalCurrentValue={data.totalCurrentValue}
+                  />
+                )}
               </div>
 
               {!hasPositions ? (

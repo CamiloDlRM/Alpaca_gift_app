@@ -258,6 +258,18 @@ export default function GiftDashboard() {
 
   const isPositive = portfolio.gainLoss >= 0;
 
+  // Scale raw ETF price history so the last point = actual portfolio dollar value.
+  // This converts e.g. "VOO went from $440 to $445" into "your $200 went to $202.27".
+  const scaledHistory = (() => {
+    if (!history.length) return [];
+    const lastPrice = history[history.length - 1].value;
+    if (!lastPrice) return [];
+    return history.map(p => ({
+      date: p.date,
+      value: Number(((p.value / lastPrice) * portfolio.totalValue).toFixed(2)),
+    }));
+  })();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Nav />
@@ -295,10 +307,10 @@ export default function GiftDashboard() {
             ))}
           </div>
 
-          {/* Chart */}
+          {/* Chart — shows actual dollar value of this investment over time */}
           <div className="h-64 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={history} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <AreaChart data={scaledHistory} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#F5C518" stopOpacity={0.2} />

@@ -4,6 +4,7 @@ import {
   getRecipientHistory,
   sellRecipientInvestment,
   getConsolidatedRecipientPortfolio,
+  getConsolidatedPortfolioHistory,
 } from './recipient.service';
 import { SellRequestDto } from './recipient.types';
 
@@ -43,6 +44,20 @@ export async function getConsolidatedPortfolioHandler(
 ): Promise<void> {
   try {
     const result = await getConsolidatedRecipientPortfolio(req.user!.email);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getConsolidatedHistoryHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const period = (req.query.period as string) || '1M';
+    const result = await getConsolidatedPortfolioHistory(req.user!.email, period);
     res.json(result);
   } catch (err) {
     next(err);

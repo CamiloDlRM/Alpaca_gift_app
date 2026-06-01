@@ -121,6 +121,20 @@ export default function RecipientDashboard() {
 
   const isPositive = portfolio.gainLoss >= 0;
 
+  // Scale raw ETF price history to actual dollar values of this investment
+  const currentValue = portfolio.isRedeemed && portfolio.redeemedAmount != null
+    ? portfolio.redeemedAmount
+    : portfolio.totalValue;
+  const scaledHistory = (() => {
+    if (!history.length) return [];
+    const lastPrice = history[history.length - 1].value;
+    if (!lastPrice) return [];
+    return history.map(p => ({
+      date: p.date,
+      value: Number(((p.value / lastPrice) * currentValue).toFixed(2)),
+    }));
+  })();
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
@@ -177,11 +191,11 @@ export default function RecipientDashboard() {
             ))}
           </div>
 
-          {/* Chart */}
+          {/* Chart — dollar value of this investment over time */}
           <div className="h-64 sm:h-80">
-            {history.length > 0 ? (
+            {scaledHistory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                <AreaChart data={scaledHistory} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                   <defs>
                     <linearGradient id="recipientGoldGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#F5C518" stopOpacity={0.2} />

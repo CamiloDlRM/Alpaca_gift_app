@@ -233,3 +233,67 @@ export async function getConsolidatedRecipientPortfolio(
 
   return { totalInvested, totalCurrentValue, totalGainLoss, totalGainLossPercent, positions };
 }
+
+export async function getConsolidatedPortfolioHistory(
+  userEmail: string,
+  period: string
+): Promise<{
+  period: string;
+  data: { date: string; value: number }[];
+  totalInvested: number;
+  totalCurrentValue: number;
+}> {
+  const { positions, totalInvested, totalCurrentValue } =
+    await getConsolidatedRecipientPortfolio(userEmail);
+
+  const validPeriod = ['1D', '1W', '1M', '1Y', 'ALL'].includes(period) ? period : '1M';
+
+  // Active positions = those where NOT all gifts are redeemed
+  const activePositions = positions.filter((p) => !p.gifts.every((g) => g.isRedeemed));
+
+  if (activePositions.length === 0) {
+    return { period: validPeriod, data: [], totalInvested, totalCurrentValue };
+  }
+
+  // Unique ETF symbols from active positions
+  const symbols = [...new Set(activePositions.map((p) => p.etfSymbol))];
+
+  // Fetch price history in parallel; catch per-symbol errors and store empty array
+  const histories = await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        const hist = await fetchPriceHistory(symbol, validPeriod);
+        return [symbol, hist] as const;
+      } catch {
+        return [symbol, [] as { date: string; value: number }[]] as const;
+      }
+    })
+  );
+  const historyMap = new Map(histories);
+
+  // Reference symbol = first symbol with non-empty history
+  const referenceSymbol = symbols.find((s) => (historyMap.get(s)?.length ?? 0) > 0);
+  if (!referenceSymbol) {
+    return { period: validPeriod, data: [], totalInvested, totalCurrentValue };
+  }
+
+  const timeline = historyMap.get(referenceSymbol) ?? [];
+
+  const data: { date: string; value: number }[] = timeline.map((refPoint, i) => {
+    let totalValue = 0;
+
+    for (const position of activePositions) {
+      const hist = historyMap.get(position.etfSymbol) ?? [];
+      const histPoint = hist[i];
+      const lastValue = hist[hist.length - 1]?.value;
+      if (!histPoint || !lastValue || lastValue === 0) continue;
+
+      const scaledValue = (histPoint.value / lastValue) * position.totalCurrentValue;
+      totalValue += scaledValue;
+    }
+
+    return { date: refPoint.date, value: Number(totalValue.toFixed(2)) };
+  });
+
+  return { period: validPeriod, data, totalInvested, totalCurrentValue };
+}
