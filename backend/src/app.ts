@@ -12,6 +12,7 @@ import subscriptionsRouter from './modules/subscriptions/subscriptions.routes';
 import recipientRouter from './modules/recipient/recipient.routes';
 import etfRatingsRouter from './modules/etf-ratings/etf-ratings.routes';
 import rankingsRouter from './modules/rankings/rankings.routes';
+import wealthyRouter from './modules/wealthy/wealthy.routes';
 import { errorMiddleware } from './shared/middleware/error.middleware';
 
 // Import modules that register event listeners
@@ -42,6 +43,7 @@ app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/recipient', recipientRouter);
 app.use('/api/etf-ratings', etfRatingsRouter);
 app.use('/api/rankings', rankingsRouter);
+app.use('/api/wealthy', wealthyRouter);
 
 app.use(errorMiddleware);
 

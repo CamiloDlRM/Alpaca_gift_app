@@ -235,7 +235,7 @@ function PortfolioChartCard() {
         </div>
 
         {/* Scrolling ticker */}
-        <div className="relative mt-4 overflow-hidden border-t border-white/5 pt-3">
+        <div className="relative mt-4 overflow-hidden border-t border-white/5 pt-3 hidden sm:block">
           <div className="flex gap-6 animate-ticker whitespace-nowrap w-max">
             {[...TICKER, ...TICKER].map((t, i) => (
               <span key={i} className="inline-flex items-center gap-1.5 text-xs">
@@ -251,8 +251,8 @@ function PortfolioChartCard() {
         </div>
       </div>
 
-      {/* Floating badge — VOO */}
-      <div className="absolute -top-4 -right-4 animate-float-card animate-fadeIn bg-[#0d1829] border border-white/10 rounded-2xl shadow-xl p-4 min-w-[110px]">
+      {/* Floating badge — VOO (hidden on mobile to avoid overflow) */}
+      <div className="hidden sm:block absolute -top-4 -right-4 animate-float-card animate-fadeIn bg-[#0d1829] border border-white/10 rounded-2xl shadow-xl p-4 min-w-[110px]">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-6 h-6 rounded-full bg-[#F5C518]/20 border border-[#F5C518]/40 flex items-center justify-center">
             <span className="text-[9px] font-black text-[#F5C518]">V</span>
@@ -268,8 +268,8 @@ function PortfolioChartCard() {
         </div>
       </div>
 
-      {/* Floating badge — Gift sent */}
-      <div className="absolute -bottom-4 -left-4 animate-float-card-slow animate-fadeIn bg-[#0d1829] border border-white/10 rounded-2xl shadow-xl p-4">
+      {/* Floating badge — Gift sent (hidden on mobile) */}
+      <div className="hidden sm:block absolute -bottom-4 -left-4 animate-float-card-slow animate-fadeIn bg-[#0d1829] border border-white/10 rounded-2xl shadow-xl p-4">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-6 h-6 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center">
             <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
@@ -307,13 +307,15 @@ export default function Landing() {
       <Nav />
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-bl from-[#F5C518]/5 to-transparent pointer-events-none" aria-hidden="true" />
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#F5C518]/10 blur-3xl pointer-events-none" aria-hidden="true" />
+      <section className="relative">
+        {/* Background glow — clipped to avoid horizontal scroll */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-bl from-[#F5C518]/5 to-transparent" />
+          <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#F5C518]/10 blur-3xl" />
+        </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-20 sm:pb-32">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-16 sm:pb-28">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
             {/* Left — copy */}
             <div className="space-y-8 animate-slideUp">
@@ -322,7 +324,7 @@ export default function Landing() {
                 The future of gifting is here
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
                 Give the gift of{' '}
                 <span className="text-[#F5C518] relative inline-block">
                   investment
@@ -382,10 +384,7 @@ export default function Landing() {
             </div>
 
             {/* Right — animated chart */}
-            <div
-              className="relative lg:block"
-              style={{ animationDelay: '200ms', animationFillMode: 'both' }}
-            >
+            <div className="relative sm:pt-6 sm:pb-6 sm:px-6">
               <PortfolioChartCard />
             </div>
           </div>

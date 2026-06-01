@@ -14,6 +14,7 @@ const navItems = [
   { label: 'Pricing',       to: '/pricing',       icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
   { label: 'Profile',       to: '/profile',       icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
   { label: 'Support',       to: '/support',       icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+  { label: 'Wealthy AI',    to: '/wealthy',       icon: 'M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.537.215a3 3 0 011.106 4.85l-4.5 4.5a3 3 0 01-4.242 0l-4.5-4.5a3 3 0 011.106-4.851l.537-.215a2.25 2.25 0 001.357-2.059V3.104m4.5 0c.251.023.501.05.75.082M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
 export function Sidebar() {
@@ -59,7 +60,13 @@ export function Sidebar() {
               to={item.to}
               onClick={close}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
-                isActive ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                item.label === 'Wealthy AI'
+                  ? isActive
+                    ? 'bg-[#F5C518]/20 text-[#F5C518] border border-[#F5C518]/30'
+                    : 'text-[#F5C518]/70 hover:bg-[#F5C518]/10 hover:text-[#F5C518] border border-transparent'
+                  : isActive
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
               }`}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

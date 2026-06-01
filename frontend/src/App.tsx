@@ -24,6 +24,8 @@ import Support from './pages/Support';
 import RecipientPortfolioPage from './pages/RecipientPortfolioPage';
 import ScheduleGifts from './pages/ScheduleGifts';
 import Leaderboard from './pages/Leaderboard';
+import Wealthy from './pages/Wealthy';
+import { WealthyWidget } from './components/WealthyWidget';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -32,6 +34,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { token } = useAuthStore();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -59,7 +63,11 @@ export default function App() {
         <Route path="/my-portfolio" element={<ProtectedRoute><RecipientPortfolioPage /></ProtectedRoute>} />
         <Route path="/schedule" element={<ProtectedRoute><ScheduleGifts /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+        <Route path="/wealthy" element={<ProtectedRoute><Wealthy /></ProtectedRoute>} />
       </Routes>
+
+      {/* Wealthy widget — shown to logged-in users on all pages */}
+      {token && <WealthyWidget />}
     </BrowserRouter>
   );
 }

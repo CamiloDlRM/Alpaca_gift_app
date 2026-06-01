@@ -4,6 +4,33 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-06-01 00:00] - [NUEVO MÓDULO]
+
+**Acción**: Creado el módulo Wealthy (asistente IA) con endpoint `POST /api/wealthy/chat` con streaming SSE y 3 modos
+**Archivos afectados**:
+- `src/modules/wealthy/wealthy.types.ts` - Tipos `WealthyMode`, `ChatMessage`, `WealthyChatRequest`
+- `src/modules/wealthy/wealthy.prompts.ts` - Tres system prompts (regulations, investments, portfolio)
+- `src/modules/wealthy/wealthy.tools.ts` - Ejecutores de herramientas y definiciones de tools para Gemini (get_etf_price, get_etf_history, get_top_etfs)
+- `src/modules/wealthy/wealthy.service.ts` - `streamRegulations` (DeepSeek streaming), `chatInvestments` (Gemini + tool use), `chatPortfolio` (DeepSeek + contexto de portafolio), router `chatWealthy`
+- `src/modules/wealthy/wealthy.controller.ts` - Handler que fija cabeceras SSE y delega en el servicio
+- `src/modules/wealthy/wealthy.routes.ts` - Ruta `POST /chat` con `optionalAuthMiddleware`
+- `src/modules/wealthy/index.ts` - Barrel export del router y tipos públicos
+- `src/app.ts` - Registro de `wealthyRouter` en `/api/wealthy`
+
+**Detalles**:
+Módulo IA con 3 modos servidos todos por SSE al cliente:
+- Modo 1 (regulations): DeepSeek `deepseek-chat` con streaming token-a-token sobre el conocimiento de WealthGift (categorías, planes, flujo de claim, ratings, leaderboards).
+- Modo 2 (investments): Gemini 2.0 Flash con tool calling y bucle agéntico (máx 3 iteraciones) que consume `market-data.service` (precio/historial) y `rankings.service` (top ETFs). No streaming; se envía la respuesta como un único chunk SSE.
+- Modo 3 (portfolio): DeepSeek no-streaming. Carga el portafolio consolidado vía `recipient.service.getConsolidatedRecipientPortfolio(userEmail)`, lo resume y lo inyecta en el system prompt. Requiere usuario autenticado (token válido).
+
+Todas las llamadas externas usan `fetch` nativo (Node 18+), sin paquetes nuevos. Manejo de errores tolerante: si faltan `DEEPSEEK_API_KEY`/`GEMINI_API_KEY` o falla la llamada, se devuelve un mensaje amistoso por SSE. Se usa `optionalAuthMiddleware` (ya existente) para que los modos 1 y 2 funcionen sin sesión y el modo 3 obtenga el email del usuario.
+
+**Variables de entorno requeridas**:
+- `DEEPSEEK_API_KEY` - Modos 1 y 3 (API REST compatible con OpenAI)
+- `GEMINI_API_KEY` - Modo 2 (Google AI REST API con tool calling)
+
+---
+
 ## [2026-05-19 22:30] - [SCHEMA PRISMA]
 
 **Acción**: Añadidos campos de verificación de email al modelo User
