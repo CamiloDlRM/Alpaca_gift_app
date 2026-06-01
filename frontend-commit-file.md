@@ -249,3 +249,35 @@ Implemented the full email-verification gate. Registration no longer logs the us
 - These backend endpoints were provided in the task brief but are NOT yet documented in `backend-commit-file.md` — recommend the backend agent add an entry for the email-verification work.
 - Could not run `tsc` to verify types (TypeScript not installed locally and npm commands are disallowed); types were reviewed manually.
 ---
+
+---
+## [2026-06-01] - Rankings + SENDER/RECEIVER rating role across rating UI and new Leaderboard
+
+### Files Modified/Created
+- `frontend/src/components/ETFRatingWidget.tsx` — Reworked `RatingResponse`/`ETFRatingsAggregate` types to the new backend shape; added a `role` field, sender/receiver averages + counts, and `userSenderRating`/`userReceiverRating`. Added a Sender/Receiver role toggle to the rating form (default SENDER), overall/senders/receivers metric chips, and a role badge on each rating in the list. Form pre-populates from the selected role's existing rating and sends `role` in the POST body.
+- `frontend/src/components/ETFCommunityReviews.tsx` — Added All/Senders/Receivers filter pill tabs, three header metric chips (overall, senders, receivers with counts), a Sender(blue)/Receiver(green) badge per review card, and role-based filtering of the carousel + dynamic average/count for the active tab.
+- `frontend/src/components/ETFReviewForm.tsx` — Switched fetch to the new aggregate shape, tracks both sender and receiver ratings, added a Sender/Receiver pill toggle (default RECEIVER for the recipient portfolio context), and includes `role` in the POST body.
+- `frontend/src/components/ETFCategoryRankings.tsx` — NEW. Compact top-3 category cards with medal badges, gold/silver/bronze gradient borders, star rating, trend arrow, gift count, and a "New" badge when there is no gift activity. Calls `onSelectCategory` and highlights the selected one. Loading skeleton included.
+- `frontend/src/components/ETFTopRankings.tsx` — NEW. Top-3 ETFs for a given category with medal badges, symbol/name/category, average rating, and gift count. Refetches when `category` changes; calls `onSelectETF`; loading + empty states included.
+- `frontend/src/pages/Leaderboard.tsx` — NEW. Full `/leaderboard` page in the Sidebar layout. Category section with a 2-1-3 podium (gold tallest, centered) plus a rank 4+ list. ETF section with All/Large Cap/Technology/Small Cap/Bonds/International tabs, a responsive card grid (top 3 medaled), separate sender/receiver rating metrics per card, skeleton loaders, and a shared "No activity yet — be the first to send a gift!" empty state.
+- `frontend/src/pages/SendGift.tsx` — Imported and embedded `ETFCategoryRankings` (before the category dropdown, wired to `setSelectedCategory` and resetting the ETF) and `ETFTopRankings` (after the dropdown, before the ETF picker, wired to `setEtfSymbol`). Existing ETF select retained as the source of truth.
+- `frontend/src/App.tsx` — Added `import Leaderboard` and the `/leaderboard` protected route.
+- `frontend/src/components/layout/Sidebar.tsx` — Added a Leaderboard nav item (bar-chart icon) immediately after Activity.
+
+### Changes Summary
+Aligned the entire ETF rating UI with the new backend contract that distinguishes SENDER vs RECEIVER ratings, and surfaced the new public Rankings API throughout the app: inline ranking guides in the Send Gift flow and a dedicated Leaderboard page.
+
+### Backend Dependencies (from backend-commit-file.md, 2026-06-01)
+- `GET /api/etf-ratings/:symbol` → new `ETFRatingsAggregateResponse` with `senderAverageStars`, `senderCount`, `receiverAverageStars`, `receiverCount`, `userSenderRating`, `userReceiverRating`, and `role` on each `RatingResponse`.
+- `POST /api/etf-ratings/:symbol` now requires `role: 'SENDER' | 'RECEIVER'` in the body alongside `stars` and optional `comment`.
+- `GET /api/rankings/categories` → `CategoryRanking[]`.
+- `GET /api/rankings/etfs` → `ETFRanking[]`.
+- `GET /api/rankings/etfs/:category` → `{ category, topETFs: ETFRanking[] }`.
+
+### Notes
+- `CategoryRanking` and `ETFRanking` types are defined and exported from `ETFCategoryRankings.tsx` / `ETFTopRankings.tsx` and reused by `Leaderboard.tsx` to avoid duplication.
+- Role toggle defaults: SENDER in `ETFRatingWidget` (generic), RECEIVER in `ETFReviewForm` (lives on the recipient portfolio page).
+- `ETFRatingWidget`'s effect intentionally only refetches on `etfSymbol` change; role switching is handled locally from already-fetched data (eslint-disable on the dep array to document this).
+- All ranking components and the Leaderboard are designed to look correct with zero gift activity (show category/ETF names with "New"/seedling empty states).
+- Could not run `tsc`/`vite` to verify (TypeScript not installed locally and npm commands disallowed); types were reviewed manually against the backend contract.
+---

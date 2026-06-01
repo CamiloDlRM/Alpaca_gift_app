@@ -8,6 +8,7 @@ const router = Router();
 
 const createRatingSchema = z.object({
   stars: z.number().int().min(1).max(5),
+  role: z.enum(['SENDER', 'RECEIVER']),
   comment: z.string().max(2000).optional(),
 });
 

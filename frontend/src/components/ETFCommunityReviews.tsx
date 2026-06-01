@@ -54,6 +54,7 @@ function ReviewCard({ review }: { review: RatingResponse }) {
     .toUpperCase();
 
   const date = new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const isSender = review.role === 'SENDER';
 
   return (
     <div className="flex-shrink-0 w-56 bg-white/8 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex flex-col gap-2">
@@ -61,10 +62,17 @@ function ReviewCard({ review }: { review: RatingResponse }) {
         <div className="w-7 h-7 rounded-full bg-[#F5C518]/20 border border-[#F5C518]/30 flex items-center justify-center flex-shrink-0">
           <span className="text-xs font-bold text-[#F5C518]">{initials}</span>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-white truncate">{review.userName}</div>
           <div className="text-xs text-white/40">{date}</div>
         </div>
+        <span
+          className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+            isSender ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' : 'bg-green-500/20 text-green-300 border border-green-400/30'
+          }`}
+        >
+          {isSender ? 'Sender' : 'Receiver'}
+        </span>
       </div>
       <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -88,13 +96,17 @@ function ReviewCard({ review }: { review: RatingResponse }) {
   );
 }
 
+type ReviewFilter = 'ALL' | 'SENDER' | 'RECEIVER';
+
 export function ETFCommunityReviews({ etfSymbol, etfName }: Props) {
   const [data, setData] = useState<ETFRatingsAggregate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<ReviewFilter>('ALL');
 
   useEffect(() => {
     setLoading(true);
     setData(null);
+    setFilter('ALL');
     apiClient
       .get<ETFRatingsAggregate>(`/etf-ratings/${etfSymbol}`)
       .then((res) => setData(res.data))
@@ -102,14 +114,30 @@ export function ETFCommunityReviews({ etfSymbol, etfName }: Props) {
       .finally(() => setLoading(false));
   }, [etfSymbol]);
 
-  const avg = data?.averageStars ?? 0;
-  const total = data?.totalCount ?? 0;
-  const ratings = data?.ratings ?? [];
+  const allRatings = data?.ratings ?? [];
+  const senderAvg = data?.senderAverageStars ?? 0;
+  const senderCount = data?.senderCount ?? 0;
+  const receiverAvg = data?.receiverAverageStars ?? 0;
+  const receiverCount = data?.receiverCount ?? 0;
+  const overallAvg = data?.averageStars ?? 0;
+  const overallCount = data?.totalCount ?? 0;
+
+  // Average + count + visible reviews depend on the active filter tab.
+  const avg = filter === 'SENDER' ? senderAvg : filter === 'RECEIVER' ? receiverAvg : overallAvg;
+  const total = filter === 'SENDER' ? senderCount : filter === 'RECEIVER' ? receiverCount : overallCount;
+  const ratings =
+    filter === 'ALL' ? allRatings : allRatings.filter((r) => r.role === filter);
 
   const dist = [5, 4, 3, 2, 1].map((star) => ({
     star,
     count: ratings.filter((r) => r.stars === star).length,
   }));
+
+  const filterTabs: { key: ReviewFilter; label: string }[] = [
+    { key: 'ALL', label: 'All' },
+    { key: 'SENDER', label: 'Senders' },
+    { key: 'RECEIVER', label: 'Receivers' },
+  ];
 
   return (
     <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#0d1829] via-[#111f35] to-[#0a1628] shadow-xl border border-white/5 animate-fadeIn">
@@ -142,6 +170,46 @@ export function ETFCommunityReviews({ etfSymbol, etfName }: Props) {
             </div>
           )}
         </div>
+
+        {/* Metric chips: overall / senders / receivers */}
+        {!loading && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80">
+              Overall: {overallAvg.toFixed(1)} <span className="text-[#F5C518]">★</span>
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
+              Senders: {senderAvg.toFixed(1)} <span className="text-[#F5C518]">★</span> ({senderCount})
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
+              Receivers: {receiverAvg.toFixed(1)} <span className="text-[#F5C518]">★</span> ({receiverCount})
+            </span>
+          </div>
+        )}
+
+        {/* Filter tabs */}
+        {!loading && (
+          <div className="flex gap-1.5 mb-4" role="tablist" aria-label="Filter reviews by role">
+            {filterTabs.map((tab) => {
+              const active = filter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilter(tab.key)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    active
+                      ? 'bg-[#F5C518] text-black'
+                      : 'bg-white/8 text-white/60 hover:bg-white/15 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Distribution bars */}
         {!loading && total > 0 && (

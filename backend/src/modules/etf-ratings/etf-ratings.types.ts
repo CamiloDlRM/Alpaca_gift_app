@@ -1,5 +1,8 @@
+export type RatingRole = 'SENDER' | 'RECEIVER';
+
 export interface CreateRatingDto {
   stars: number;
+  role: RatingRole;
   comment?: string;
 }
 
@@ -9,6 +12,7 @@ export interface RatingResponse {
   userName: string;
   etfSymbol: string;
   stars: number;
+  role: RatingRole;
   comment: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -18,5 +22,10 @@ export interface ETFRatingsAggregateResponse {
   ratings: RatingResponse[];
   averageStars: number;
   totalCount: number;
-  userRating: RatingResponse | null;
+  senderAverageStars: number;
+  senderCount: number;
+  receiverAverageStars: number;
+  receiverCount: number;
+  userSenderRating: RatingResponse | null;
+  userReceiverRating: RatingResponse | null;
 }

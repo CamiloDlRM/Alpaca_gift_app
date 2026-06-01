@@ -6,6 +6,8 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { ETFCommunityReviews } from '../components/ETFCommunityReviews';
+import { ETFCategoryRankings } from '../components/ETFCategoryRankings';
+import { ETFTopRankings } from '../components/ETFTopRankings';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
@@ -463,6 +465,12 @@ export default function SendGift() {
                 </div>
               </div>
 
+              {/* Category rankings — visual guide above the category dropdown */}
+              <ETFCategoryRankings
+                onSelectCategory={(c) => { setSelectedCategory(c); setEtfSymbol(''); }}
+                selectedCategory={selectedCategory}
+              />
+
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Investment category</label>
                 <select
@@ -475,6 +483,15 @@ export default function SendGift() {
                   ))}
                 </select>
               </div>
+
+              {/* Top-ranked ETFs for the selected category — visual guide above the ETF picker */}
+              {selectedCategory && (
+                <ETFTopRankings
+                  category={selectedCategory}
+                  onSelectETF={setEtfSymbol}
+                  selectedETF={etfSymbol}
+                />
+              )}
 
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select investment</label>

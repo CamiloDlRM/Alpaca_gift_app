@@ -23,6 +23,7 @@ import Profile from './pages/Profile';
 import Support from './pages/Support';
 import RecipientPortfolioPage from './pages/RecipientPortfolioPage';
 import ScheduleGifts from './pages/ScheduleGifts';
+import Leaderboard from './pages/Leaderboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
         <Route path="/my-portfolio" element={<ProtectedRoute><RecipientPortfolioPage /></ProtectedRoute>} />
         <Route path="/schedule" element={<ProtectedRoute><ScheduleGifts /></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

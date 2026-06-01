@@ -4,6 +4,43 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-06-01 12:00] - [NUEVO MÓDULO] Rankings + rol SENDER/RECEIVER en ETFRating + catálogo ETF ampliado a 100
+
+**Acción**: Se añadió el campo `role` (SENDER/RECEIVER) a las calificaciones de ETF, se amplió el catálogo de ETFs a 100 (20 por categoría) y se creó el módulo de Rankings con endpoints públicos.
+
+**Archivos afectados**:
+- `prisma/schema.prisma` - Nuevo enum `RatingRole`, campo `role RatingRole @default(SENDER)` en `ETFRating`, unique cambiado a `@@unique([userId, etfSymbol, role])`
+- `prisma/migrations/20260601120000_add_role_to_etf_rating/migration.sql` - Migración manual: crea el enum, añade la columna, elimina el índice único viejo y crea el nuevo
+- `src/modules/etf-ratings/etf-ratings.types.ts` - Tipo `RatingRole`, `role` en `CreateRatingDto` y `RatingResponse`, agregados sender/receiver en `ETFRatingsAggregateResponse`
+- `src/modules/etf-ratings/etf-ratings.repository.ts` - `upsertRating` y `findByUserAndETF` usan la clave `userId_etfSymbol_role`; `findByETF` acepta filtro de rol opcional
+- `src/modules/etf-ratings/etf-ratings.service.ts` - Validación de rol, promedios separados por rol, `userSenderRating`/`userReceiverRating`, `role: string` en `RatingWithUser`
+- `src/modules/etf-ratings/etf-ratings.routes.ts` - Schema zod incluye `role: z.enum(['SENDER','RECEIVER'])`
+- `src/modules/etfs/etfs.service.ts` - `ETF_CATALOG` ampliado a 100 ETFs (20 por categoría) con precios y cambios mock
+- `src/modules/rankings/rankings.types.ts` - NUEVO: tipos de rankings
+- `src/modules/rankings/rankings.service.ts` - NUEVO: lógica de ranking ponderado (40% gifts, 30% rating, 20% uso reciente, 10% total ratings)
+- `src/modules/rankings/rankings.controller.ts` - NUEVO: handlers
+- `src/modules/rankings/rankings.routes.ts` - NUEVO: rutas públicas
+- `src/app.ts` - Registro de `/api/rankings`
+
+**Detalles**:
+El unique original de `ETFRating` se creó con `CREATE UNIQUE INDEX` (no es una constraint), por lo que la migración usa `DROP INDEX "ETFRating_userId_etfSymbol_key"` en vez de `DROP CONSTRAINT`. El servicio de rankings combina `groupBy` de Prisma (gifts por símbolo, gifts recientes <=30 días, y ETFRatings por símbolo+rol) en la capa de servicio, ya que Prisma no soporta groupBy con includes. El catálogo de ETFs se usa como fuente de verdad para mapear símbolo->categoría y enriquecer con precio/cambio.
+
+**Contrato de API (nuevos endpoints, todos públicos)**:
+- `GET /api/rankings` → `{ topCategories: CategoryRanking[], topETFs: ETFRanking[], updatedAt: Date }`
+- `GET /api/rankings/categories` → `CategoryRanking[]`
+- `GET /api/rankings/etfs` → `ETFRanking[]`
+- `GET /api/rankings/etfs/:category` → `{ category: string, topETFs: ETFRanking[] }`
+
+`POST /api/etf-ratings/:symbol` ahora REQUIERE `role` en el body: `{ stars: number(1-5), role: 'SENDER'|'RECEIVER', comment?: string }`.
+
+**Pasos manuales requeridos** (en el servidor remoto):
+```bash
+npx prisma migrate deploy   # aplica 20260601120000_add_role_to_etf_rating
+npx prisma generate         # regenera el client con el campo role
+```
+
+---
+
 ## [2026-05-15] - KYC bypass con PIN dinámico, fee BASIC $5.99, precio anual Pro Plus $49
 
 ### Cambios realizados

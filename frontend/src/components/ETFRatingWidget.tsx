@@ -3,12 +3,15 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import apiClient from '../api/client';
 
+export type RatingRole = 'SENDER' | 'RECEIVER';
+
 export interface RatingResponse {
   id: string;
   userId: string;
   userName: string;
   etfSymbol: string;
   stars: number;
+  role: RatingRole;
   comment: string | null;
   createdAt: string;
   updatedAt: string;
@@ -18,7 +21,12 @@ export interface ETFRatingsAggregate {
   ratings: RatingResponse[];
   averageStars: number;
   totalCount: number;
-  userRating: RatingResponse | null;
+  senderAverageStars: number;
+  senderCount: number;
+  receiverAverageStars: number;
+  receiverCount: number;
+  userSenderRating: RatingResponse | null;
+  userReceiverRating: RatingResponse | null;
 }
 
 interface ETFRatingWidgetProps {
@@ -109,16 +117,34 @@ function formatDate(iso: string): string {
   }
 }
 
+function pickRoleRating(data: ETFRatingsAggregate | null, role: RatingRole): RatingResponse | null {
+  if (!data) return null;
+  return role === 'SENDER' ? data.userSenderRating : data.userReceiverRating;
+}
+
 export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly = false }: ETFRatingWidgetProps) {
   const [data, setData] = useState<ETFRatingsAggregate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Form state
+  const [role, setRole] = useState<RatingRole>('SENDER');
   const [stars, setStars] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // Pre-populate the form from the rating that matches the currently-selected role.
+  const applyRoleRating = useCallback((aggregate: ETFRatingsAggregate | null, selectedRole: RatingRole) => {
+    const existing = pickRoleRating(aggregate, selectedRole);
+    if (existing) {
+      setStars(existing.stars);
+      setComment(existing.comment ?? '');
+    } else {
+      setStars(0);
+      setComment('');
+    }
+  }, []);
 
   const fetchRatings = useCallback(async () => {
     if (!etfSymbol) return;
@@ -127,23 +153,25 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
     try {
       const res = await apiClient.get<ETFRatingsAggregate>(`/etf-ratings/${etfSymbol}`);
       setData(res.data);
-      if (res.data.userRating) {
-        setStars(res.data.userRating.stars);
-        setComment(res.data.userRating.comment ?? '');
-      } else {
-        setStars(0);
-        setComment('');
-      }
+      applyRoleRating(res.data, role);
     } catch {
       setError('Could not load ratings.');
     } finally {
       setLoading(false);
     }
-  }, [etfSymbol]);
+  }, [etfSymbol, role, applyRoleRating]);
 
   useEffect(() => {
     fetchRatings();
-  }, [fetchRatings]);
+    // Only refetch when the ETF changes — role switching is handled locally below
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etfSymbol]);
+
+  const handleRoleChange = (nextRole: RatingRole) => {
+    setRole(nextRole);
+    setSubmitError('');
+    applyRoleRating(data, nextRole);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +184,7 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
     try {
       await apiClient.post(`/etf-ratings/${etfSymbol}`, {
         stars,
+        role,
         comment: comment.trim() ? comment.trim() : undefined,
       });
       // Refresh the list
@@ -195,7 +224,11 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
   const ratings = data?.ratings ?? [];
   const averageStars = data?.averageStars ?? 0;
   const totalCount = data?.totalCount ?? 0;
-  const hasUserRating = !!data?.userRating;
+  const senderAverageStars = data?.senderAverageStars ?? 0;
+  const senderCount = data?.senderCount ?? 0;
+  const receiverAverageStars = data?.receiverAverageStars ?? 0;
+  const receiverCount = data?.receiverCount ?? 0;
+  const hasUserRating = !!pickRoleRating(data, role);
 
   return (
     <Card className="p-6">
@@ -213,6 +246,19 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
         </div>
       </div>
 
+      {/* Metric chips: overall / senders / receivers */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200">
+          Overall {averageStars.toFixed(1)} <span className="text-[#F5C518]">★</span>
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+          Senders {senderAverageStars.toFixed(1)} <span className="text-[#F5C518]">★</span> ({senderCount})
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-300">
+          Receivers {receiverAverageStars.toFixed(1)} <span className="text-[#F5C518]">★</span> ({receiverCount})
+        </span>
+      </div>
+
       {/* Recent ratings list */}
       {ratings.length === 0 ? (
         <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg px-4 py-6 text-center">
@@ -223,7 +269,18 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
           {ratings.slice(0, 5).map((r) => (
             <div key={r.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="font-medium text-gray-900 dark:text-white text-sm truncate">{r.userName}</div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{r.userName}</span>
+                  <span
+                    className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                      r.role === 'SENDER'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                        : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                    }`}
+                  >
+                    {r.role === 'SENDER' ? 'Sender' : 'Receiver'}
+                  </span>
+                </div>
                 <StarsDisplay value={r.stars} size="sm" />
               </div>
               {r.comment && (
@@ -240,6 +297,39 @@ export function ETFRatingWidget({ etfSymbol, etfName, isAuthenticated, readOnly 
         <form onSubmit={handleSubmit} className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
           <div>
             <h4 className="font-bold text-gray-900 dark:text-white mb-3">Rate this ETF</h4>
+            <div className="mb-4">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Your role</span>
+              <div className="inline-flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600" role="radiogroup" aria-label="Your role">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={role === 'SENDER'}
+                  onClick={() => handleRoleChange('SENDER')}
+                  disabled={submitting}
+                  className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                    role === 'SENDER'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  I&#39;m the Sender
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={role === 'RECEIVER'}
+                  onClick={() => handleRoleChange('RECEIVER')}
+                  disabled={submitting}
+                  className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                    role === 'RECEIVER'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  I&#39;m the Receiver
+                </button>
+              </div>
+            </div>
             <StarPicker value={stars} onChange={setStars} disabled={submitting} />
           </div>
 

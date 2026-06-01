@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/Button';
 import { StarPicker, StarsDisplay } from './ETFRatingWidget';
-import type { RatingResponse } from './ETFRatingWidget';
+import type { RatingResponse, RatingRole, ETFRatingsAggregate } from './ETFRatingWidget';
 import apiClient from '../api/client';
 
 interface ETFReviewFormProps {
@@ -9,7 +9,11 @@ interface ETFReviewFormProps {
 }
 
 export function ETFReviewForm({ etfSymbol }: ETFReviewFormProps) {
-  const [existing, setExisting] = useState<RatingResponse | null>(null);
+  // Holds both role-specific ratings so switching role doesn't require a refetch.
+  const [senderRating, setSenderRating] = useState<RatingResponse | null>(null);
+  const [receiverRating, setReceiverRating] = useState<RatingResponse | null>(null);
+  // Default to RECEIVER: this form lives on the gift recipient's portfolio page.
+  const [role, setRole] = useState<RatingRole>('RECEIVER');
   const [open, setOpen] = useState(false);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
@@ -18,20 +22,37 @@ export function ETFReviewForm({ etfSymbol }: ETFReviewFormProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const existing = role === 'SENDER' ? senderRating : receiverRating;
+
+  const applyRating = useCallback((rating: RatingResponse | null) => {
+    if (rating) {
+      setStars(rating.stars);
+      setComment(rating.comment ?? '');
+    } else {
+      setStars(0);
+      setComment('');
+    }
+  }, []);
+
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await apiClient.get<{ userRating: RatingResponse | null }>(`/etf-ratings/${etfSymbol}`);
-        if (res.data.userRating) {
-          setExisting(res.data.userRating);
-          setStars(res.data.userRating.stars);
-          setComment(res.data.userRating.comment ?? '');
-        }
+        const res = await apiClient.get<ETFRatingsAggregate>(`/etf-ratings/${etfSymbol}`);
+        setSenderRating(res.data.userSenderRating);
+        setReceiverRating(res.data.userReceiverRating);
+        // Pre-populate for the default role (RECEIVER).
+        applyRating(res.data.userReceiverRating);
       } catch { /* non-blocking */ }
       finally { setLoading(false); }
     };
     fetch();
-  }, [etfSymbol]);
+  }, [etfSymbol, applyRating]);
+
+  const handleRoleChange = (nextRole: RatingRole) => {
+    setRole(nextRole);
+    setError('');
+    applyRating(nextRole === 'SENDER' ? senderRating : receiverRating);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +63,11 @@ export function ETFReviewForm({ etfSymbol }: ETFReviewFormProps) {
     try {
       const res = await apiClient.post<RatingResponse>(`/etf-ratings/${etfSymbol}`, {
         stars,
+        role,
         comment: comment.trim() || undefined,
       });
-      setExisting(res.data);
+      if (role === 'SENDER') setSenderRating(res.data);
+      else setReceiverRating(res.data);
       setOpen(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -103,6 +126,40 @@ export function ETFReviewForm({ etfSymbol }: ETFReviewFormProps) {
       {open && (
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Your role</label>
+            <div className="inline-flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600" role="radiogroup" aria-label="Your role">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={role === 'SENDER'}
+                onClick={() => handleRoleChange('SENDER')}
+                disabled={submitting}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  role === 'SENDER'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                Sender
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={role === 'RECEIVER'}
+                onClick={() => handleRoleChange('RECEIVER')}
+                disabled={submitting}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  role === 'RECEIVER'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                Receiver
+              </button>
+            </div>
+          </div>
+
+          <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Rating</label>
             <StarPicker value={stars} onChange={setStars} disabled={submitting} />
           </div>
@@ -133,10 +190,7 @@ export function ETFReviewForm({ etfSymbol }: ETFReviewFormProps) {
               onClick={() => {
                 setOpen(false);
                 setError('');
-                if (existing) {
-                  setStars(existing.stars);
-                  setComment(existing.comment ?? '');
-                }
+                applyRating(existing);
               }}
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             >

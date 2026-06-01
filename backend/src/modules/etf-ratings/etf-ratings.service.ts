@@ -5,6 +5,7 @@ import type {
   CreateRatingDto,
   ETFRatingsAggregateResponse,
   RatingResponse,
+  RatingRole,
 } from './etf-ratings.types';
 
 type RatingWithUser = {
@@ -12,6 +13,7 @@ type RatingWithUser = {
   userId: string;
   etfSymbol: string;
   stars: number;
+  role: string;
   comment: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -25,6 +27,7 @@ function toRatingResponse(rating: RatingWithUser): RatingResponse {
     userName: rating.user.name,
     etfSymbol: rating.etfSymbol,
     stars: rating.stars,
+    role: rating.role as RatingRole,
     comment: rating.comment,
     createdAt: rating.createdAt,
     updatedAt: rating.updatedAt,
@@ -40,18 +43,31 @@ function ensureValidSymbol(etfSymbol: string): string {
   return symbol;
 }
 
+function ensureValidRole(role: unknown): RatingRole {
+  if (role !== 'SENDER' && role !== 'RECEIVER') {
+    throw new BadRequestError('El rol debe ser "SENDER" o "RECEIVER".');
+  }
+  return role;
+}
+
+function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return Number((values.reduce((acc, v) => acc + v, 0) / values.length).toFixed(2));
+}
+
 export async function upsertRating(
   userId: string,
   etfSymbol: string,
   dto: CreateRatingDto
 ): Promise<RatingResponse> {
   const symbol = ensureValidSymbol(etfSymbol);
+  const role = ensureValidRole(dto.role);
 
   if (!Number.isInteger(dto.stars) || dto.stars < 1 || dto.stars > 5) {
     throw new BadRequestError('La calificación debe ser un número entero entre 1 y 5.');
   }
 
-  const rating = await ratingsRepo.upsertRating(userId, symbol, dto.stars, dto.comment);
+  const rating = await ratingsRepo.upsertRating(userId, symbol, dto.stars, role, dto.comment);
   return toRatingResponse(rating as RatingWithUser);
 }
 
@@ -63,31 +79,46 @@ export async function getRatingsForETF(
 
   const ratings = (await ratingsRepo.findByETF(symbol)) as RatingWithUser[];
   const totalCount = ratings.length;
-  const averageStars = totalCount === 0
-    ? 0
-    : ratings.reduce((acc, r) => acc + r.stars, 0) / totalCount;
+  const averageStars = average(ratings.map((r) => r.stars));
+
+  const senderRatings = ratings.filter((r) => r.role === 'SENDER');
+  const receiverRatings = ratings.filter((r) => r.role === 'RECEIVER');
 
   const mapped = ratings.map(toRatingResponse);
 
-  let userRating: RatingResponse | null = null;
+  let userSenderRating: RatingResponse | null = null;
+  let userReceiverRating: RatingResponse | null = null;
   if (userId) {
-    const own = mapped.find((r) => r.userId === userId);
-    userRating = own ?? null;
+    userSenderRating =
+      mapped.find((r) => r.userId === userId && r.role === 'SENDER') ?? null;
+    userReceiverRating =
+      mapped.find((r) => r.userId === userId && r.role === 'RECEIVER') ?? null;
   }
 
   return {
     ratings: mapped,
-    averageStars: Number(averageStars.toFixed(2)),
+    averageStars,
     totalCount,
-    userRating,
+    senderAverageStars: average(senderRatings.map((r) => r.stars)),
+    senderCount: senderRatings.length,
+    receiverAverageStars: average(receiverRatings.map((r) => r.stars)),
+    receiverCount: receiverRatings.length,
+    userSenderRating,
+    userReceiverRating,
   };
 }
 
 export async function getUserRatingForETF(
   userId: string,
-  etfSymbol: string
+  etfSymbol: string,
+  role: RatingRole
 ): Promise<RatingResponse | null> {
   const symbol = ensureValidSymbol(etfSymbol);
-  const rating = (await ratingsRepo.findByUserAndETF(userId, symbol)) as RatingWithUser | null;
+  const validRole = ensureValidRole(role);
+  const rating = (await ratingsRepo.findByUserAndETF(
+    userId,
+    symbol,
+    validRole
+  )) as RatingWithUser | null;
   return rating ? toRatingResponse(rating) : null;
 }

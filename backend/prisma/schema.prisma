@@ -104,16 +104,17 @@ model Payment {
 }
 
 model ETFRating {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   etfSymbol String
   stars     Int
+  role      RatingRole @default(SENDER)
   comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  @@unique([userId, etfSymbol])
+  @@unique([userId, etfSymbol, role])
 }
 
 enum GiftStatus {
@@ -145,4 +146,9 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   REFUNDED
+}
+
+enum RatingRole {
+  SENDER
+  RECEIVER
 }
