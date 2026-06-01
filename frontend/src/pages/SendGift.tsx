@@ -44,15 +44,74 @@ interface GiftFormData {
   giftType: GiftType;
 }
 
+const OccasionIcon = ({ value, className = 'w-6 h-6' }: { value: string; className?: string }) => {
+  const props = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className };
+  switch (value) {
+    case 'Birthday': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M20 12v10H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
+        <path d="M12 7C12 7 9.5 4 7.5 4A2.5 2.5 0 005 6.5C5 8 6 8.5 7.5 8.5S10 8 12 7z"/>
+        <path d="M12 7c0 0 2.5-3 4.5-3A2.5 2.5 0 0119 6.5C19 8 18 8.5 16.5 8.5S14 8 12 7z"/>
+      </svg>
+    );
+    case 'Anniversary': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M12 22L3 9l3-5h12l3 5-9 13z"/>
+        <path d="M3 9h18"/><path d="M9 4l2 5M15 4l-2 5"/>
+      </svg>
+    );
+    case 'Graduation': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M22 10L12 5 2 10l10 5 10-5z"/>
+        <path d="M6 12.5v4c0 1.66 2.69 3 6 3s6-1.34 6-3v-4"/>
+        <line x1="22" y1="10" x2="22" y2="16"/>
+      </svg>
+    );
+    case 'Baby Shower': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M3 12H0M24 12h-3"/>
+        <path d="M5.64 5.64l-2.12-2.12M20.48 20.48l-2.12-2.12M5.64 18.36l-2.12 2.12M20.48 3.52l-2.12 2.12"/>
+      </svg>
+    );
+    case 'Holiday': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+    );
+    case 'Just Because': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    );
+    case 'Wedding': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M5 22V11a7 7 0 0114 0v11"/><path d="M5 22h14"/>
+        <path d="M9 22v-5h6v5"/>
+      </svg>
+    );
+    case 'Achievement': return (
+      <svg viewBox="0 0 24 24" {...props}>
+        <path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/>
+        <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+        <path d="M18 2H6v7a6 6 0 0012 0V2z"/>
+      </svg>
+    );
+    default: return null;
+  }
+};
+
 const OCCASIONS = [
-  { value: 'Birthday', label: 'Birthday', emoji: '🎂', color: 'from-pink-400 to-rose-500', bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-700' },
-  { value: 'Anniversary', label: 'Anniversary', emoji: '💍', color: 'from-purple-400 to-violet-600', bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700' },
-  { value: 'Graduation', label: 'Graduation', emoji: '🎓', color: 'from-blue-400 to-indigo-600', bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700' },
-  { value: 'Baby Shower', label: 'Baby Shower', emoji: '👶', color: 'from-cyan-300 to-sky-500', bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700' },
-  { value: 'Holiday', label: 'Holiday', emoji: '🎄', color: 'from-green-400 to-emerald-600', bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700' },
-  { value: 'Just Because', label: 'Just Because', emoji: '💝', color: 'from-yellow-400 to-orange-500', bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-700' },
-  { value: 'Wedding', label: 'Wedding', emoji: '💒', color: 'from-pink-300 to-fuchsia-500', bg: 'bg-fuchsia-50', border: 'border-fuchsia-300', text: 'text-fuchsia-700' },
-  { value: 'Achievement', label: 'Achievement', emoji: '🏆', color: 'from-amber-400 to-yellow-500', bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700' },
+  { value: 'Birthday',    label: 'Birthday',    color: 'from-pink-400 to-rose-500',    bg: 'bg-pink-50 dark:bg-pink-900/20',    border: 'border-pink-300 dark:border-pink-700',    text: 'text-pink-700 dark:text-pink-300' },
+  { value: 'Anniversary', label: 'Anniversary', color: 'from-purple-400 to-violet-600', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-300 dark:border-purple-700', text: 'text-purple-700 dark:text-purple-300' },
+  { value: 'Graduation',  label: 'Graduation',  color: 'from-blue-400 to-indigo-600',  bg: 'bg-blue-50 dark:bg-blue-900/20',   border: 'border-blue-300 dark:border-blue-700',   text: 'text-blue-700 dark:text-blue-300' },
+  { value: 'Baby Shower', label: 'Baby Shower', color: 'from-cyan-300 to-sky-500',     bg: 'bg-cyan-50 dark:bg-cyan-900/20',   border: 'border-cyan-300 dark:border-cyan-700',   text: 'text-cyan-700 dark:text-cyan-300' },
+  { value: 'Holiday',     label: 'Holiday',     color: 'from-green-400 to-emerald-600', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-300' },
+  { value: 'Just Because',label: 'Just Because',color: 'from-yellow-400 to-orange-500',bg: 'bg-yellow-50 dark:bg-yellow-900/20',border: 'border-yellow-300 dark:border-yellow-700',text: 'text-yellow-700 dark:text-yellow-300'},
+  { value: 'Wedding',     label: 'Wedding',     color: 'from-pink-300 to-fuchsia-500', bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',border:'border-fuchsia-300 dark:border-fuchsia-700',text:'text-fuchsia-700 dark:text-fuchsia-300'},
+  { value: 'Achievement', label: 'Achievement', color: 'from-amber-400 to-yellow-500', bg: 'bg-amber-50 dark:bg-amber-900/20',  border: 'border-amber-300 dark:border-amber-700', text: 'text-amber-700 dark:text-amber-300' },
 ];
 
 // Inner payment component that uses Stripe hooks
@@ -233,6 +292,10 @@ export default function SendGift() {
   const [note, setNote] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
 
+  // ETF pagination
+  const [etfPage, setEtfPage] = useState(0);
+  const ETF_PAGE_SIZE = 6;
+
   // Step state
   const [step, setStep] = useState<1 | 2>(1);
   const [paymentData, setPaymentData] = useState<PaymentIntentResponse | null>(null);
@@ -242,6 +305,8 @@ export default function SendGift() {
 
   const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
+
+  useEffect(() => { setEtfPage(0); }, [selectedCategory]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -315,7 +380,15 @@ export default function SendGift() {
       </header>
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
           <Card className="p-8 animate-bounceIn">
-            <div className="text-5xl mb-4 animate-bounceIn" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>{selectedOccasion?.emoji ?? '🎁'}</div>
+            <div className="mb-4 flex justify-center animate-bounceIn" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
+              {selectedOccasion ? (
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${selectedOccasion.color} flex items-center justify-center shadow-lg text-white`}>
+                  <OccasionIcon value={selectedOccasion.value} className="w-8 h-8" />
+                </div>
+              ) : (
+                <span className="text-5xl">🎁</span>
+              )}
+            </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Gift sent!</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               {giftType === 'INSTANT' && recipientEmail
@@ -446,8 +519,8 @@ export default function SendGift() {
                             : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
                         }`}
                       >
-                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${o.color} flex items-center justify-center text-2xl shadow-sm`}>
-                          {o.emoji}
+                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${o.color} flex items-center justify-center shadow-sm text-white`}>
+                          <OccasionIcon value={o.value} className="w-6 h-6" />
                         </div>
                         <span className={`text-xs font-semibold ${selected ? o.text : 'text-gray-600 dark:text-gray-400'}`}>
                           {o.label}
@@ -493,39 +566,102 @@ export default function SendGift() {
                 />
               )}
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select investment</label>
-                {filteredEtfs.length === 0 ? (
-                  <p className="text-sm text-gray-400 py-3">No ETFs available for this category.</p>
-                ) : (
-                  <div className="grid gap-3">
-                    {filteredEtfs.map((etf, ei) => (
-                      <button
-                        type="button"
-                        key={etf.symbol}
-                        onClick={() => setEtfSymbol(etf.symbol)}
-                        style={{ animationDelay: `${ei * 40}ms`, animationFillMode: 'both' }}
-                        className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all text-left animate-slideUp ${
-                          etfSymbol === etf.symbol
-                            ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20'
-                            : 'border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">{etf.symbol}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{etf.name}</div>
+              {(() => {
+                const totalEtfPages = Math.max(1, Math.ceil(filteredEtfs.length / ETF_PAGE_SIZE));
+                const pagedEtfs = filteredEtfs.slice(etfPage * ETF_PAGE_SIZE, (etfPage + 1) * ETF_PAGE_SIZE);
+                return (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select investment</label>
+                      {filteredEtfs.length > 0 && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {filteredEtfs.length} ETFs · page {etfPage + 1}/{totalEtfPages}
+                        </span>
+                      )}
+                    </div>
+
+                    {filteredEtfs.length === 0 ? (
+                      <p className="text-sm text-gray-400 py-3">No ETFs available for this category.</p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {pagedEtfs.map((etf, ei) => {
+                            const selected = etfSymbol === etf.symbol;
+                            return (
+                              <button
+                                type="button"
+                                key={etf.symbol}
+                                onClick={() => setEtfSymbol(etf.symbol)}
+                                style={{ animationDelay: `${ei * 30}ms`, animationFillMode: 'both' }}
+                                className={`relative flex flex-col p-3 rounded-xl border-2 transition-all text-left animate-scaleIn ${
+                                  selected
+                                    ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20 shadow-md'
+                                    : 'border-gray-100 dark:border-gray-700 hover:border-[#F5C518]/50 hover:shadow-sm bg-white dark:bg-gray-800'
+                                }`}
+                              >
+                                {selected && (
+                                  <span className="absolute top-2 right-2 w-4 h-4 bg-[#F5C518] rounded-full flex items-center justify-center">
+                                    <svg className="w-2.5 h-2.5 text-black" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                      <path d="M2 6l3 3 5-5"/>
+                                    </svg>
+                                  </span>
+                                )}
+                                <div className="font-bold text-gray-900 dark:text-white text-sm pr-5">{etf.symbol}</div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 mt-0.5 mb-2 leading-tight">{etf.name}</div>
+                                <div className="mt-auto flex items-end justify-between gap-1">
+                                  <span className="font-semibold text-gray-900 dark:text-white text-sm">${etf.price.toFixed(2)}</span>
+                                  <span className={`text-xs font-semibold ${etf.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                                    {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent.toFixed(2)}%
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-gray-900 dark:text-white">${etf.price.toFixed(2)}</div>
-                          <div className={`text-sm font-medium ${etf.changePercent >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                            {etf.changePercent >= 0 ? '+' : ''}{etf.changePercent}%
+
+                        {totalEtfPages > 1 && (
+                          <div className="flex items-center justify-between pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setEtfPage(p => Math.max(0, p - 1))}
+                              disabled={etfPage === 0}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                              Prev
+                            </button>
+                            <div className="flex gap-1">
+                              {Array.from({ length: totalEtfPages }, (_, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setEtfPage(i)}
+                                  className={`w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                                    i === etfPage
+                                      ? 'bg-[#F5C518] text-black'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  }`}
+                                >
+                                  {i + 1}
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEtfPage(p => Math.min(totalEtfPages - 1, p + 1))}
+                              disabled={etfPage >= totalEtfPages - 1}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Next
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            </button>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        )}
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
               {/* Community Reviews — inline, between ETF selection and amount */}
               {etfSymbol && (() => {

@@ -47,14 +47,14 @@ export function ETFCategoryRankings({ onSelectCategory, selectedCategory }: Prop
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
     setLoading(true);
     apiClient
-      .get<CategoryRanking[]>('/rankings/categories')
-      .then((res) => { if (active) setRankings(res.data); })
-      .catch(() => { if (active) setRankings([]); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .get<CategoryRanking[]>('/rankings/categories', { signal: controller.signal })
+      .then((res) => setRankings(res.data))
+      .catch(() => setRankings([]))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, []);
 
   const top3 = rankings.slice(0, 3);

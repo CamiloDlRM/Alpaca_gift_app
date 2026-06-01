@@ -57,14 +57,14 @@ export function ETFTopRankings({ category, onSelectETF, selectedETF }: Props) {
       setLoading(false);
       return;
     }
-    let active = true;
+    const controller = new AbortController();
     setLoading(true);
     apiClient
-      .get<CategoryETFsResponse>(`/rankings/etfs/${encodeURIComponent(category)}`)
-      .then((res) => { if (active) setEtfs(res.data.topETFs ?? []); })
-      .catch(() => { if (active) setEtfs([]); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .get<CategoryETFsResponse>(`/rankings/etfs/${encodeURIComponent(category)}`, { signal: controller.signal })
+      .then((res) => setEtfs(res.data.topETFs ?? []))
+      .catch(() => setEtfs([]))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [category]);
 
   const top3 = etfs.slice(0, 3);

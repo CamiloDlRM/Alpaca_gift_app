@@ -44,10 +44,9 @@ const MEDAL_TEXT = ['text-yellow-500', 'text-gray-400', 'text-orange-400'];
 // --- Category podium ---------------------------------------------------------
 
 function CategoryPodium({ categories }: { categories: CategoryRanking[] }) {
-  // Reorder for visual podium: rank2 (left), rank1 (center), rank3 (right)
   const order: { cat: CategoryRanking | undefined; idx: number; height: string }[] = [
     { cat: categories[1], idx: 1, height: 'h-32' },
-    { cat: categories[0], idx: 0, height: 'h-40' },
+    { cat: categories[0], idx: 0, height: 'h-44' },
     { cat: categories[2], idx: 2, height: 'h-28' },
   ];
 
@@ -56,24 +55,53 @@ function CategoryPodium({ categories }: { categories: CategoryRanking[] }) {
       {order.map(({ cat, idx, height }) =>
         cat ? (
           <div key={cat.category} className="flex flex-col items-center">
-            <div className={`text-3xl mb-1 ${MEDAL_TEXT[idx]}`}>{MEDALS[idx]}</div>
-            <Card
-              className={`w-full ${height} flex flex-col items-center justify-center p-3 text-center bg-gradient-to-b ${
-                idx === 0
-                  ? 'from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800 border-yellow-300 dark:border-yellow-700'
-                  : idx === 1
-                  ? 'from-gray-50 to-white dark:from-gray-700/40 dark:to-gray-800'
-                  : 'from-orange-50 to-white dark:from-orange-900/20 dark:to-gray-800 border-orange-300 dark:border-orange-700'
-              }`}
-            >
-              <div className="font-bold text-gray-900 dark:text-white text-sm leading-tight line-clamp-2">{cat.category}</div>
-              <div className="mt-1">
-                <StarsDisplay value={cat.averageRating} />
+            {/* Crown + particles for #1 */}
+            {idx === 0 ? (
+              <div className="relative flex flex-col items-center mb-1">
+                <div className="flex gap-1 mb-0.5">
+                  <span className="particle text-yellow-400 text-xs" style={{ animationDelay: '0s' }}>✦</span>
+                  <span className="particle text-amber-300 text-xs" style={{ animationDelay: '0.6s' }}>✦</span>
+                  <span className="particle text-yellow-500 text-xs" style={{ animationDelay: '1.2s' }}>✦</span>
+                </div>
+                <span className="animate-float-crown text-3xl">👑</span>
+                <span className="text-[10px] font-black tracking-widest text-yellow-600 dark:text-yellow-400 uppercase mt-0.5">Champion</span>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                {cat.giftCount} {cat.giftCount === 1 ? 'gift' : 'gifts'} <TrendIndicator trend={cat.trend} />
-              </div>
-            </Card>
+            ) : (
+              <div className={`text-2xl mb-1 ${MEDAL_TEXT[idx]}`}>{MEDALS[idx]}</div>
+            )}
+
+            {/* Card — wrapped in glow for #1 */}
+            <div className={`w-full ${idx === 0 ? 'animate-champion-glow' : ''}`}>
+              <Card
+                className={`w-full ${height} flex flex-col items-center justify-center p-3 text-center bg-gradient-to-b border-2 ${
+                  idx === 0
+                    ? 'from-yellow-50 to-amber-50/60 dark:from-yellow-900/30 dark:to-amber-900/20 border-yellow-400 dark:border-yellow-600'
+                    : idx === 1
+                    ? 'from-gray-50 to-white dark:from-gray-700/40 dark:to-gray-800 border-gray-200 dark:border-gray-600'
+                    : 'from-orange-50 to-white dark:from-orange-900/20 dark:to-gray-800 border-orange-300 dark:border-orange-700'
+                }`}
+              >
+                {idx === 0 && (
+                  <span className="text-2xl mb-1">{MEDALS[idx]}</span>
+                )}
+                <div className={`font-bold text-sm leading-tight line-clamp-2 ${idx === 0 ? 'text-yellow-800 dark:text-yellow-200' : 'text-gray-900 dark:text-white'}`}>
+                  {cat.category}
+                </div>
+                <div className="mt-1">
+                  <StarsDisplay value={cat.averageRating} />
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                  {cat.giftCount} {cat.giftCount === 1 ? 'gift' : 'gifts'} <TrendIndicator trend={cat.trend} />
+                </div>
+              </Card>
+            </div>
+
+            {/* Podium step base */}
+            <div className={`w-full mt-1 rounded-b-lg flex items-center justify-center py-1 ${
+              idx === 0 ? 'bg-yellow-400/20 dark:bg-yellow-600/20 h-5' :
+              idx === 1 ? 'bg-gray-200/60 dark:bg-gray-600/40 h-3' :
+              'bg-orange-200/40 dark:bg-orange-700/20 h-2'
+            }`} />
           </div>
         ) : (
           <div key={`empty-${idx}`} />
@@ -87,21 +115,31 @@ function CategoryPodium({ categories }: { categories: CategoryRanking[] }) {
 
 function ETFCard({ etf, rank }: { etf: ETFRanking; rank: number }) {
   const isTop3 = rank < 3;
+  const isChampion = rank === 0;
   const borderClass = !isTop3
     ? 'border-gray-100 dark:border-gray-700'
-    : rank === 0
-    ? 'border-yellow-300 dark:border-yellow-700'
+    : isChampion
+    ? 'border-yellow-400 dark:border-yellow-500'
     : rank === 1
     ? 'border-gray-300 dark:border-gray-500'
     : 'border-orange-300 dark:border-orange-700';
 
-  return (
-    <Card className={`p-4 border-2 ${borderClass}`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
+  const card = (
+    <Card className={`relative p-4 border-2 ${borderClass} ${isChampion ? 'bg-gradient-to-br from-yellow-50 to-white dark:from-yellow-900/20 dark:to-gray-800' : ''}`}>
+      {/* Champion crown badge */}
+      {isChampion && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-yellow-400 text-black text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-lg">
+          <span>👑</span> #1 Best
+        </div>
+      )}
+
+      <div className="flex items-start justify-between gap-2 mb-2 mt-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl flex-shrink-0">{isTop3 ? MEDALS[rank] : <span className="text-sm font-bold text-gray-400">#{etf.rank}</span>}</span>
+          <span className="text-xl flex-shrink-0">
+            {isTop3 ? MEDALS[rank] : <span className="text-sm font-bold text-gray-400 tabular-nums">#{etf.rank}</span>}
+          </span>
           <div className="min-w-0">
-            <div className="font-bold text-gray-900 dark:text-white">{etf.symbol}</div>
+            <div className={`font-bold ${isChampion ? 'text-yellow-800 dark:text-yellow-200' : 'text-gray-900 dark:text-white'}`}>{etf.symbol}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{etf.name}</div>
           </div>
         </div>
@@ -129,9 +167,33 @@ function ETFCard({ etf, rank }: { etf: ETFRanking; rank: number }) {
 
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
         <span>{etf.giftCount} {etf.giftCount === 1 ? 'gift' : 'gifts'}</span>
-        <span>{etf.recentGiftCount} recent</span>
+        <span className="flex items-center gap-0.5">
+          <span className="text-orange-500">🔥</span>{etf.recentGiftCount} recent
+        </span>
       </div>
     </Card>
+  );
+
+  if (!isChampion) return card;
+
+  return (
+    <div className="relative pt-3">
+      {/* Particle confetti above champion card */}
+      <div className="absolute top-0 left-0 right-0 flex justify-around pointer-events-none">
+        {['✦','★','✦','★','✦'].map((s, i) => (
+          <span
+            key={i}
+            className="particle text-yellow-400 text-xs"
+            style={{ animationDelay: `${i * 0.35}s`, animationDuration: `${1.5 + i * 0.2}s` }}
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+      <div className="animate-champion-glow rounded-xl">
+        {card}
+      </div>
+    </div>
   );
 }
 
@@ -202,7 +264,12 @@ export default function Leaderboard() {
         <div className="max-w-5xl mx-auto">
           {/* Page header */}
           <header className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Leaderboards</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Leaderboards</h1>
+              <span className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-md animate-pulse">
+                🔥 Live
+              </span>
+            </div>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
               Discover the most popular ETFs and categories on WealthGift
             </p>
@@ -210,7 +277,10 @@ export default function Leaderboard() {
 
           {/* Category leaderboard */}
           <section className="mb-12">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Top Categories</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Top Categories</h2>
+              <span className="text-lg">🏆</span>
+            </div>
 
             {catLoading ? (
               <PodiumSkeleton />
@@ -250,7 +320,10 @@ export default function Leaderboard() {
 
           {/* ETF leaderboard */}
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Top ETFs</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Top ETFs</h2>
+              <span className="text-lg">📈</span>
+            </div>
 
             {/* Filter tabs */}
             <div className="flex flex-wrap gap-2 mb-5" role="tablist" aria-label="Filter ETFs by category">

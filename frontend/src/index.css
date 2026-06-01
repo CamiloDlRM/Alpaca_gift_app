@@ -35,3 +35,47 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes champion-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 3px rgba(245, 197, 24, 0.5),
+                0 0 35px 8px rgba(245, 197, 24, 0.25),
+                0 0 60px 15px rgba(245, 197, 24, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px 8px rgba(245, 197, 24, 0.85),
+                0 0 60px 20px rgba(245, 197, 24, 0.45),
+                0 0 100px 30px rgba(245, 197, 24, 0.15);
+  }
+}
+.animate-champion-glow {
+  animation: champion-glow 2.2s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+@keyframes float-crown {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50%       { transform: translateY(-6px) rotate(5deg); }
+}
+.animate-float-crown {
+  animation: float-crown 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes particle-drift {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-24px) scale(0.4); opacity: 0; }
+}
+.particle {
+  animation: particle-drift 1.8s ease-out infinite;
+}
+
+@keyframes gradient-sweep {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-sweep {
+  background-size: 200% 200%;
+  animation: gradient-sweep 3s ease infinite;
+}
