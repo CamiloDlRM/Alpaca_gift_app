@@ -6,8 +6,8 @@ import { getConsolidatedRecipientPortfolio } from '../recipient/recipient.servic
 // ── Provider config — all values from environment variables ──────────────────
 const GROQ_URL          = process.env.GROQ_BASE_URL    || 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL_FAST   = process.env.GROQ_MODEL_FAST  || 'llama-3.3-70b-versatile';
-const GROQ_MODEL_REASON = process.env.GROQ_MODEL_REASON || 'deepseek-r1-distill-llama-70b';
-const GEMINI_MODEL      = process.env.GEMINI_MODEL     || 'gemini-2.0-flash';
+const GROQ_MODEL_REASON = process.env.GROQ_MODEL_REASON || 'llama-3.3-70b-versatile';
+const GEMINI_MODEL      = process.env.GEMINI_MODEL     || 'gemini-2.5-flash';
 const GEMINI_BASE_URL   = process.env.GEMINI_BASE_URL  || 'https://generativelanguage.googleapis.com/v1beta';
 
 // ── SSE helpers ───────────────────────────────────────────────────────────────
@@ -104,47 +104,72 @@ export async function streamRegulations(messages: ChatMessage[], res: Response):
   }
 }
 
-// ── Mode 2: investments — Gemini 2.0 Flash + google_search ───────────────────
-// Gemini searches Google for real daily market news before answering.
+// ── Mode 2: investments — Gemini 2.0 Flash + google_search, fallback to Groq ──
 export async function chatInvestments(messages: ChatMessage[]): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return (
-      '⚙️ **Market Intelligence needs GEMINI_API_KEY.** Get a free key at https://aistudio.google.com\n\n' +
-      'Free tier: 1 million tokens/day — no credit card required.'
-    );
-  }
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const groqKey   = process.env.GROQ_API_KEY;
 
-  const url = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  if (geminiKey) {
+    const url = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+    const contents = messages.map(m => ({
+      role:  m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
 
-  // Convert chat history to Gemini format
-  const contents = messages.map(m => ({
-    role:  m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
+    try {
+      const response = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: INVESTMENTS_PROMPT }] },
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+        }),
+      });
 
-  try {
-    const response = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: INVESTMENTS_PROMPT }] },
-        contents,
-        tools: [{ google_search: {} }],            // native Google Search — reads real news
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-      }),
-    });
-
-    if (!response.ok) {
-      return "Sorry, I'm having trouble connecting to market intelligence right now. Please try again.";
+      if (response.ok) {
+        const data = (await response.json()) as GeminiResponse;
+        const text = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
+        if (text?.trim()) return text.trim();
+      } else {
+        const errText = await response.text().catch(() => '');
+        console.error('[Wealthy/investments] Gemini error', response.status, errText);
+      }
+    } catch (err) {
+      console.error('[Wealthy/investments] Gemini fetch failed:', err);
     }
-
-    const data = (await response.json()) as GeminiResponse;
-    const text = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
-    return text?.trim() ?? "I wasn't able to analyze the market right now. Please try again.";
-  } catch {
-    return "Sorry, I'm having trouble connecting right now. Please try again.";
   }
+
+  // Fallback: use Groq (no real-time search, but reliable)
+  if (groqKey) {
+    try {
+      const response = await fetch(GROQ_URL, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:    GROQ_MODEL_FAST,
+          stream:   false,
+          messages: [{ role: 'system', content: INVESTMENTS_PROMPT }, ...messages],
+          max_tokens: 1024,
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as OpenAIResponse;
+        const text = data.choices?.[0]?.message?.content?.trim();
+        if (text) return text;
+      } else {
+        const errText = await response.text().catch(() => '');
+        console.error('[Wealthy/investments] Groq fallback error', response.status, errText);
+      }
+    } catch (err) {
+      console.error('[Wealthy/investments] Groq fallback fetch failed:', err);
+    }
+  }
+
+  return "Sorry, I'm having trouble connecting to market intelligence right now. Please try again.";
 }
 
 // ── Mode 3: portfolio — Groq DeepSeek-R1, with user's live portfolio context ─
@@ -197,15 +222,17 @@ export async function chatPortfolio(messages: ChatMessage[], userEmail: string):
     });
 
     if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.error('[Wealthy/portfolio] Groq error', response.status, errText);
       return "Sorry, I'm having trouble connecting right now. Please try again.";
     }
 
     const data = (await response.json()) as OpenAIResponse;
     const raw  = data.choices?.[0]?.message?.content ?? '';
-    // Remove DeepSeek-R1 thinking tags — only show the final answer
     const clean = stripThinking(raw);
     return clean || "I wasn't able to analyze your portfolio right now. Please try again.";
-  } catch {
+  } catch (err) {
+    console.error('[Wealthy/portfolio] fetch failed:', err);
     return "Sorry, I'm having trouble connecting right now. Please try again.";
   }
 }
