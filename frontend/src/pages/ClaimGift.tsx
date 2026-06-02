@@ -50,6 +50,26 @@ export default function ClaimGift() {
     fetchGift();
   }, [fetchGift]);
 
+  // Status-based routing for returning users
+  useEffect(() => {
+    if (loading || !gift || !claimToken) return;
+
+    switch (gift.status) {
+      case 'INVESTED':
+      case 'REDEEMED':
+        navigate(`/recipient/${claimToken}/dashboard`, { replace: true });
+        break;
+      case 'KYC_SUBMITTED':
+      case 'KYC_VERIFIED':
+        navigate(`/claim/${claimToken}/agreement`, { replace: true });
+        break;
+      // CLAIMING: show resume UI below
+      // AGREEMENT_SIGNED / ACCOUNT_CREATING: show processing UI below
+      // FAILED: show error UI below
+      // PENDING: show normal claim UI
+    }
+  }, [gift, loading, claimToken, navigate]);
+
   const isSender = !!user && !!gift && user.id === gift.senderId;
 
   const handleStart = async () => {
@@ -158,6 +178,46 @@ export default function ClaimGift() {
     );
   }
 
+  // Gift is being processed by Alpaca — show status screen
+  if (gift.status === 'AGREEMENT_SIGNED' || gift.status === 'ACCOUNT_CREATING') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {claimPageHeader}
+        <div className="max-w-lg mx-auto px-4 py-16 text-center">
+          <div className="w-16 h-16 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Setting up your investment</h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            We're opening your brokerage account and purchasing your ETF. This usually takes less than a minute.
+            You can close this page — we'll notify you when it's ready.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Gift failed during Alpaca processing
+  if (gift.status === 'FAILED') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {claimPageHeader}
+        <div className="max-w-lg mx-auto px-4 py-16 text-center">
+          <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Something went wrong</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            There was an error setting up your investment. Please contact support and we'll resolve it right away.
+          </p>
+          <a href="/support" className="inline-block bg-[#F5C518] text-black font-bold py-3 px-6 rounded-xl hover:bg-yellow-400 transition-colors">
+            Contact Support
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  const isReturning = gift.status === 'CLAIMING';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {claimPageHeader}
@@ -167,9 +227,11 @@ export default function ClaimGift() {
             <path d="M20 7h-1.209A4.92 4.92 0 0019 5.5C19 3.57 17.43 2 15.5 2c-1.622 0-2.705 1.482-3.404 3.085C11.498 3.49 10.39 2 8.5 2 6.57 2 5 3.57 5 5.5c0 .596.079 1.089.209 1.5H4c-1.1 0-2 .9-2 2v2c0 .55.45 1 1 1v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7c.55 0 1-.45 1-1V9c0-1.1-.9-2-2-2zm-4.5-3c.83 0 1.5.67 1.5 1.5S16.33 7 15.5 7H13c.5-1.58 1.55-3 2.5-3zM7 5.5C7 4.67 7.67 4 8.5 4c.95 0 2 1.42 2.5 3H8.5C7.67 7 7 6.33 7 5.5zM4 9h7v2H4V9zm1 4h6v7H5v-7zm14 7h-6v-7h6v7zm1-9h-7V9h7v2z"/>
           </svg>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            {gift.occasion} Gift
+            {isReturning ? 'Welcome back!' : `${gift.occasion} Gift`}
           </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400">You've received an investment gift!</p>
+          <p className="text-lg text-gray-500 dark:text-gray-400">
+            {isReturning ? 'Continue where you left off to claim your investment gift.' : "You've received an investment gift!"}
+          </p>
         </div>
 
         <Card className="p-6 sm:p-8 mb-8">

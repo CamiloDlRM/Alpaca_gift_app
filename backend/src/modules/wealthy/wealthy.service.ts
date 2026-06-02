@@ -124,14 +124,15 @@ export async function chatInvestments(messages: ChatMessage[]): Promise<string> 
           systemInstruction: { parts: [{ text: INVESTMENTS_PROMPT }] },
           contents,
           tools: [{ google_search: {} }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
         }),
       });
 
       if (response.ok) {
         const data = (await response.json()) as GeminiResponse;
-        const text = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
-        if (text?.trim()) return text.trim();
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        const text = parts.filter(p => p.text).map(p => p.text).join('');
+        if (text.trim()) return text.trim();
       } else {
         const errText = await response.text().catch(() => '');
         console.error('[Wealthy/investments] Gemini error', response.status, errText);

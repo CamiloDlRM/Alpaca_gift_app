@@ -69,6 +69,11 @@ export async function startClaiming(claimToken: string, claimingUserId: string):
     }
   }
 
+  // If already CLAIMING the user is resuming after closing the page — idempotent, just return it
+  if (gift.status === GiftStatus.CLAIMING) {
+    return toGiftResponse(gift);
+  }
+
   const valid = VALID_TRANSITIONS[gift.status];
   if (!valid.includes(GiftStatus.CLAIMING)) {
     throw new ConflictError(`Cannot transition from ${gift.status} to CLAIMING`);

@@ -182,6 +182,10 @@ export async function handleWebhook(rawBody: Buffer, signature: string): Promise
 
       if (!userId || !giftData) break;
 
+      // Idempotency: skip if the gift was already created (by confirmGift or a previous webhook delivery)
+      const alreadyCreated = await prisma.gift.findFirst({ where: { paymentIntentId: pi.id } });
+      if (alreadyCreated) break;
+
       const parsedGiftData = JSON.parse(giftData);
       const commissionVal = parseFloat(commission || '0');
       const amountVal = parseFloat(giftAmount || '0');

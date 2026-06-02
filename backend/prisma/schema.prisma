@@ -40,7 +40,7 @@ model Gift {
   claimToken      String     @unique @default(uuid())
   alpacaAccountId String?
   alpacaOrderId   String?
-  paymentIntentId String?
+  paymentIntentId String?  @unique
   recipientEmail  String?
   redeemedAmount  Float?
   claimPin        String?
