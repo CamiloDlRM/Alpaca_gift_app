@@ -23,6 +23,10 @@ model User {
   gifts              Gift[]
   subscription       Subscription?
   etfRatings         ETFRating[]
+  savedRecipients    SavedRecipient[]
+  importantDates     ImportantDate[]
+  favoriteRecipients FavoriteRecipient[]
+  createdEvents      GiftEvent[]
 }
 
 model Gift {
@@ -46,6 +50,8 @@ model Gift {
   claimPin        String?
   claimPinExpiry  DateTime?
   claimEmailSentAt DateTime?
+  cancelledAt     DateTime?
+  cancelledReason String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   kyc             KYC?
@@ -127,6 +133,7 @@ enum GiftStatus {
   INVESTED
   FAILED
   REDEEMED
+  CANCELLED
 }
 
 enum SubscriptionStatus {
@@ -151,4 +158,94 @@ enum PaymentStatus {
 enum RatingRole {
   SENDER
   RECEIVER
+}
+
+model SavedRecipient {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, email])
+}
+
+model ImportantDate {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personName  String
+  personEmail String?
+  label       String
+  month       Int
+  day         Int
+  remindDaysBefore Int @default(7)
+  createdAt   DateTime @default(now())
+}
+
+model FavoriteRecipient {
+  id             String             @id @default(uuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientEmail String
+  recipientName  String
+  etfSymbol      String
+  amount         Float
+  schedules      FavoriteSchedule[]
+  createdAt      DateTime           @default(now())
+
+  @@unique([userId, recipientEmail])
+}
+
+model FavoriteSchedule {
+  id                  String            @id @default(uuid())
+  favoriteRecipientId String
+  favoriteRecipient   FavoriteRecipient @relation(fields: [favoriteRecipientId], references: [id], onDelete: Cascade)
+  month               Int
+  day                 Int
+  label               String?
+  lastSentAt          DateTime?
+  createdAt           DateTime          @default(now())
+}
+
+model GiftEvent {
+  id           String                 @id @default(uuid())
+  creatorId    String
+  creator      User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  etfSymbol    String
+  targetAmount Float
+  status       GiftEventStatus        @default(ACTIVE)
+  participants GiftEventParticipant[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+}
+
+model GiftEventParticipant {
+  id          String            @id @default(uuid())
+  eventId     String
+  event       GiftEvent         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  email       String
+  name        String
+  status      ParticipantStatus @default(INVITED)
+  giftId      String?           @unique
+  inviteToken String            @unique @default(uuid())
+  acceptedAt  DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@unique([eventId, email])
+}
+
+enum GiftEventStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  GIFTED
 }

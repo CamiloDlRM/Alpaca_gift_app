@@ -281,3 +281,37 @@ Aligned the entire ETF rating UI with the new backend contract that distinguishe
 - All ranking components and the Leaderboard are designed to look correct with zero gift activity (show category/ETF names with "New"/seedling empty states).
 - Could not run `tsc`/`vite` to verify (TypeScript not installed locally and npm commands disallowed); types were reviewed manually against the backend contract.
 ---
+
+---
+## [2026-06-12] - Calculator AI mode, Pricing redesign, non-registered gift flow, cancel gift, and 5 new pages
+
+### Files Modified
+- `src/hooks/useWealthyChat.ts` — Added `'calculator'` to the `WealthyMode` union.
+- `src/pages/Wealthy.tsx` — Added the ETF Calculator mode card (🧮, purple gradient) and `calculator` starter prompts.
+- `src/components/WealthyWidget.tsx` — Added `calculator` mode tab and starters to the floating widget.
+- `src/pages/Pricing.tsx` — Full redesign: Momments/Future Builder/Visionary display labels (internal enums BASIC/PRO/PRO_PLUS unchanged). Removed the monthly/annual toggle; both paid plans annual only ($39 PRO, $69 PRO_PLUS). Subscribe posts `{ paymentMethodId, plan, billingInterval: 'year' }`. Future Builder = MOST POPULAR (yellow border), Visionary = purple border.
+- `src/pages/SendGift.tsx` — Removed "recipient must be registered" warning copy; recipient email now optional for scheduled gifts with a helper note. Added URL pre-fill (`recipientName`, `recipientEmail`, `etfSymbol`, `amount`) on mount. Added a PRO/PRO_PLUS-only "Use saved recipient" dropdown backed by `GET /api/saved-recipients`.
+- `src/pages/Register.tsx` — Pre-fills email from `?email=`; captures `?claimToken=` into state and writes it to `sessionStorage.pendingClaimToken` on successful registration.
+- `src/pages/VerifyEmail.tsx` — After verify, redirects to `/claim/:claimToken` when a token is present (response `claimToken` or `sessionStorage.pendingClaimToken`), clearing it; otherwise `/dashboard`.
+- `src/pages/GiftDashboard.tsx` — Fetches gift status via `GET /api/gifts/:id`; adds a destructive "Cancel Gift" button (PENDING only) with a confirm step calling `DELETE /api/gifts/:giftId` with `{ reason }`, success/refund message.
+- `src/components/layout/Sidebar.tsx` — Added nav items Saved Contacts, Important Dates, Favorites, Gift Events (between Schedule and Activity).
+- `src/App.tsx` — Registered the 4 protected routes + public `/gift-events/invite/:inviteToken`.
+
+### Files Created
+- `src/components/UpgradePrompt.tsx` — Shared full-page plan-gate prompt (PRO vs PRO_PLUS copy), CTA to `/pricing`.
+- `src/pages/SavedRecipients.tsx` — `/saved-recipients` (PRO/PRO_PLUS). CRUD against `/api/saved-recipients`.
+- `src/pages/ImportantDates.tsx` — `/important-dates` (PRO/PRO_PLUS). CRUD against `/api/important-dates` with month dropdown + day/remindDaysBefore inputs.
+- `src/pages/FavoriteRecipients.tsx` — `/favorites` (PRO_PLUS only). CRUD against `/api/favorites` with dynamic multi-schedule rows.
+- `src/pages/GiftEvents.tsx` — `/gift-events` (PRO_PLUS only). "My Events" tab (`GET/POST /api/gift-events`, `PATCH /:id/close`, create modal with dynamic participants) and "Invited" tab (`GET /api/gift-events/invited`, `PATCH /api/gift-events/invite/:token/accept|decline`, Send Gift deep-link).
+- `src/pages/GiftEventInvite.tsx` — Public `/gift-events/invite/:inviteToken`. Standalone WealthGift-branded page (no sidebar). `GET /api/gift-events/invite/:token`; Accept / Send Gift / declined / gifted states.
+
+### Backend Dependencies (consumed)
+- Documented in backend-commit-file.md: `DELETE /api/gifts/:giftId` (confirmed present in gifts.routes.ts as cancelGiftHandler), `GET /api/gifts/:id`, `POST /api/subscriptions` with `plan`/`billingInterval`, `POST /api/payments/create-intent` with optional `recipientEmail`, `GET /auth/verify-email`.
+- NOT documented in backend-commit-file.md (contracts taken from the task brief only): `/api/saved-recipients`, `/api/important-dates`, `/api/favorites`, `/api/gift-events` (+ `/invited`, `/:id/close`, `/invite/:token`, `/invite/:token/accept|decline`), the `calculator` Wealthy mode, the `claimToken` field on the verify-email response, and the relaxed (no-longer-required) recipient registration in payments/gifts. These should be verified against the actual backend before release.
+
+### Notes
+- Internal subscription enums remain `BASIC`/`PRO`/`PRO_PLUS` for all API calls; only display labels changed (Momments/Future Builder/Visionary).
+- The new Pricing page no longer charges $5.99 BASIC fee in copy — uses $4.99 per gift per the task brief (backend BASIC_SENDING_FEE is documented as $5.99 — flag for backend alignment).
+- Plan-gated pages render the sidebar plus a centered UpgradePrompt rather than redirecting, so navigation stays consistent.
+- Could not run tsc/vite locally (not installed; npm disallowed) — types reviewed manually against the provided contracts.
+---

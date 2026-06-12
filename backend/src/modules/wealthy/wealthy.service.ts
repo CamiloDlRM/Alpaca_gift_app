@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { ChatMessage, WealthyMode } from './wealthy.types';
-import { REGULATIONS_PROMPT, INVESTMENTS_PROMPT, PORTFOLIO_PROMPT } from './wealthy.prompts';
+import { REGULATIONS_PROMPT, INVESTMENTS_PROMPT, PORTFOLIO_PROMPT, CALCULATOR_PROMPT } from './wealthy.prompts';
 import { getConsolidatedRecipientPortfolio } from '../recipient/recipient.service';
 
 // ── Provider config — all values from environment variables ──────────────────
@@ -173,6 +173,75 @@ export async function chatInvestments(messages: ChatMessage[]): Promise<string> 
   return "Sorry, I'm having trouble connecting to market intelligence right now. Please try again.";
 }
 
+// ── Mode 4: calculator — Gemini + google_search for real ETF data, fallback Groq ─
+export async function chatCalculator(messages: ChatMessage[]): Promise<string> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const groqKey   = process.env.GROQ_API_KEY;
+
+  if (geminiKey) {
+    const url = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+    const contents = messages.map(m => ({
+      role:  m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    try {
+      const response = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: CALCULATOR_PROMPT }] },
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as GeminiResponse;
+        const parts = data.candidates?.[0]?.content?.parts ?? [];
+        const text = parts.filter(p => p.text).map(p => p.text).join('');
+        if (text.trim()) return text.trim();
+      } else {
+        const errText = await response.text().catch(() => '');
+        console.error('[Wealthy/calculator] Gemini error', response.status, errText);
+      }
+    } catch (err) {
+      console.error('[Wealthy/calculator] Gemini fetch failed:', err);
+    }
+  }
+
+  // Fallback: use Groq (no real-time search, but reliable)
+  if (groqKey) {
+    try {
+      const response = await fetch(GROQ_URL, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:    GROQ_MODEL_FAST,
+          stream:   false,
+          messages: [{ role: 'system', content: CALCULATOR_PROMPT }, ...messages],
+          max_tokens: 2048,
+          temperature: 0.5,
+        }),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as OpenAIResponse;
+        const text = data.choices?.[0]?.message?.content?.trim();
+        if (text) return text;
+      } else {
+        const errText = await response.text().catch(() => '');
+        console.error('[Wealthy/calculator] Groq fallback error', response.status, errText);
+      }
+    } catch (err) {
+      console.error('[Wealthy/calculator] Groq fallback fetch failed:', err);
+    }
+  }
+
+  return "Sorry, I'm having trouble running the calculator right now. Please try again.";
+}
+
 // ── Mode 3: portfolio — Groq DeepSeek-R1, with user's live portfolio context ─
 // DeepSeek-R1's chain-of-thought reasoning is the best free model for analysis.
 export async function chatPortfolio(messages: ChatMessage[], userEmail: string): Promise<string> {
@@ -258,6 +327,12 @@ export async function chatWealthy(
       return;
     }
 
+    case 'calculator': {
+      const text = await chatCalculator(messages);
+      sseSendFull(res, text);
+      return;
+    }
+
     case 'portfolio': {
       if (!userEmail) {
         sseSendFull(res, 'Please sign in to let Wealthy analyze your portfolio.');
@@ -269,6 +344,6 @@ export async function chatWealthy(
     }
 
     default:
-      sseSendFull(res, 'Unknown mode. Please choose regulations, investments, or portfolio.');
+      sseSendFull(res, 'Unknown mode. Please choose regulations, investments, calculator, or portfolio.');
   }
 }

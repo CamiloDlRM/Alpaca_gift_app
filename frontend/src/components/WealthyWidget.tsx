@@ -22,6 +22,12 @@ const MODES: { key: WealthyMode; label: string; icon: string; desc: string }[] =
     icon: '💼',
     desc: 'Analyze your investments and get hold/sell advice',
   },
+  {
+    key: 'calculator',
+    label: 'Calculator',
+    icon: '🧮',
+    desc: 'Historical returns and compound growth projections',
+  },
 ];
 
 const STARTERS: Record<WealthyMode, string[]> = {
@@ -39,6 +45,11 @@ const STARTERS: Record<WealthyMode, string[]> = {
     "Should I hold or sell my current positions?",
     "How diversified is my portfolio?",
     "Which of my gifts is performing best?",
+  ],
+  calculator: [
+    "What could $5,000 in VOO be worth in 20 years?",
+    "Show real historical returns of QQQ",
+    "Compare long-term growth: VOO vs QQQ",
   ],
 };
 

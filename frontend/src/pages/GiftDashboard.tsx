@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import apiClient from '../api/client';
 
 // Inline sender rating card — lets the gift sender rate the ETF as SENDER
@@ -194,11 +195,19 @@ type Period = typeof PERIODS[number];
 
 export default function GiftDashboard() {
   const { giftId } = useParams<{ giftId: string }>();
+  const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [period, setPeriod] = useState<Period>('1M');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Gift status + cancellation
+  const [giftStatus, setGiftStatus] = useState<string>('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const [cancelSuccess, setCancelSuccess] = useState(false);
 
   const fetchPortfolio = useCallback(async () => {
     if (!giftId) return;
@@ -209,6 +218,39 @@ export default function GiftDashboard() {
       setError('Failed to load portfolio data.');
     }
   }, [giftId]);
+
+  const fetchGiftStatus = useCallback(async () => {
+    if (!giftId) return;
+    try {
+      const res = await apiClient.get<{ status: string }>(`/gifts/${giftId}`);
+      setGiftStatus(res.data.status);
+    } catch {
+      // Non-blocking — status section just won't show a cancel button.
+    }
+  }, [giftId]);
+
+  const handleCancelGift = async () => {
+    if (!giftId || cancelLoading) return;
+    setCancelLoading(true);
+    setCancelError('');
+    try {
+      await apiClient.delete(`/gifts/${giftId}`, {
+        data: { reason: 'Cancelled by sender' },
+      });
+      setGiftStatus('CANCELLED');
+      setCancelSuccess(true);
+      setShowCancelConfirm(false);
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        setCancelError(axiosErr.response?.data?.error || 'Could not cancel the gift.');
+      } else {
+        setCancelError('Could not cancel the gift. Please try again.');
+      }
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   const fetchHistory = useCallback(async () => {
     if (!giftId) return;
@@ -225,11 +267,11 @@ export default function GiftDashboard() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchPortfolio(), fetchHistory()]);
+      await Promise.all([fetchPortfolio(), fetchHistory(), fetchGiftStatus()]);
       setLoading(false);
     };
     load();
-  }, [fetchPortfolio, fetchHistory]);
+  }, [fetchPortfolio, fetchHistory, fetchGiftStatus]);
 
   if (loading) {
     return (
@@ -377,6 +419,71 @@ export default function GiftDashboard() {
             </div>
           </div>
         </Card>
+
+        {/* Gift status + cancel */}
+        {(giftStatus === 'PENDING' || cancelSuccess) && (
+          <Card className="p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Gift status</h2>
+            {cancelSuccess ? (
+              <div className="mt-3 flex items-start gap-2 bg-green-50 text-green-700 px-4 py-3 rounded-lg text-sm" role="status">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Gift cancelled. A full refund has been issued to your payment method.</span>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-4">
+                  This gift is still pending. You can cancel it for a full refund as long as it has not been claimed.
+                </p>
+                {cancelError && (
+                  <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{cancelError}</div>
+                )}
+                {showCancelConfirm ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-sm font-medium text-red-700 mb-4">
+                      Are you sure? This cannot be undone. A full refund will be issued.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        size="sm"
+                        onClick={handleCancelGift}
+                        loading={cancelLoading}
+                        className="bg-red-600 hover:bg-red-700 text-white border-0"
+                      >
+                        Yes, cancel gift
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowCancelConfirm(false)}
+                        disabled={cancelLoading}
+                      >
+                        Keep gift
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                  >
+                    Cancel Gift
+                  </Button>
+                )}
+              </>
+            )}
+            {cancelSuccess && (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="mt-4 text-sm text-[#b8960c] font-semibold hover:underline"
+              >
+                Back to my gifts
+              </button>
+            )}
+          </Card>
+        )}
 
         {/* Sender rating */}
         <SenderRatingCard symbol={portfolio.symbol} />

@@ -26,6 +26,13 @@ const MODES: { key: WealthyMode; label: string; icon: string; desc: string; colo
     desc: 'Analyze your investments and get personalized hold/sell advice',
     color: 'from-[#F5C518] to-amber-500',
   },
+  {
+    key: 'calculator',
+    label: 'ETF Calculator',
+    icon: '🧮',
+    desc: 'Real historical returns and compound growth projections for any ETF',
+    color: 'from-purple-500 to-violet-600',
+  },
 ];
 
 const STARTERS: Record<WealthyMode, string[]> = {
@@ -46,6 +53,12 @@ const STARTERS: Record<WealthyMode, string[]> = {
     "How diversified is my portfolio?",
     "Which of my investments is performing the best?",
     "Give me an overall analysis of my WealthGift portfolio",
+  ],
+  calculator: [
+    "If I invest $5,000 in VOO today, what could it be worth in 20 years?",
+    "Show me real historical returns of QQQ over the last 10 years",
+    "How much would I need to invest monthly in VTI to reach $100k in 15 years?",
+    "Compare long-term growth: VOO vs QQQ vs VGT",
   ],
 };
 

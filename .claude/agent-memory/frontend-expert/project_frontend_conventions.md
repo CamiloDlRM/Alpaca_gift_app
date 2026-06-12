@@ -30,5 +30,18 @@ WealthGift frontend lives at `/home/camilo/Alpaca_gift_app/frontend` — React +
 - Dark mode supported throughout via `dark:` variants (gray-900/800 backgrounds, gray-100/400 text).
 - Auth pages pattern: `min-h-screen bg-gray-50 dark:bg-gray-900` centered, `max-w-md` card with `rounded-2xl shadow-sm border`.
 
+**Plan display labels (marketing rename)**
+- Internal subscription enums stay `BASIC | PRO | PRO_PLUS` for ALL API calls.
+- Marketing display names: BASIC = "Momments", PRO = "Future Builder", PRO_PLUS = "Visionary". Map enum→label at the display layer only; never send marketing names to the backend.
+- Paid plans are annual only on the Pricing page: PRO $39/yr, PRO_PLUS $69/yr. Subscribe posts `{ paymentMethodId, plan, billingInterval: 'year' }` to `/subscriptions`.
+
+**Plan-gated pages**
+- Shared component `src/components/UpgradePrompt.tsx` renders a centered full-page upgrade card (props: `feature`, `requiredPlan?: 'PRO' | 'PRO_PLUS'`). Gated pages render `<Sidebar />` + `<UpgradePrompt />` inside `<main>` rather than redirecting, so nav stays consistent.
+- PRO/PRO_PLUS pages: Saved Contacts, Important Dates. PRO_PLUS-only: Favorites, Gift Events.
+
+**Cross-page deep-link conventions**
+- Send-gift pre-fill via query params: `/send?recipientName=&recipientEmail=&etfSymbol=&amount=`. SendGift reads these in a mount `useEffect`. Used by Gift Events "Send Gift" and the public invite page.
+- Gift-claim-after-verify: Register stashes `?claimToken=` into `sessionStorage.pendingClaimToken`; VerifyEmail reads it (or the verify response's `claimToken`) and redirects to `/claim/:token`.
+
 **Constraints**
 - Do NOT run npm/npx commands locally (TypeScript not installed; migrations run on remote server).

@@ -56,3 +56,13 @@ export async function startClaimingHandler(req: Request, res: Response, next: Ne
     next(err);
   }
 }
+
+export async function cancelGiftHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason : undefined;
+    await giftsService.cancelGift(req.params.giftId, req.user!.id, reason);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}

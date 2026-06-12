@@ -6,7 +6,6 @@ import {
   CreateSubscriptionDto,
   PaidPlanName,
   PLAN_PRICING,
-  PRO_PLUS_ANNUAL_PRICE_CENTS,
   SubscriptionPlanName,
   SubscriptionStatusResponse,
 } from './subscriptions.types';
@@ -69,10 +68,9 @@ export async function createSubscription(
   });
 
   const pricing = PLAN_PRICING[requestedPlan];
-  const billingInterval = dto.billingInterval === 'year' ? 'year' : 'month';
-  const unitAmount = (billingInterval === 'year' && requestedPlan === 'PRO_PLUS')
-    ? PRO_PLUS_ANNUAL_PRICE_CENTS
-    : pricing.unitAmountCents;
+  // Both plans are annual only; billingInterval is kept for API compatibility
+  const billingInterval = 'year';
+  const unitAmount = pricing.unitAmountCents;
 
   // Create a price inline for the requested plan
   const price = await stripe.prices.create({

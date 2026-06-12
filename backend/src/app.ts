@@ -13,6 +13,11 @@ import recipientRouter from './modules/recipient/recipient.routes';
 import etfRatingsRouter from './modules/etf-ratings/etf-ratings.routes';
 import rankingsRouter from './modules/rankings/rankings.routes';
 import wealthyRouter from './modules/wealthy/wealthy.routes';
+import savedRecipientsRouter from './modules/saved-recipients/saved-recipients.routes';
+import importantDatesRouter from './modules/important-dates/important-dates.routes';
+import favoritesRouter from './modules/favorites/favorites.routes';
+import giftEventsRouter from './modules/gift-events/gift-events.routes';
+import { authMiddleware } from './shared/middleware/auth.middleware';
 import { errorMiddleware } from './shared/middleware/error.middleware';
 
 // Import modules that register event listeners
@@ -20,6 +25,7 @@ import './modules/alpaca/alpaca.service';
 import './modules/notifications/notifications.service';
 import './shared/email/email.listeners';
 import './shared/cron/gift-delivery.cron';
+import './shared/cron/reminders.cron';
 
 const app = express();
 
@@ -44,6 +50,10 @@ app.use('/api/recipient', recipientRouter);
 app.use('/api/etf-ratings', etfRatingsRouter);
 app.use('/api/rankings', rankingsRouter);
 app.use('/api/wealthy', wealthyRouter);
+app.use('/api/saved-recipients', authMiddleware, savedRecipientsRouter);
+app.use('/api/important-dates', authMiddleware, importantDatesRouter);
+app.use('/api/favorites', authMiddleware, favoritesRouter);
+app.use('/api/gift-events', authMiddleware, giftEventsRouter);
 
 app.use(errorMiddleware);
 

@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { prisma } from '../db/prisma.client';
-import { sendGiftReceivedEmail } from '../email/email.service';
+import { sendGiftReceivedEmail, sendGiftInvitationEmail } from '../email/email.service';
+import { isEmailRegistered } from '../../modules/auth/auth.service';
 
 // Runs every day at 9:00 AM UTC.
 // Finds scheduled gifts whose delivery date has arrived and sends the claim link email.
@@ -20,7 +21,7 @@ cron.schedule('0 9 * * *', async () => {
     for (const gift of gifts) {
       if (!gift.recipientEmail || !gift.sender) continue;
       try {
-        await sendGiftReceivedEmail({
+        const emailPayload = {
           recipientEmail: gift.recipientEmail,
           recipientName: gift.recipientName,
           senderName: gift.sender.name,
@@ -28,7 +29,13 @@ cron.schedule('0 9 * * *', async () => {
           etfSymbol: gift.etfSymbol,
           occasion: gift.occasion,
           claimToken: gift.claimToken,
-        });
+        };
+        const registered = await isEmailRegistered(gift.recipientEmail);
+        if (registered) {
+          await sendGiftReceivedEmail(emailPayload);
+        } else {
+          await sendGiftInvitationEmail(emailPayload);
+        }
         await prisma.gift.update({
           where: { id: gift.id },
           data: { claimEmailSentAt: now },

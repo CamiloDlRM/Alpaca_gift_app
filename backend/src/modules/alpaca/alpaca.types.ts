@@ -6,6 +6,8 @@ export interface KYCData {
   city: string;
   state: string;
   zip: string;
+  email: string;
+  ipAddress?: string;
 }
 
 export interface PortfolioSnapshot {

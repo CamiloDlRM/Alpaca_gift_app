@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/auth.store';
 
-export type WealthyMode = 'regulations' | 'investments' | 'portfolio';
+export type WealthyMode = 'regulations' | 'investments' | 'portfolio' | 'calculator';
 
 export interface WealthyMessage {
   id: string;

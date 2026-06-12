@@ -3,11 +3,7 @@ export type PaidPlanName = 'PRO' | 'PRO_PLUS';
 
 export interface CreateSubscriptionDto {
   paymentMethodId: string;
-  /**
-   * Which paid plan to subscribe to. Defaults to 'PRO' for backward compatibility.
-   */
   plan?: PaidPlanName;
-  /** Billing interval. Defaults to 'month'. Annual PRO_PLUS costs $49/year. */
   billingInterval?: 'month' | 'year';
 }
 
@@ -18,21 +14,20 @@ export interface SubscriptionStatusResponse {
   stripeSubscriptionId?: string | null;
 }
 
-/** Annual PRO_PLUS price: $49/year */
-export const PRO_PLUS_ANNUAL_PRICE_CENTS = 4900;
+/** Future Builder (PRO): $39/year */
+export const PRO_ANNUAL_PRICE_CENTS = 3900;
+/** Visionary (PRO_PLUS): $69/year */
+export const PRO_PLUS_ANNUAL_PRICE_CENTS = 6900;
 
-/**
- * Pricing in USD (charged via Stripe in cents).
- */
-export const PLAN_PRICING: Record<PaidPlanName, { unitAmountCents: number; productName: string; monthlyPriceUsd: number }> = {
+export const PLAN_PRICING: Record<PaidPlanName, { unitAmountCents: number; productName: string; annualPriceUsd: number }> = {
   PRO: {
-    unitAmountCents: 999,
-    productName: 'WealthGift PRO',
-    monthlyPriceUsd: 9.99,
+    unitAmountCents: PRO_ANNUAL_PRICE_CENTS,
+    productName: 'WealthGift Future Builder',
+    annualPriceUsd: 39,
   },
   PRO_PLUS: {
-    unitAmountCents: 1999,
-    productName: 'WealthGift PRO+',
-    monthlyPriceUsd: 19.99,
+    unitAmountCents: PRO_PLUS_ANNUAL_PRICE_CENTS,
+    productName: 'WealthGift Visionary',
+    annualPriceUsd: 69,
   },
 };

@@ -30,7 +30,7 @@ export interface GiftResponse {
 }
 
 export const VALID_TRANSITIONS: Record<GiftStatus, GiftStatus[]> = {
-  PENDING: ['CLAIMING'],
+  PENDING: ['CLAIMING', 'CANCELLED'],
   CLAIMING: ['KYC_SUBMITTED'],
   KYC_SUBMITTED: ['KYC_VERIFIED'],
   KYC_VERIFIED: ['AGREEMENT_SIGNED'],
@@ -39,4 +39,5 @@ export const VALID_TRANSITIONS: Record<GiftStatus, GiftStatus[]> = {
   INVESTED: ['REDEEMED'],
   FAILED: [],
   REDEEMED: [],
+  CANCELLED: [],
 };

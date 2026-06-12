@@ -31,6 +31,14 @@ interface PaymentIntentResponse {
   total: number;
 }
 
+interface SavedRecipient {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 type GiftType = 'INSTANT' | 'SCHEDULED';
 
 interface GiftFormData {
@@ -292,6 +300,25 @@ export default function SendGift() {
   const [note, setNote] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
 
+  // Saved contacts (PRO / PRO_PLUS) — quick-fill recipient from saved list
+  const [savedRecipients, setSavedRecipients] = useState<SavedRecipient[]>([]);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState('');
+
+  // Pre-fill from URL params on mount (e.g. coming from a gift event / favorites)
+  useEffect(() => {
+    const pName = searchParams.get('recipientName');
+    const pEmail = searchParams.get('recipientEmail');
+    const pSymbol = searchParams.get('etfSymbol');
+    const pAmount = searchParams.get('amount');
+    if (pName) setRecipientName(pName);
+    if (pEmail) setRecipientEmail(pEmail);
+    if (pSymbol) setEtfSymbol(pSymbol);
+    if (pAmount) setAmount(pAmount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ETF pagination
   const [etfPage, setEtfPage] = useState(0);
   const ETF_PAGE_SIZE = 6;
@@ -350,6 +377,29 @@ export default function SendGift() {
       setRatingSubmitted(true);
     } catch { /* non-blocking */ }
     finally { setRatingSubmitting(false); }
+  };
+
+  const openSavedRecipients = async () => {
+    const next = !savedOpen;
+    setSavedOpen(next);
+    if (next && savedRecipients.length === 0) {
+      setSavedLoading(true);
+      setSavedError('');
+      try {
+        const { data } = await apiClient.get<SavedRecipient[]>('/saved-recipients');
+        setSavedRecipients(data);
+      } catch {
+        setSavedError('Could not load your saved contacts.');
+      } finally {
+        setSavedLoading(false);
+      }
+    }
+  };
+
+  const pickSavedRecipient = (r: SavedRecipient) => {
+    setRecipientName(r.name);
+    setRecipientEmail(r.email);
+    setSavedOpen(false);
   };
 
   const fetchData = useCallback(async () => {
@@ -617,6 +667,49 @@ export default function SendGift() {
                 </p>
               </div>
 
+              {/* Saved contacts — PRO / PRO_PLUS only */}
+              {isPro && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={openSavedRecipients}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#b8960c] hover:text-[#8a6f08] transition-colors"
+                    aria-expanded={savedOpen}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                    </svg>
+                    Use saved recipient
+                  </button>
+                  {savedOpen && (
+                    <div className="absolute z-20 mt-2 w-full sm:w-80 max-h-64 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg p-2">
+                      {savedLoading ? (
+                        <div className="py-6 text-center text-sm text-gray-400">Loading…</div>
+                      ) : savedError ? (
+                        <div className="py-4 px-2 text-sm text-red-500" role="alert">{savedError}</div>
+                      ) : savedRecipients.length === 0 ? (
+                        <div className="py-4 px-2 text-sm text-gray-400 text-center">
+                          No saved contacts yet.{' '}
+                          <Link to="/saved-recipients" className="text-[#b8960c] font-semibold hover:underline">Add one</Link>
+                        </div>
+                      ) : (
+                        savedRecipients.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => pickSavedRecipient(r)}
+                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{r.name}</div>
+                            <div className="text-xs text-gray-400">{r.email}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Input
                 label="Recipient name"
                 placeholder="Who is this gift for?"
@@ -837,14 +930,19 @@ export default function SendGift() {
                 )}
               </div>
 
-              <Input
-                label={giftType === 'INSTANT' ? 'Recipient email (required)' : 'Recipient email (must be registered on the platform)'}
-                type="email"
-                placeholder="email@example.com"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                required={giftType === 'INSTANT'}
-              />
+              <div className="flex flex-col gap-2">
+                <Input
+                  label={giftType === 'INSTANT' ? 'Recipient email (required)' : 'Recipient email (optional)'}
+                  type="email"
+                  placeholder="email@example.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  required={giftType === 'INSTANT'}
+                />
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  The recipient does not need a WealthGift account — they can create one when they claim the gift.
+                </p>
+              </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Note (optional)</label>

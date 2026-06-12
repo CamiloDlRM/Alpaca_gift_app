@@ -1,6 +1,7 @@
 import { eventBus, EVENTS } from '../events/event-bus';
 import { prisma } from '../db/prisma.client';
-import { sendGiftReceivedEmail, sendGiftClaimedEmail } from './email.service';
+import { sendGiftReceivedEmail, sendGiftClaimedEmail, sendGiftInvitationEmail } from './email.service';
+import { isEmailRegistered } from '../../modules/auth/auth.service';
 
 eventBus.on<{ giftId: string }>(EVENTS.GIFT_CREATED, async ({ giftId }) => {
   try {
@@ -12,7 +13,7 @@ eventBus.on<{ giftId: string }>(EVENTS.GIFT_CREATED, async ({ giftId }) => {
     // Scheduled gifts are handled by the daily cron job.
     if (!gift?.recipientEmail || !gift.sender || gift.deliveryDate) return;
 
-    await sendGiftReceivedEmail({
+    const emailPayload = {
       recipientEmail: gift.recipientEmail,
       recipientName: gift.recipientName,
       senderName: gift.sender.name,
@@ -20,7 +21,16 @@ eventBus.on<{ giftId: string }>(EVENTS.GIFT_CREATED, async ({ giftId }) => {
       etfSymbol: gift.etfSymbol,
       occasion: gift.occasion,
       claimToken: gift.claimToken,
-    });
+    };
+
+    // Registered recipients get the regular claim email; non-registered get an
+    // invitation email prompting them to create a free account to claim.
+    const registered = await isEmailRegistered(gift.recipientEmail);
+    if (registered) {
+      await sendGiftReceivedEmail(emailPayload);
+    } else {
+      await sendGiftInvitationEmail(emailPayload);
+    }
 
     await prisma.gift.update({
       where: { id: gift.id },

@@ -3,13 +3,14 @@ const Stripe = require('stripe');
 import { prisma } from '../../shared/db/prisma.client';
 import { BadRequestError } from '../../shared/errors/http-errors';
 import { eventBus } from '../../shared/events/event-bus';
-import { isEmailRegistered } from '../auth/auth.service';
 import { CreatePaymentIntentDto, PaymentIntentResponse } from './payments.types';
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// Flat sending fee charged to BASIC users on each gift (replaces the 2.5% commission).
-export const BASIC_SENDING_FEE = 5.99;
+// Flat sending fee charged to BASIC (Momments) users on each gift.
+export const BASIC_SENDING_FEE = 4.99;
+// Flat sending fee charged to PRO (Future Builder) and PRO_PLUS (Visionary) users on each gift.
+export const PRO_SENDING_FEE = 1.5;
 
 async function getOrCreateStripeCustomer(userId: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -50,29 +51,12 @@ export async function createPaymentIntent(
     }
   }
 
-  // Validate that the recipient email (if provided) belongs to a registered user.
-  if (dto.giftData.recipientEmail) {
-    const registered = await isEmailRegistered(dto.giftData.recipientEmail);
-    if (!registered) {
-      throw new BadRequestError(
-        'El email del destinatario no corresponde a un usuario registrado en la plataforma.'
-      );
-    }
-  }
-
-  if (user.subscriptionStatus === 'BASIC') {
-    const giftCount = await prisma.gift.count({ where: { senderId: userId } });
-    if (giftCount >= 5) {
-      throw new BadRequestError(
-        'Has alcanzado el límite de 5 regalos del plan BASIC. Suscríbete a PRO para enviar regalos ilimitados.'
-      );
-    }
-  }
+  // Non-registered recipients are allowed — they receive an invitation email to claim.
 
   const amount = dto.giftData.amount;
-  // BASIC users pay a flat $0.99 "tarifa de envío" per gift.
-  // PRO and PRO_PLUS users pay no fee and no commission.
-  const sendingFee = user.subscriptionStatus === 'BASIC' ? BASIC_SENDING_FEE : 0;
+  // BASIC (Momments) users pay a flat sending fee per gift.
+  // PRO (Future Builder) and PRO_PLUS (Visionary) users pay a reduced flat fee per gift.
+  const sendingFee = user.subscriptionStatus === 'BASIC' ? BASIC_SENDING_FEE : PRO_SENDING_FEE;
   const commission = sendingFee; // kept in legacy field for backward compatibility
   const total = amount + sendingFee;
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 import { Logo } from '../components/ui/Logo';
@@ -20,6 +20,17 @@ export default function Register() {
   const [resendState, setResendState] = useState<ResendState>('idle');
   const [resendError, setResendError] = useState('');
   const { register } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  // Preserve the claim token across re-renders so a gift can be claimed
+  // right after email verification.
+  const [claimToken] = useState<string>(() => searchParams.get('claimToken') ?? '');
+
+  // Pre-fill the email field from the query param (e.g. invited recipient).
+  useEffect(() => {
+    const prefillEmail = searchParams.get('email');
+    if (prefillEmail) setEmail(prefillEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +42,11 @@ export default function Register() {
     setLoading(true);
     try {
       await register(email, password, name);
+      // Stash the claim token so the VerifyEmail page can redirect the user
+      // straight to the claim flow after they verify their email.
+      if (claimToken) {
+        sessionStorage.setItem('pendingClaimToken', claimToken);
+      }
       setRegistered(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed. Please try again.';

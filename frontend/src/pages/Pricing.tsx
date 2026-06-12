@@ -15,18 +15,29 @@ const CHECK_ICON = (
   </svg>
 );
 
+// Internal enum stays PRO / PRO_PLUS for API calls. Display labels map below.
 type PaidPlan = 'PRO' | 'PRO_PLUS';
-type BillingInterval = 'month' | 'year';
+
+// Display labels per plan (internal enum -> marketing name).
+const PLAN_DISPLAY_NAME: Record<'BASIC' | PaidPlan, string> = {
+  BASIC: 'Momments',
+  PRO: 'Future Builder',
+  PRO_PLUS: 'Visionary',
+};
+
+// Annual prices (both paid plans are annual only).
+const PLAN_ANNUAL_PRICE: Record<PaidPlan, string> = {
+  PRO: '$39',
+  PRO_PLUS: '$69',
+};
 
 interface SubscribeModalProps {
   plan: PaidPlan;
-  price: string;
-  billingInterval: BillingInterval;
   onClose: () => void;
   onSuccess: (plan: PaidPlan) => void;
 }
 
-function SubscribeModalInner({ plan, price, billingInterval, onClose, onSuccess }: SubscribeModalProps) {
+function SubscribeModalInner({ plan, onClose, onSuccess }: SubscribeModalProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -59,7 +70,7 @@ function SubscribeModalInner({ plan, price, billingInterval, onClose, onSuccess 
       await apiClient.post('/subscriptions', {
         paymentMethodId: paymentMethod.id,
         plan,
-        billingInterval,
+        billingInterval: 'year',
       });
 
       onSuccess(plan);
@@ -75,8 +86,8 @@ function SubscribeModalInner({ plan, price, billingInterval, onClose, onSuccess 
     }
   };
 
-  const planLabel = plan === 'PRO_PLUS' ? 'PRO+' : 'PRO';
-  const intervalLabel = billingInterval === 'year' ? 'year' : 'month';
+  const planLabel = PLAN_DISPLAY_NAME[plan];
+  const price = PLAN_ANNUAL_PRICE[plan];
 
   return (
     <div
@@ -84,11 +95,11 @@ function SubscribeModalInner({ plan, price, billingInterval, onClose, onSuccess 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
-      aria-label={`Subscribe to WealthGift ${planLabel}`}
+      aria-label={`Subscribe to ${planLabel}`}
     >
       <Card className="w-full max-w-md p-6 sm:p-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscribe to WealthGift {planLabel}</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{price}/{intervalLabel} &middot; Cancel anytime</p>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscribe to {planLabel}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{price}/year &middot; Cancel anytime</p>
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-4" role="alert">{error}</div>
@@ -135,7 +146,6 @@ export default function Pricing() {
   const [modalPlan, setModalPlan] = useState<PaidPlan | null>(null);
   const [successBanner, setSuccessBanner] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
 
   const currentPlan = user?.subscriptionStatus ?? 'BASIC';
   const isAuthenticated = !!token;
@@ -152,8 +162,7 @@ export default function Pricing() {
   const handleSubscribeSuccess = (plan: PaidPlan) => {
     updateUser({ subscriptionStatus: plan });
     setModalPlan(null);
-    const label = plan === 'PRO_PLUS' ? 'PRO+' : 'PRO';
-    setSuccessBanner(`Your ${label} subscription has been activated.`);
+    setSuccessBanner(`Your ${PLAN_DISPLAY_NAME[plan]} subscription has been activated.`);
     setTimeout(() => setSuccessBanner(''), 5000);
   };
 
@@ -190,48 +199,33 @@ export default function Pricing() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">Plans & Pricing</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">Choose the plan that best fits your needs</p>
-        </div>
-
-        {/* Monthly / Annual toggle */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <span className={`text-sm font-medium ${billing === 'monthly' ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>Monthly</span>
-          <button
-            type="button"
-            onClick={() => setBilling(b => b === 'monthly' ? 'annual' : 'monthly')}
-            className={`relative w-12 h-6 rounded-full overflow-hidden transition-colors ${billing === 'annual' ? 'bg-[#F5C518]' : 'bg-gray-300 dark:bg-gray-600'}`}
-            role="switch"
-            aria-checked={billing === 'annual'}
-            aria-label="Toggle annual billing"
-          >
-            <span className={`absolute top-1 left-0 w-4 h-4 bg-white rounded-full transition-transform ${billing === 'annual' ? 'translate-x-7' : 'translate-x-1'}`} />
-          </button>
-          <span className={`text-sm font-medium ${billing === 'annual' ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
-            Annual <span className="text-xs text-green-600 font-semibold">(Save with PRO+!)</span>
-          </span>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">Choose the plan that best fits how you gift</p>
         </div>
 
         {/* 3-plan grid */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-6 items-stretch">
 
-          {/* BASIC Plan */}
+          {/* Momments (BASIC) */}
           <Card className="p-6 sm:p-8 border-gray-200 flex flex-col">
             <div className="mb-4">
               <span className="text-xs font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full">
-                BASIC
+                MOMMENTS
               </span>
             </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">For occasional gifting</p>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">$0</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">Free</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">to use</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">$4.99 per gift</div>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Up to 5 investment gifts',
-                '$5.99 sending fee per gift',
+                'Unlimited gifts',
+                '$4.99 sending fee per gift',
+                'Limited Wealthy AI messages',
                 'Portfolio dashboard',
                 'Access to all ETFs',
-                'ETF ratings',
+                'No subscription needed',
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
@@ -254,7 +248,7 @@ export default function Pricing() {
             )}
           </Card>
 
-          {/* PRO Plan */}
+          {/* Future Builder (PRO) — most popular */}
           <Card className="p-6 sm:p-8 border-2 border-[#F5C518] shadow-lg relative flex flex-col">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="text-xs font-bold uppercase tracking-wider bg-[#F5C518] text-black px-4 py-1 rounded-full whitespace-nowrap">
@@ -263,20 +257,22 @@ export default function Pricing() {
             </div>
             <div className="mb-4 mt-2">
               <span className="text-xs font-bold uppercase tracking-wider bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full">
-                PRO
+                FUTURE BUILDER
               </span>
             </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">For consistent giving</p>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">$9.99</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">/ month</span>
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">$39</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/ year</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">$1.50 per gift</div>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Unlimited gifts',
-                'No sending fees',
-                'Full dashboard with analytics',
-                'ETF ratings',
-                'Priority support',
+                '$1.50 sending fee per gift',
+                'Smart reminders for important dates',
+                'Save recipients and send again in one tap',
+                'More Wealthy AI messages',
+                'Full portfolio analytics',
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
@@ -295,36 +291,30 @@ export default function Pricing() {
               </div>
             ) : (
               <Button className="w-full" onClick={() => openModal('PRO')}>
-                {currentPlan === 'PRO_PLUS' ? 'Switch to PRO' : 'Subscribe to PRO'}
+                {currentPlan === 'PRO_PLUS' ? 'Switch to Future Builder' : 'Get Future Builder'}
               </Button>
             )}
           </Card>
 
-          {/* PRO+ Plan */}
+          {/* Visionary (PRO_PLUS) */}
           <Card className="p-6 sm:p-8 border-2 border-purple-200 dark:border-purple-700 shadow-lg relative flex flex-col">
             <div className="mb-4">
               <span className="text-xs font-bold uppercase tracking-wider bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full">
-                PRO+
+                VISIONARY
               </span>
             </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">For those creating long-term impact</p>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                {billing === 'annual' ? '$49' : '$19.99'}
-              </span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">
-                / {billing === 'annual' ? 'year' : 'month'}
-              </span>
-              {billing === 'annual' && (
-                <div className="text-xs text-green-600 font-semibold mt-1">Save 80% vs monthly</div>
-              )}
+              <span className="text-4xl font-bold text-gray-900 dark:text-white">$69</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">/ year</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">$1.50 per gift</div>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                'Everything in PRO',
-                'Advanced scheduled gifts',
-                'Advanced analytics',
-                '24/7 support',
-                'Early access to new features',
+                'Everything in Future Builder',
+                'Automatic scheduled gifts (favorites with dates)',
+                'Creation of gift lists (group gifting events)',
+                'Priority support',
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {CHECK_ICON}
@@ -346,26 +336,20 @@ export default function Pricing() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0"
                 onClick={() => openModal('PRO_PLUS')}
               >
-                {currentPlan === 'PRO' ? 'Upgrade to PRO+' : 'Subscribe to PRO+'}
+                {currentPlan === 'PRO' ? 'Upgrade to Visionary' : 'Get Visionary'}
               </Button>
             )}
           </Card>
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
-          * The Basic plan sending fee ($5.99) is charged once per gift sent. No additional commissions on any plan.
+          * Momments charges a $4.99 sending fee per gift. Future Builder and Visionary are billed annually and charge a reduced $1.50 fee per gift.
         </p>
       </div>
 
       {modalPlan && (
         <SubscribeModal
           plan={modalPlan}
-          price={
-            modalPlan === 'PRO_PLUS'
-              ? (billing === 'annual' ? '$49' : '$19.99')
-              : '$9.99'
-          }
-          billingInterval={modalPlan === 'PRO_PLUS' && billing === 'annual' ? 'year' : 'month'}
           onClose={() => setModalPlan(null)}
           onSuccess={handleSubscribeSuccess}
         />

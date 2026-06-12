@@ -52,7 +52,7 @@ export async function login(dto: LoginDto): Promise<AuthResponse> {
   return { token, user: { id: user.id, email: user.email, name: user.name } };
 }
 
-export async function verifyEmail(token: string): Promise<AuthResponse> {
+export async function verifyEmail(token: string): Promise<AuthResponse & { claimToken?: string }> {
   if (!token) throw new BadRequestError('Invalid or expired verification token');
 
   const user = await prisma.user.findUnique({ where: { emailVerificationToken: token } });
@@ -63,8 +63,19 @@ export async function verifyEmail(token: string): Promise<AuthResponse> {
     data: { emailVerified: true, emailVerificationToken: null },
   });
 
+  // If this user was invited to claim a pending gift, surface its claimToken so
+  // the frontend can redirect them straight to the claim flow after verifying.
+  const pendingGift = await prisma.gift.findFirst({
+    where: { recipientEmail: user.email, status: 'PENDING' },
+    orderBy: { createdAt: 'asc' },
+  });
+
   const jwt = signToken({ id: user.id, email: user.email });
-  return { token: jwt, user: { id: user.id, email: user.email, name: user.name } };
+  return {
+    token: jwt,
+    user: { id: user.id, email: user.email, name: user.name },
+    ...(pendingGift ? { claimToken: pendingGift.claimToken } : {}),
+  };
 }
 
 export async function resendVerification(email: string): Promise<void> {

@@ -1,4 +1,4 @@
-export type WealthyMode = 'regulations' | 'investments' | 'portfolio';
+export type WealthyMode = 'regulations' | 'investments' | 'portfolio' | 'calculator';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';

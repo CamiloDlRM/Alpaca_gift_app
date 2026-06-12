@@ -607,3 +607,133 @@ PENDING -> CLAIMING -> KYC_SUBMITTED -> KYC_VERIFIED -> AGREEMENT_SIGNED -> ACCO
 | BND | Vanguard Total Bond Market ETF | Bonds | $73.21 |
 | VEA | Vanguard FTSE Developed Markets ETF | International | $48.76 |
 | VWO | Vanguard FTSE Emerging Markets ETF | International | $41.23 |
+
+## [2026-06-12 12:00] - [NUEVO MÓDULO] Calculator AI + Gifts a no-registrados + Cancelación + Planes/Saved/Dates/Favorites/Events
+
+**Acción**: Se implementaron tres conjuntos de funcionalidades: (1) un cuarto modo "calculator" para Wealthy AI, (2) envío de regalos a destinatarios no registrados con email de invitación + cancelación de regalos con reembolso Stripe, y (3) nuevos planes (tarifas), destinatarios guardados, fechas importantes, favoritos con agendas, y eventos de regalo grupales, más crons de recordatorio.
+
+### 1. ENDPOINTS NUEVOS / MODIFICADOS
+
+**Wealthy AI (modo calculator)** — sin cambios de ruta:
+- `POST /api/wealthy/chat` (existente). Ahora `mode` acepta `'calculator'` además de `'regulations' | 'investments' | 'portfolio'`.
+  - Request body: `{ mode: 'calculator', messages: Array<{ role: 'user'|'assistant'|'system', content: string }> }`
+  - Respuesta: stream SSE (`data: {"content": "..."}` ... `data: [DONE]`). El modo calculator devuelve la respuesta completa de una sola vez (no token-a-token), igual que investments.
+  - El modo calculator usa Gemini + Google Search para datos históricos reales de ETFs (CAGR, retornos), proyecciones de interés compuesto a 5/10/20 años y ejemplos por meta.
+
+**Gifts — cancelación (NUEVO):**
+- `DELETE /api/gifts/:giftId` (protegido, requiere JWT del sender)
+  - Request body (opcional): `{ reason?: string }`
+  - Respuesta: `{ success: true }`
+  - Solo permite cancelar si el gift está en estado `PENDING`. Si está en `CLAIMING` o posterior devuelve 403 (`FORBIDDEN`). Hace reembolso total en Stripe, marca el gift como `CANCELLED` (con `cancelledAt` y `cancelledReason`) y el payment como `REFUNDED`. Envía email de confirmación al sender.
+
+**Auth — verifyEmail con redirect a regalo pendiente (MODIFICADO):**
+- `GET /api/auth/verify-email?token=...` (existente). La respuesta ahora puede incluir `claimToken`:
+  - Respuesta: `{ token: string, user: { id, email, name }, claimToken?: string }`
+  - Si el usuario recién verificado tiene un gift `PENDING` cuyo `recipientEmail` coincide con su email, se devuelve el `claimToken` del más antiguo para que el frontend redirija al flujo de claim (`/claim/:claimToken`).
+
+**Saved Recipients (NUEVO MÓDULO)** — base `/api/saved-recipients`, todas protegidas (JWT):
+- `GET /api/saved-recipients` → `SavedRecipient[]` (más recientes primero)
+- `POST /api/saved-recipients` body `{ name: string, email: string }` → `SavedRecipient` (201). 409 si ya existe (mismo userId+email).
+- `DELETE /api/saved-recipients/:id` → `{ success: true }`
+- Shape `SavedRecipient`: `{ id, userId, name, email, createdAt }`
+
+**Important Dates (NUEVO MÓDULO)** — base `/api/important-dates`, protegidas (JWT):
+- `GET /api/important-dates` → `ImportantDate[]` (ordenadas por mes/día)
+- `POST /api/important-dates` body `{ personName: string, personEmail?: string, label: string, month: number(1-12), day: number(1-31), remindDaysBefore?: number(0-60, default 7) }` → `ImportantDate` (201)
+- `DELETE /api/important-dates/:id` → `{ success: true }`
+- Shape `ImportantDate`: `{ id, userId, personName, personEmail, label, month, day, remindDaysBefore, createdAt }`
+
+**Favorites (NUEVO MÓDULO)** — base `/api/favorites`, protegidas (JWT):
+- `GET /api/favorites` → `FavoriteRecipient[]` con `schedules` incluidas
+- `POST /api/favorites` body `{ recipientEmail: string, recipientName: string, etfSymbol: string, amount: number, schedules: Array<{ month: number(1-12), day: number(1-31), label?: string }> }` → `FavoriteRecipient` (201). 409 si ya existe (mismo userId+recipientEmail).
+- `PUT /api/favorites/:id` body parcial `{ recipientName?, etfSymbol?, amount?, schedules? }` → `FavoriteRecipient`. NOTA: si se envía `schedules`, REEMPLAZA todas las agendas existentes.
+- `DELETE /api/favorites/:id` → `{ success: true }`
+- Shape `FavoriteRecipient`: `{ id, userId, recipientEmail, recipientName, etfSymbol, amount, schedules: FavoriteSchedule[], createdAt }`
+- Shape `FavoriteSchedule`: `{ id, favoriteRecipientId, month, day, label, lastSentAt, createdAt }`
+
+**Gift Events (NUEVO MÓDULO)** — base `/api/gift-events`, protegidas (JWT):
+- `POST /api/gift-events` body `{ title: string, description?: string, etfSymbol: string, targetAmount: number, participants: Array<{ email: string, name: string }> (min 1) }` → `GiftEvent` con `participants` (201). Crea el evento, los participantes (cada uno con `inviteToken` único) y envía emails de invitación.
+- `GET /api/gift-events` → eventos creados por el usuario autenticado (`GiftEvent[]` con `participants`)
+- `GET /api/gift-events/invited` → eventos donde el email del usuario autenticado es participante (incluye `participants` y `creator { name, email }`)
+- `GET /api/gift-events/invite/:inviteToken` → `{ participant, event }` (event incluye `participants` y `creator { name, email }`). Para la pantalla a la que llega el participante desde el email.
+- `PATCH /api/gift-events/invite/:inviteToken/accept` → participante con `status: 'ACCEPTED'`, `acceptedAt`
+- `PATCH /api/gift-events/invite/:inviteToken/decline` → participante con `status: 'DECLINED'`
+- `PATCH /api/gift-events/invite/:inviteToken/link-gift` body `{ giftId: string }` → participante con `status: 'GIFTED'`, `giftId`. 409 si el gift ya está vinculado a otra invitación.
+- `PATCH /api/gift-events/:eventId/close` → `GiftEvent` con `status: 'CLOSED'` (solo el creator)
+- Shape `GiftEvent`: `{ id, creatorId, title, description, etfSymbol, targetAmount, status: 'ACTIVE'|'CLOSED', participants: GiftEventParticipant[], createdAt, updatedAt }`
+- Shape `GiftEventParticipant`: `{ id, eventId, email, name, status: 'INVITED'|'ACCEPTED'|'DECLINED'|'GIFTED', giftId, inviteToken, acceptedAt, createdAt }`
+
+### 2. CAMBIOS DE SCHEMA (prisma/schema.prisma + migración 20260612120000_add_engagement_features)
+
+- Enum `GiftStatus`: nuevo valor `CANCELLED`.
+- Modelo `Gift`: nuevos campos `cancelledAt DateTime?` y `cancelledReason String?`.
+- Modelo `User`: nuevas relaciones `savedRecipients`, `importantDates`, `favoriteRecipients`, `createdEvents`.
+- Nuevos modelos: `SavedRecipient`, `ImportantDate`, `FavoriteRecipient`, `FavoriteSchedule`, `GiftEvent`, `GiftEventParticipant`.
+- Nuevos enums: `GiftEventStatus (ACTIVE, CLOSED)`, `ParticipantStatus (INVITED, ACCEPTED, DECLINED, GIFTED)`.
+- Uniques: `SavedRecipient(userId,email)`, `FavoriteRecipient(userId,recipientEmail)`, `GiftEventParticipant(eventId,email)`, `GiftEventParticipant.giftId` (unique), `GiftEventParticipant.inviteToken` (unique).
+- MIGRACIÓN MANUAL ya escrita en `prisma/migrations/20260612120000_add_engagement_features/migration.sql`. El servidor remoto debe ejecutar `prisma migrate deploy` (o `prisma migrate dev`) para aplicarla.
+
+### 3. CAMBIOS DE LÓGICA DE NEGOCIO
+
+**Tarifas por plan (payments.service.ts):**
+- `BASIC_SENDING_FEE` cambió de **5.99 → 4.99** (plan Momments).
+- Nueva constante `PRO_SENDING_FEE = 1.5` aplicada a PRO (Future Builder) y PRO_PLUS (Visionary).
+- Nueva fórmula: `sendingFee = subscriptionStatus === 'BASIC' ? 4.99 : 1.5`. (Antes PRO/PRO_PLUS eran $0.)
+- ELIMINADO el límite de 5 regalos del plan BASIC (ya no existe el chequeo `giftCount >= 5`).
+
+**BREAKING CHANGE — Regalos a no registrados:**
+- Se ELIMINÓ por completo la validación de "el email del destinatario debe ser un usuario registrado" tanto en `payments.service.ts` (`createPaymentIntent`) como en `gifts.service.ts` (`createGift`). Ahora se puede enviar un regalo a cualquier email.
+- En el envío del email de regalo (listener `gift.created` y cron de entrega programada), se verifica si el email está registrado: si SÍ → email normal de regalo recibido (comportamiento previo); si NO → email de invitación que pide crear cuenta gratis para reclamar.
+
+**VALID_TRANSITIONS (gifts.types.ts):** `PENDING → ['CLAIMING', 'CANCELLED']`; `CANCELLED → []`.
+
+### 4. EMAILS NUEVOS (shared/email/email.service.ts)
+
+- `sendGiftInvitationEmail` — para destinatarios NO registrados. Link de registro: `${FRONTEND_URL}/register?claimToken=...&email=...`. El frontend debe leer estos query params en la pantalla de registro y, tras registrarse/verificar, llevar al claim.
+- `sendGiftCancelledEmail` — confirmación al sender de cancelación + reembolso.
+- `sendGiftEventInviteEmail` — invitación a evento grupal. Link: `${FRONTEND_URL}/gift-events/invite/:inviteToken`.
+- `sendImportantDateReminderEmail` — recordatorio de fecha importante. Link pre-llenado: `${FRONTEND_URL}/send?recipientName=...[&recipientEmail=...]`.
+- `sendFavoriteScheduleReminderEmail` — recordatorio de regalo agendado de un favorito. Link pre-llenado: `${FRONTEND_URL}/send?recipientName=...&recipientEmail=...&etfSymbol=...&amount=...`.
+- Todos usan el mismo template HTML y color de marca `#F5C518`.
+
+### 5. CRONS NUEVOS (shared/cron/reminders.cron.ts, registrado en app.ts)
+
+- Recordatorios de fechas importantes: diario 8:00 AM UTC. Envía email cuando faltan exactamente `remindDaysBefore` días.
+- Recordatorios de regalos agendados (favoritos): diario 9:00 AM UTC. NO cobra automáticamente (decisión de compliance) — envía email con link pre-llenado. Idempotente vía `FavoriteSchedule.lastSentAt`.
+
+### 6. RUTAS DE FRONTEND QUE EL BACKEND ASUME (para que el equipo de UI las implemente)
+
+- `/register?claimToken=...&email=...` — registro con prefill + redirect a claim tras verificar.
+- `/claim/:claimToken` — flujo de reclamo (ya existente).
+- `/gift-events/invite/:inviteToken` — pantalla de invitación a evento.
+- `/send?recipientName=...&recipientEmail=...&etfSymbol=...&amount=...` — formulario de envío con prefill (usado por recordatorios).
+
+**Archivos afectados**:
+- `prisma/schema.prisma` - Enum CANCELLED, campos cancel en Gift, relaciones en User, 6 modelos nuevos, 2 enums nuevos
+- `prisma/migrations/20260612120000_add_engagement_features/migration.sql` - Migración manual completa
+- `src/modules/wealthy/wealthy.types.ts` - `'calculator'` añadido a WealthyMode
+- `src/modules/wealthy/wealthy.prompts.ts` - `CALCULATOR_PROMPT`
+- `src/modules/wealthy/wealthy.service.ts` - `chatCalculator()` + case en `chatWealthy`
+- `src/modules/payments/payments.service.ts` - tarifas 4.99/1.5, eliminado límite 5 gifts y validación de registro
+- `src/modules/gifts/gifts.service.ts` - `createGift` sin validación de registro, nueva `cancelGift` con reembolso Stripe
+- `src/modules/gifts/gifts.types.ts` - VALID_TRANSITIONS con CANCELLED
+- `src/modules/gifts/gifts.controller.ts` - `cancelGiftHandler`
+- `src/modules/gifts/gifts.routes.ts` - `DELETE /:giftId`
+- `src/modules/auth/auth.service.ts` - `verifyEmail` devuelve `claimToken?` de gift pendiente
+- `src/shared/email/email.service.ts` - 5 funciones de email nuevas
+- `src/shared/email/email.listeners.ts` - elige invitación vs recibido según registro
+- `src/shared/cron/gift-delivery.cron.ts` - misma lógica invitación/recibido
+- `src/shared/cron/reminders.cron.ts` - NUEVO, dos crons
+- `src/modules/saved-recipients/*` - NUEVO módulo (service, controller, routes)
+- `src/modules/important-dates/*` - NUEVO módulo
+- `src/modules/favorites/*` - NUEVO módulo
+- `src/modules/gift-events/*` - NUEVO módulo
+- `src/app.ts` - registro de 4 routers nuevos + import del cron de recordatorios
+
+**Comandos a ejecutar en el servidor remoto** (no se ejecutan en este entorno):
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+---

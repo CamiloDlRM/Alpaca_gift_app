@@ -10,6 +10,7 @@ type VerifyStatus = 'loading' | 'success' | 'error';
 interface VerifyEmailResponse {
   token: string;
   user: User;
+  claimToken?: string;
 }
 
 export default function VerifyEmail() {
@@ -40,7 +41,16 @@ export default function VerifyEmail() {
         });
         setAuth(res.data.token, res.data.user);
         setStatus('success');
-        redirectTimer = setTimeout(() => navigate('/dashboard'), 2000);
+
+        // If a gift claim token is attached (from the response or stored during
+        // registration), send the user to the claim flow instead of the dashboard.
+        const pendingClaimToken = res.data.claimToken || sessionStorage.getItem('pendingClaimToken');
+        if (pendingClaimToken) {
+          sessionStorage.removeItem('pendingClaimToken');
+          redirectTimer = setTimeout(() => navigate(`/claim/${pendingClaimToken}`), 2000);
+        } else {
+          redirectTimer = setTimeout(() => navigate('/dashboard'), 2000);
+        }
       } catch {
         setStatus('error');
       }

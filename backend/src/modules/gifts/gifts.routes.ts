@@ -5,6 +5,7 @@ import { validate } from '../../shared/middleware/validate.middleware';
 import {
   createGiftHandler, listGiftsHandler, getGiftHandler,
   getGiftByClaimTokenHandler, startClaimingHandler, listReceivedGiftsHandler,
+  cancelGiftHandler,
 } from './gifts.controller';
 
 const router = Router();
@@ -25,5 +26,6 @@ router.get('/received', authMiddleware, listReceivedGiftsHandler);
 router.get('/claim/:claimToken', getGiftByClaimTokenHandler);
 router.patch('/claim/:claimToken/start', authMiddleware, startClaimingHandler);
 router.get('/:id', authMiddleware, getGiftHandler);
+router.delete('/:giftId', authMiddleware, cancelGiftHandler);
 
 export default router;
