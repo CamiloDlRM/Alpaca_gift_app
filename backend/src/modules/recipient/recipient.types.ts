@@ -19,6 +19,9 @@ export interface RecipientPortfolioResponse {
   isRedeemed: boolean;
   redeemedAmount?: number;
   transactions: RecipientTransaction[];
+  // Present when the Alpaca flow is still running (AGREEMENT_SIGNED / ACCOUNT_CREATING)
+  processing?: boolean;
+  giftStatus?: string;
 }
 
 export interface ConsolidatedGiftItem {

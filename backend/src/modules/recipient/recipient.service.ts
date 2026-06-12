@@ -16,8 +16,34 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
   const gift = await prisma.gift.findUnique({ where: { claimToken } });
 
   if (!gift) throw new NotFoundError('Regalo no encontrado.');
+
+  // Gift is still being processed by the Alpaca flow — return a processing sentinel
+  // instead of an error so the frontend can poll gracefully.
+  const PROCESSING_STATUSES = ['AGREEMENT_SIGNED', 'ACCOUNT_CREATING', 'KYC_VERIFIED', 'CLAIMING', 'KYC_SUBMITTED'];
+  if (PROCESSING_STATUSES.includes(gift.status)) {
+    return {
+      processing: true,
+      giftStatus: gift.status,
+      giftId: gift.id,
+      recipientName: gift.recipientName,
+      etfSymbol: gift.etfSymbol,
+      occasion: gift.occasion,
+      totalValue: 0,
+      gainLoss: 0,
+      gainLossPercent: 0,
+      shares: 0,
+      investedAt: gift.updatedAt.toISOString(),
+      isRedeemed: false,
+      transactions: [],
+    } as RecipientPortfolioResponse;
+  }
+
+  if (gift.status === 'FAILED' || gift.status === 'CANCELLED') {
+    throw new BadRequestError('Este regalo no pudo ser procesado.');
+  }
+
   if (gift.status !== 'INVESTED' && gift.status !== 'REDEEMED') {
-    throw new BadRequestError('Este regalo aún no está invertido.');
+    throw new BadRequestError('Este regalo aún no está disponible.');
   }
 
   // Fetch real current price from Yahoo Finance

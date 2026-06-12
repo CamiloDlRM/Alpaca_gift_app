@@ -25,6 +25,8 @@ interface RecipientPortfolio {
   isRedeemed: boolean;
   redeemedAmount?: number;
   transactions: RecipientTransaction[];
+  processing?: boolean;
+  giftStatus?: string;
 }
 
 interface HistoryPoint {
@@ -46,6 +48,32 @@ const TYPE_BADGES: Record<string, { bg: string; text: string }> = {
   DIVIDEND: { bg: 'bg-blue-50',  text: 'text-blue-700' },
 };
 
+function ProcessingView({ etfSymbol, recipientName }: { etfSymbol?: string; recipientName?: string }) {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header />
+      <div className="max-w-lg mx-auto px-4 py-16 text-center">
+        <Card className="p-8">
+          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#F5C518]/15 flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Investing your gift
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-1">
+            {recipientName && etfSymbol
+              ? `We're purchasing ${etfSymbol} for ${recipientName}.`
+              : 'Your investment is being processed.'}
+          </p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            This usually takes a few seconds. This page will update automatically.
+          </p>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default function RecipientDashboard() {
   const { claimToken } = useParams<{ claimToken: string }>();
   const [portfolio, setPortfolio] = useState<RecipientPortfolio | null>(null);
@@ -53,40 +81,58 @@ export default function RecipientDashboard() {
   const [period, setPeriod] = useState<Period>('1M');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchPortfolio = useCallback(async () => {
     if (!claimToken) return;
     try {
       const res = await apiClient.get<RecipientPortfolio>(`/recipient/portfolio/${claimToken}`);
-      setPortfolio(res.data);
+      if (res.data.processing) {
+        setIsProcessing(true);
+        setPortfolio(res.data);
+        setError('');
+      } else {
+        setIsProcessing(false);
+        setPortfolio(res.data);
+        setError('');
+      }
     } catch {
       setError('Could not load the portfolio. Please verify the link is correct.');
     }
   }, [claimToken]);
 
   const fetchHistory = useCallback(async () => {
-    if (!claimToken) return;
+    if (!claimToken || isProcessing) return;
     try {
       const res = await apiClient.get<HistoryResponse>(`/recipient/portfolio/${claimToken}/history`, {
         params: { period },
       });
       setHistory(res.data.data);
     } catch { /* History might fail independently */ }
-  }, [claimToken, period]);
+  }, [claimToken, period, isProcessing]);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await Promise.all([fetchPortfolio(), fetchHistory()]);
+      await fetchPortfolio();
       setLoading(false);
     };
     load();
-  }, [fetchPortfolio, fetchHistory]);
-
-  useEffect(() => {
-    const interval = setInterval(() => { fetchPortfolio(); }, 30000);
-    return () => clearInterval(interval);
   }, [fetchPortfolio]);
+
+  // Fetch history once we have a real (non-processing) portfolio
+  useEffect(() => {
+    if (!isProcessing && portfolio && !portfolio.processing) {
+      fetchHistory();
+    }
+  }, [isProcessing, portfolio, fetchHistory]);
+
+  // Poll every 3s while processing, every 30s otherwise
+  useEffect(() => {
+    const delay = isProcessing ? 3000 : 30000;
+    const interval = setInterval(() => { fetchPortfolio(); }, delay);
+    return () => clearInterval(interval);
+  }, [fetchPortfolio, isProcessing]);
 
   if (loading) {
     return (
@@ -96,6 +142,10 @@ export default function RecipientDashboard() {
         </div>
       </div>
     );
+  }
+
+  if (isProcessing && portfolio) {
+    return <ProcessingView etfSymbol={portfolio.etfSymbol} recipientName={portfolio.recipientName} />;
   }
 
   if (error && !portfolio) {
@@ -117,7 +167,7 @@ export default function RecipientDashboard() {
     );
   }
 
-  if (!portfolio) return null;
+  if (!portfolio || portfolio.processing) return null;
 
   const isPositive = portfolio.gainLoss >= 0;
 
