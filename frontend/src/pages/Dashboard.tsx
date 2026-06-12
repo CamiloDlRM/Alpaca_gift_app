@@ -103,29 +103,21 @@ export default function Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [sentRes, receivedRes] = await Promise.all([
+      const [sentRes, receivedRes, subRes] = await Promise.all([
         apiClient.get<GiftResponse[]>('/gifts'),
         apiClient.get<GiftResponse[]>('/gifts/received'),
+        apiClient.get<{ plan: 'BASIC' | 'PRO' | 'PRO_PLUS' }>('/subscriptions').catch(() => null),
       ]);
       setGifts(sentRes.data);
       setReceivedGifts(receivedRes.data);
+      if (subRes && subRes.data.plan !== user?.subscriptionStatus) {
+        updateUser({ subscriptionStatus: subRes.data.plan });
+      }
     } catch {
       setError('Failed to load gifts.');
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const syncSubscription = async () => {
-      try {
-        const res = await apiClient.get<{ plan: 'BASIC' | 'PRO' | 'PRO_PLUS' }>('/subscriptions');
-        if (res.data.plan !== user?.subscriptionStatus) {
-          updateUser({ subscriptionStatus: res.data.plan });
-        }
-      } catch { /* silently fail */ }
-    };
-    syncSubscription();
   }, [updateUser, user?.subscriptionStatus]);
 
   useEffect(() => { fetchData(); }, [fetchData]);

@@ -27,6 +27,8 @@ model User {
   importantDates     ImportantDate[]
   favoriteRecipients FavoriteRecipient[]
   createdEvents      GiftEvent[]
+
+  @@index([stripeCustomerId])
 }
 
 model Gift {
@@ -57,6 +59,11 @@ model Gift {
   kyc             KYC?
   agreement       Agreement?
   payment         Payment?
+
+  @@index([senderId])
+  @@index([recipientEmail])
+  @@index([status])
+  @@index([deliveryDate])
 }
 
 model KYC {
@@ -182,6 +189,8 @@ model ImportantDate {
   day         Int
   remindDaysBefore Int @default(7)
   createdAt   DateTime @default(now())
+
+  @@index([userId])
 }
 
 model FavoriteRecipient {
@@ -207,6 +216,8 @@ model FavoriteSchedule {
   label               String?
   lastSentAt          DateTime?
   createdAt           DateTime          @default(now())
+
+  @@index([favoriteRecipientId])
 }
 
 model GiftEvent {
@@ -221,6 +232,8 @@ model GiftEvent {
   participants GiftEventParticipant[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
+
+  @@index([creatorId])
 }
 
 model GiftEventParticipant {
@@ -236,6 +249,8 @@ model GiftEventParticipant {
   createdAt   DateTime          @default(now())
 
   @@unique([eventId, email])
+  @@index([email])
+  @@index([eventId])
 }
 
 enum GiftEventStatus {

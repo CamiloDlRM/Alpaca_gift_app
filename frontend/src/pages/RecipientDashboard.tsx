@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import apiClient from '../api/client';
@@ -82,16 +82,25 @@ export default function RecipientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingStartRef = useRef<number | null>(null);
+  const PROCESSING_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
   const fetchPortfolio = useCallback(async () => {
     if (!claimToken) return;
     try {
       const res = await apiClient.get<RecipientPortfolio>(`/recipient/portfolio/${claimToken}`);
       if (res.data.processing) {
-        setIsProcessing(true);
-        setPortfolio(res.data);
-        setError('');
+        if (!processingStartRef.current) processingStartRef.current = Date.now();
+        if (Date.now() - processingStartRef.current > PROCESSING_TIMEOUT_MS) {
+          setError('Your investment is taking longer than expected. Please contact support or try refreshing the page.');
+          setIsProcessing(false);
+        } else {
+          setIsProcessing(true);
+          setPortfolio(res.data);
+          setError('');
+        }
       } else {
+        processingStartRef.current = null;
         setIsProcessing(false);
         setPortfolio(res.data);
         setError('');

@@ -60,6 +60,8 @@ export default function ClaimGift() {
         navigate(`/recipient/${claimToken}/dashboard`, { replace: true });
         break;
       case 'KYC_SUBMITTED':
+        navigate(`/claim/${claimToken}/kyc/questions`, { replace: true });
+        break;
       case 'KYC_VERIFIED':
         navigate(`/claim/${claimToken}/agreement`, { replace: true });
         break;

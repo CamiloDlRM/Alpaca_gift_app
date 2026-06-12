@@ -200,6 +200,12 @@ eventBus.on<{ giftId: string }>(EVENTS.AGREEMENT_SIGNED, async ({ giftId }) => {
     eventBus.emit(EVENTS.ETF_PURCHASED, { giftId, orderId });
   } catch (err) {
     console.error('Alpaca flow error:', err);
-    await transitionStatus(giftId, GiftStatus.FAILED);
+    // Use a direct update instead of transitionStatus — the gift may be in
+    // AGREEMENT_SIGNED (if account creation failed before the first status
+    // transition), which is not in ACCOUNT_CREATING's valid predecessors for FAILED.
+    await prisma.gift.update({
+      where: { id: giftId },
+      data: { status: GiftStatus.FAILED },
+    }).catch(e => console.error('[Recovery] Could not mark gift as FAILED:', e));
   }
 });
