@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
 interface GiftResponse {
@@ -19,6 +20,9 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function ScheduleGifts() {
+  const { user } = useAuthStore();
+  const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
+
   const now = new Date();
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth();
@@ -36,7 +40,10 @@ export default function ScheduleGifts() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchGifts(); }, [fetchGifts]);
+  useEffect(() => {
+    if (isPro) fetchGifts();
+    else setLoading(false);
+  }, [isPro, fetchGifts]);
 
   const minYear = todayYear;
   const maxYear = todayYear + 1;
@@ -68,6 +75,32 @@ export default function ScheduleGifts() {
   });
 
   const selectedMonthLabel = `${MONTH_NAMES_FULL[selectedMonth]} ${selectedYear}`;
+
+  if (!isPro) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
+            <div className="text-center py-16 animate-slideUp">
+              <div className="w-16 h-16 rounded-full bg-[#F5C518]/10 flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-[#F5C518]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">Scheduled Gifts</h1>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
+                Schedule gifts in advance with a Future Builder or Visionary plan.
+              </p>
+              <Link to="/pricing">
+                <Button>Upgrade your plan</Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">

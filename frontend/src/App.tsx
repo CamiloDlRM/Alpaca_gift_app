@@ -26,7 +26,6 @@ import ScheduleGifts from './pages/ScheduleGifts';
 import Leaderboard from './pages/Leaderboard';
 import Wealthy from './pages/Wealthy';
 import SavedRecipients from './pages/SavedRecipients';
-import ImportantDates from './pages/ImportantDates';
 import FavoriteRecipients from './pages/FavoriteRecipients';
 import GiftEvents from './pages/GiftEvents';
 import GiftEventInvite from './pages/GiftEventInvite';
@@ -70,7 +69,6 @@ export default function App() {
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/wealthy" element={<ProtectedRoute><Wealthy /></ProtectedRoute>} />
         <Route path="/saved-recipients" element={<ProtectedRoute><SavedRecipients /></ProtectedRoute>} />
-        <Route path="/important-dates" element={<ProtectedRoute><ImportantDates /></ProtectedRoute>} />
         <Route path="/favorites" element={<ProtectedRoute><FavoriteRecipients /></ProtectedRoute>} />
         <Route path="/gift-events" element={<ProtectedRoute><GiftEvents /></ProtectedRoute>} />
         <Route path="/gift-events/invite/:inviteToken" element={<GiftEventInvite />} />

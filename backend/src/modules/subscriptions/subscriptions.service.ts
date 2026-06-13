@@ -80,6 +80,14 @@ export async function createSubscription(
     product_data: { name: pricing.productName },
   });
 
+  // Cancel existing subscription before creating a new one (plan change / upgrade)
+  const existingSub = await prisma.subscription.findUnique({ where: { userId } });
+  if (existingSub?.stripeSubscriptionId) {
+    await stripe.subscriptions.cancel(existingSub.stripeSubscriptionId).catch((err: unknown) => {
+      console.warn('[Subscriptions] Could not cancel old subscription:', err);
+    });
+  }
+
   // Create subscription. Embed plan in metadata so the webhook can recover it.
   const stripeSub = await stripe.subscriptions.create({
     customer: customerId,

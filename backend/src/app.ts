@@ -14,7 +14,6 @@ import etfRatingsRouter from './modules/etf-ratings/etf-ratings.routes';
 import rankingsRouter from './modules/rankings/rankings.routes';
 import wealthyRouter from './modules/wealthy/wealthy.routes';
 import savedRecipientsRouter from './modules/saved-recipients/saved-recipients.routes';
-import importantDatesRouter from './modules/important-dates/important-dates.routes';
 import favoritesRouter from './modules/favorites/favorites.routes';
 import giftEventsRouter from './modules/gift-events/gift-events.routes';
 import { authMiddleware } from './shared/middleware/auth.middleware';
@@ -51,7 +50,6 @@ app.use('/api/etf-ratings', etfRatingsRouter);
 app.use('/api/rankings', rankingsRouter);
 app.use('/api/wealthy', wealthyRouter);
 app.use('/api/saved-recipients', authMiddleware, savedRecipientsRouter);
-app.use('/api/important-dates', authMiddleware, importantDatesRouter);
 app.use('/api/favorites', authMiddleware, favoritesRouter);
 app.use('/api/gift-events', authMiddleware, giftEventsRouter);
 

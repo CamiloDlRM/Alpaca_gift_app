@@ -315,3 +315,24 @@ Aligned the entire ETF rating UI with the new backend contract that distinguishe
 - Plan-gated pages render the sidebar plus a centered UpgradePrompt rather than redirecting, so navigation stays consistent.
 - Could not run tsc/vite locally (not installed; npm disallowed) — types reviewed manually against the provided contracts.
 ---
+
+---
+## [2026-06-12] - Remove Important Dates, Plan Name Display, Scheduled Gift Gating, ETF Ticker Validation
+
+### Files Modified
+- `frontend/src/components/layout/Sidebar.tsx` — Removed the "Important Dates" nav item from `navItems`.
+- `frontend/src/App.tsx` — Removed the `ImportantDates` import and its `/important-dates` route (file left in place, no longer referenced).
+- `frontend/src/pages/Dashboard.tsx` — Updated `PlanBadge` to show marketing names: PRO → "Future Builder", PRO_PLUS → "Visionary", BASIC → "Momments". Removed the `{giftsCount}/5` usage display from the Basic badge and dropped the now-unused `giftsCount` prop (also updated the call site).
+- `frontend/src/pages/SendGift.tsx` — Added `showScheduleUpsell` state. Non-Pro users clicking "📅 Scheduled" now see an inline amber upsell linking to `/pricing` instead of switching gift type. The "⚡ Instant" button clears the upsell.
+- `frontend/src/pages/ScheduleGifts.tsx` — Imported `useAuthStore`, added `isPro` check. Non-Pro users get an upgrade screen (Sidebar + centered CTA to `/pricing`) instead of the calendar. The gifts fetch is skipped for non-Pro users.
+- `frontend/src/pages/GiftEvents.tsx` — Added single-ticker validation in `handleCreate` (`/^[A-Z]{1,10}$/`) with an inline error, used the normalized symbol in the POST body, and made the ETF input auto-uppercase on change.
+
+### Changes Summary
+Implemented five product changes: (1) fully removed "Important Dates" from navigation and routing; (2) surfaced marketing plan names in the Dashboard badge; (3) gated the "Scheduled" gift type in SendGift behind Pro/Pro+ with a non-blocking inline upsell; (4) gated the entire Schedule page behind Pro/Pro+ with an upgrade screen; (5) enforced a single valid ETF ticker in the Gift Events create form.
+
+### Backend Dependencies
+No new backend contracts consumed. Uses existing `user.subscriptionStatus` (BASIC | PRO | PRO_PLUS) from the auth store and existing `/gifts` and `/gift-events` endpoints.
+
+### Notes
+- `ImportantDates.tsx` was intentionally left in the repo (per instructions); it is now dead code with no router/nav references.
+- Plan gating is purely client-side UX; the backend remains the source of truth for enforcement.

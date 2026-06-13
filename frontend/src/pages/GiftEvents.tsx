@@ -123,13 +123,18 @@ export default function GiftEvents() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !etfSymbol.trim() || !targetAmount || creating) return;
+    const normalizedEtf = etfSymbol.trim().toUpperCase();
+    if (!/^[A-Z]{1,10}$/.test(normalizedEtf)) {
+      setCreateError('ETF symbol must be a single valid ticker (e.g. VOO, SPY).');
+      return;
+    }
     setCreating(true);
     setCreateError('');
     try {
       const { data } = await apiClient.post<GiftEvent>('/gift-events', {
         title: title.trim(),
         description: description.trim() || undefined,
-        etfSymbol: etfSymbol.trim().toUpperCase(),
+        etfSymbol: normalizedEtf,
         targetAmount: parseFloat(targetAmount),
         participants: participants
           .filter((p) => p.email.trim())
@@ -381,7 +386,7 @@ export default function GiftEvents() {
                 />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <Input label="ETF symbol" placeholder="VOO" value={etfSymbol} onChange={(e) => setEtfSymbol(e.target.value)} required />
+                <Input label="ETF symbol" placeholder="VOO" value={etfSymbol} onChange={(e) => setEtfSymbol(e.target.value.toUpperCase())} required />
                 <Input label="Target amount ($)" type="number" min="1" step="0.01" placeholder="500.00" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
               </div>
 

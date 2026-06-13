@@ -1,5 +1,10 @@
 import { prisma } from '../../shared/db/prisma.client';
-import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors/http-errors';
+import {
+  NotFoundError,
+  ForbiddenError,
+  ConflictError,
+  BadRequestError,
+} from '../../shared/errors/http-errors';
 import { sendGiftEventInviteEmail } from '../../shared/email/email.service';
 
 export interface ParticipantInput {
@@ -16,6 +21,11 @@ export interface CreateEventDto {
 }
 
 export async function createEvent(creatorId: string, dto: CreateEventDto) {
+  if (!/^[A-Z]{1,10}$/.test(dto.etfSymbol.trim().toUpperCase())) {
+    throw new BadRequestError('ETF symbol must be a single valid ticker (e.g. VOO, SPY).');
+  }
+  dto.etfSymbol = dto.etfSymbol.trim().toUpperCase();
+
   const creator = await prisma.user.findUniqueOrThrow({ where: { id: creatorId } });
 
   const event = await prisma.giftEvent.create({

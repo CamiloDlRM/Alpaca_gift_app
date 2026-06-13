@@ -4,6 +4,30 @@ Registro de todos los cambios realizados en el backend.
 
 ---
 
+## [2026-06-12 23:25] - [REFACTOR] Eliminación del módulo Important Dates + [BUGFIX] cambio de plan en suscripciones + [MODIFICACIÓN] validación de símbolo ETF en gift-events
+
+**Acción**: Se eliminó por completo el módulo de Important Dates, se corrigió el doble cobro al cambiar de plan en suscripciones y se añadió validación/normalización del símbolo ETF en gift-events.
+
+**Archivos afectados**:
+- `src/modules/important-dates/important-dates.controller.ts` - ELIMINADO
+- `src/modules/important-dates/important-dates.routes.ts` - ELIMINADO
+- `src/modules/important-dates/important-dates.service.ts` - ELIMINADO (carpeta vacía removida)
+- `src/app.ts` - Removido el import de `importantDatesRouter` y el registro de la ruta `/api/important-dates`
+- `prisma/schema.prisma` - Removida la relación `importantDates ImportantDate[]` del modelo `User` y eliminado el modelo `ImportantDate` por completo
+- `src/shared/cron/reminders.cron.ts` - Removido el cron de recordatorios de Important Dates (8:00 AM UTC), el import `sendImportantDateReminderEmail` y la función helper `daysUntilNextOccurrence` que solo usaba ese cron. Se conserva el cron de Favorite Schedule (9:00 AM UTC)
+- `src/modules/subscriptions/subscriptions.service.ts` - En `createSubscription`, antes de crear la nueva suscripción en Stripe, se busca la suscripción existente en DB y, si tiene `stripeSubscriptionId`, se cancela en Stripe (best-effort con `.catch`) para evitar doble cobro al cambiar de plan
+- `src/modules/gift-events/gift-events.service.ts` - En `createEvent` se valida que `etfSymbol` cumpla el formato `/^[A-Z]{1,10}$/` (lanza `BadRequestError` si no) y se normaliza a mayúsculas/trim. Se añadió `BadRequestError` al import de `http-errors`
+
+**Detalles**:
+- Las migraciones se aplican manualmente en el servidor remoto: NO se generó SQL. El usuario debe crear/aplicar una migración que elimine la tabla `ImportantDate` (incluyendo su FK e índice). Las migraciones históricas que crearon la tabla se dejan intactas.
+- `sendImportantDateReminderEmail` permanece exportada en `src/shared/email/email.service.ts` pero ya no se usa; al ser un export no rompe la compilación. Puede limpiarse en un cambio posterior si se desea.
+- El fix de Stripe usa `.catch` para que un fallo al cancelar la suscripción antigua (p. ej. ya cancelada) no bloquee la creación de la nueva.
+
+**Pasos manuales pendientes**:
+- Regenerar Prisma Client y aplicar la migración que dropea `ImportantDate` en el servidor.
+
+---
+
 ## [2026-06-01 12:00] - [NUEVO MÓDULO] Rankings + rol SENDER/RECEIVER en ETFRating + catálogo ETF ampliado a 100
 
 **Acción**: Se añadió el campo `role` (SENDER/RECEIVER) a las calificaciones de ETF, se amplió el catálogo de ETFs a 100 (20 por categoría) y se creó el módulo de Rankings con endpoints públicos.

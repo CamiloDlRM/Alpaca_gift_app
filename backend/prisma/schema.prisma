@@ -24,7 +24,6 @@ model User {
   subscription       Subscription?
   etfRatings         ETFRating[]
   savedRecipients    SavedRecipient[]
-  importantDates     ImportantDate[]
   favoriteRecipients FavoriteRecipient[]
   createdEvents      GiftEvent[]
 
@@ -176,21 +175,6 @@ model SavedRecipient {
   createdAt DateTime @default(now())
 
   @@unique([userId, email])
-}
-
-model ImportantDate {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personName  String
-  personEmail String?
-  label       String
-  month       Int
-  day         Int
-  remindDaysBefore Int @default(7)
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
 }
 
 model FavoriteRecipient {

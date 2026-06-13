@@ -279,6 +279,7 @@ export default function SendGift() {
   const [giftType, setGiftType] = useState<GiftType>(() =>
     searchParams.get('type') === 'SCHEDULED' ? 'SCHEDULED' : 'INSTANT'
   );
+  const [showScheduleUpsell, setShowScheduleUpsell] = useState(false);
 
   // If coming from schedule view with a specific month/year, lock the date picker to that month
   const lockedMonth = searchParams.get('month') !== null ? parseInt(searchParams.get('month')!) : null;
@@ -639,7 +640,7 @@ export default function SendGift() {
                 <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
                   <button
                     type="button"
-                    onClick={() => setGiftType('INSTANT')}
+                    onClick={() => { setShowScheduleUpsell(false); setGiftType('INSTANT'); }}
                     className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                       giftType === 'INSTANT'
                         ? 'bg-[#F5C518] text-black'
@@ -650,7 +651,11 @@ export default function SendGift() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setGiftType('SCHEDULED')}
+                    onClick={() => {
+                      if (!isPro) { setShowScheduleUpsell(true); return; }
+                      setShowScheduleUpsell(false);
+                      setGiftType('SCHEDULED');
+                    }}
                     className={`flex-1 py-3 text-sm font-semibold transition-colors ${
                       giftType === 'SCHEDULED'
                         ? 'bg-[#F5C518] text-black'
@@ -660,6 +665,11 @@ export default function SendGift() {
                     📅 Scheduled
                   </button>
                 </div>
+                {showScheduleUpsell && !isPro && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                    Scheduled gifts require a <Link to="/pricing" className="font-semibold underline">Future Builder or Visionary plan</Link>.
+                  </p>
+                )}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                   {giftType === 'INSTANT'
                     ? 'The recipient gets the claim link by email right away.'
