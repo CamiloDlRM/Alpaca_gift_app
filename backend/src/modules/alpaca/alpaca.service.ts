@@ -149,8 +149,8 @@ const isMock = !process.env.ALPACA_BROKER_KEY || process.env.ALPACA_BROKER_KEY =
 export const alpacaService: AlpacaService = isMock ? alpacaMock : createRealAlpacaService();
 
 // On startup: recover gifts that got stuck due to a server crash mid-flow.
-// AGREEMENT_SIGNED: event was lost — safe to re-emit (no Alpaca calls made yet).
-// ACCOUNT_CREATING: Alpaca state is unknown — mark as FAILED so support can act.
+// Both AGREEMENT_SIGNED and ACCOUNT_CREATING are safe to re-emit in mock mode.
+// In production (real Alpaca), ACCOUNT_CREATING state is unknown — mark as FAILED.
 export async function recoverStuckGifts(): Promise<void> {
   try {
     const stuck = await prisma.gift.findMany({
@@ -160,10 +160,19 @@ export async function recoverStuckGifts(): Promise<void> {
     for (const gift of stuck) {
       if (gift.status === 'AGREEMENT_SIGNED') {
         console.warn(`[Recovery] Re-triggering Alpaca flow for gift ${gift.id} (stuck at AGREEMENT_SIGNED)`);
+        // Reset to AGREEMENT_SIGNED so the event handler can transition to ACCOUNT_CREATING
         eventBus.emit(EVENTS.AGREEMENT_SIGNED, { giftId: gift.id });
       } else if (gift.status === 'ACCOUNT_CREATING') {
-        console.warn(`[Recovery] Marking gift ${gift.id} as FAILED (stuck at ACCOUNT_CREATING — Alpaca state unknown)`);
-        await prisma.gift.update({ where: { id: gift.id }, data: { status: 'FAILED' } });
+        if (isMock) {
+          // Mock mode: Alpaca state is deterministic — safe to roll back and retry
+          console.warn(`[Recovery] Mock mode: rolling back gift ${gift.id} to AGREEMENT_SIGNED for retry`);
+          await prisma.gift.update({ where: { id: gift.id }, data: { status: 'AGREEMENT_SIGNED' } });
+          eventBus.emit(EVENTS.AGREEMENT_SIGNED, { giftId: gift.id });
+        } else {
+          // Real Alpaca: state is unknown — human review needed
+          console.warn(`[Recovery] Real Alpaca: marking gift ${gift.id} as FAILED (stuck at ACCOUNT_CREATING)`);
+          await prisma.gift.update({ where: { id: gift.id }, data: { status: 'FAILED' } });
+        }
       }
     }
   } catch (err) {
@@ -175,20 +184,43 @@ export async function recoverStuckGifts(): Promise<void> {
 eventBus.on<{ giftId: string }>(EVENTS.AGREEMENT_SIGNED, async ({ giftId }) => {
   try {
     const gift = await prisma.gift.findUnique({ where: { id: giftId }, include: { kyc: true } });
-    if (!gift || !gift.kyc) return;
+    if (!gift) return;
+
+    // If this gift has no KYC (returning-user PIN flow sometimes skips creation),
+    // fall back to the most recent verified KYC for this recipient email.
+    let kyc = gift.kyc;
+    if (!kyc && gift.recipientEmail) {
+      const fallback = await prisma.gift.findFirst({
+        where: {
+          recipientEmail: gift.recipientEmail,
+          id: { not: gift.id },
+          kyc: { verified: true },
+        },
+        include: { kyc: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      kyc = fallback?.kyc ?? null;
+    }
+
+    if (!kyc) {
+      console.error(`[Alpaca] Gift ${giftId} has no KYC record — cannot invest.`);
+      await prisma.gift.update({ where: { id: giftId }, data: { status: GiftStatus.FAILED } })
+        .catch(e => console.error('[Alpaca] Could not mark gift as FAILED:', e));
+      return;
+    }
 
     await transitionStatus(giftId, GiftStatus.ACCOUNT_CREATING);
 
     const { accountId } = await alpacaService.createAccount({
-      fullName: gift.kyc.fullName,
-      dob: gift.kyc.dob,
-      ssnLast4: gift.kyc.ssnLast4,
-      address: gift.kyc.address,
-      city: gift.kyc.city,
-      state: gift.kyc.state,
-      zip: gift.kyc.zip,
-      email: gift.recipientEmail ?? `${gift.kyc.ssnLast4}@wealthgift.io`,
-      ipAddress: (gift.kyc as any).ipAddress ?? undefined,
+      fullName: kyc.fullName,
+      dob: kyc.dob,
+      ssnLast4: kyc.ssnLast4,
+      address: kyc.address,
+      city: kyc.city,
+      state: kyc.state,
+      zip: kyc.zip,
+      email: gift.recipientEmail ?? `${kyc.ssnLast4}@wealthgift.io`,
+      ipAddress: (kyc as any).ipAddress ?? undefined,
     });
 
     await alpacaService.fundAccount(accountId, gift.amount);
