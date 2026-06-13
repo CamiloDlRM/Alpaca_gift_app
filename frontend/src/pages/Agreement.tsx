@@ -14,6 +14,24 @@ export default function Agreement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
+  const [statusChecked, setStatusChecked] = useState(false);
+
+  useEffect(() => {
+    if (!claimToken) return;
+    apiClient.get(`/gifts/claim/${claimToken}`).then((res: any) => {
+      const status = res.data?.status;
+      if (status === 'AGREEMENT_SIGNED' || status === 'ACCOUNT_CREATING' || status === 'INVESTED' || status === 'REDEEMED' || status === 'FAILED' || status === 'CANCELLED') {
+        navigate(`/recipient/${claimToken}/dashboard`, { replace: true });
+      } else if (status === 'KYC_SUBMITTED') {
+        navigate(`/claim/${claimToken}/kyc/questions`, { replace: true });
+      } else if (status === 'CLAIMING' || status === 'PENDING') {
+        navigate(`/claim/${claimToken}`, { replace: true });
+      } else {
+        // KYC_VERIFIED — valid state to sign
+        setStatusChecked(true);
+      }
+    }).catch(() => setStatusChecked(true));
+  }, [claimToken, navigate]);
 
   const getCanvasContext = useCallback(() => {
     const canvas = canvasRef.current;
@@ -114,6 +132,16 @@ export default function Agreement() {
       setLoading(false);
     }
   };
+
+  if (!statusChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
+          <span className="sr-only">Loading</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

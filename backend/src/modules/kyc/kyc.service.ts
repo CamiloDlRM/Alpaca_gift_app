@@ -160,6 +160,8 @@ export async function verifyClaimPin(claimToken: string, pin: string): Promise<{
   if (gift.status === GiftStatus.PENDING || gift.status === GiftStatus.CLAIMING) {
     await transitionStatus(gift.id, GiftStatus.KYC_SUBMITTED);
     await transitionStatus(gift.id, GiftStatus.KYC_VERIFIED);
+  } else if (gift.status === GiftStatus.KYC_SUBMITTED) {
+    await transitionStatus(gift.id, GiftStatus.KYC_VERIFIED);
   }
 
   eventBus.emit(EVENTS.KYC_VERIFIED, { giftId: gift.id, claimToken });

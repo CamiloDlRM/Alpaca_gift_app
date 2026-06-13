@@ -101,8 +101,22 @@ export default function ClaimGift() {
         const msg = axiosErr.response?.data?.error ?? '';
         if (msg) { setError(msg); setStarting(false); return; }
       }
-      // Any other error: still proceed (may already be CLAIMING)
+      // Any other error: re-fetch gift status to decide where to route
       try {
+        const giftRes = await apiClient.get<{ status: string }>(`/gifts/claim/${claimToken}`);
+        const currentStatus = giftRes.data?.status;
+        if (currentStatus === 'KYC_SUBMITTED') {
+          navigate(`/claim/${claimToken}/kyc/questions`);
+          return;
+        }
+        if (currentStatus === 'KYC_VERIFIED') {
+          navigate(`/claim/${claimToken}/agreement`);
+          return;
+        }
+        if (currentStatus === 'AGREEMENT_SIGNED' || currentStatus === 'ACCOUNT_CREATING' || currentStatus === 'INVESTED' || currentStatus === 'REDEEMED') {
+          navigate(`/recipient/${claimToken}/dashboard`);
+          return;
+        }
         const checkRes = await apiClient.get<{ isReturning: boolean }>(`/kyc/returning-check/${claimToken}`);
         if (checkRes.data.isReturning) {
           navigate(`/claim/${claimToken}/verify-pin`);
