@@ -115,6 +115,8 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
     recipientName: gift.recipientName,
     etfSymbol: gift.etfSymbol,
     occasion: gift.occasion,
+    amount: gift.amount,
+    giftStatus: gift.status,
     totalValue,
     gainLoss,
     gainLossPercent,
