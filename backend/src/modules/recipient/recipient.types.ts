@@ -11,6 +11,7 @@ export interface RecipientPortfolioResponse {
   recipientName: string;
   etfSymbol: string;
   occasion: string;
+  amount: number;
   totalValue: number;
   gainLoss: number;
   gainLossPercent: number;
@@ -19,9 +20,12 @@ export interface RecipientPortfolioResponse {
   isRedeemed: boolean;
   redeemedAmount?: number;
   transactions: RecipientTransaction[];
-  // Present when the Alpaca flow is still running (AGREEMENT_SIGNED / ACCOUNT_CREATING)
-  processing?: boolean;
-  giftStatus?: string;
+  // Status sentinel fields — frontend uses these to show the right UI
+  giftStatus: string;
+  processing?: boolean;    // AGREEMENT_SIGNED or ACCOUNT_CREATING — Alpaca running
+  needsClaiming?: boolean; // PENDING / CLAIMING / KYC_* — user hasn't finished claiming
+  failed?: boolean;        // FAILED
+  cancelled?: boolean;     // CANCELLED
 }
 
 export interface ConsolidatedGiftItem {

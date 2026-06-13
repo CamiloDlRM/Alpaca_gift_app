@@ -17,33 +17,38 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
 
   if (!gift) throw new NotFoundError('Regalo no encontrado.');
 
-  // Gift is still being processed by the Alpaca flow — return a processing sentinel
-  // instead of an error so the frontend can poll gracefully.
-  const PROCESSING_STATUSES = ['AGREEMENT_SIGNED', 'ACCOUNT_CREATING', 'KYC_VERIFIED', 'CLAIMING', 'KYC_SUBMITTED'];
-  if (PROCESSING_STATUSES.includes(gift.status)) {
-    return {
-      processing: true,
-      giftStatus: gift.status,
-      giftId: gift.id,
-      recipientName: gift.recipientName,
-      etfSymbol: gift.etfSymbol,
-      occasion: gift.occasion,
-      totalValue: 0,
-      gainLoss: 0,
-      gainLossPercent: 0,
-      shares: 0,
-      investedAt: gift.updatedAt.toISOString(),
-      isRedeemed: false,
-      transactions: [],
-    } as RecipientPortfolioResponse;
+  const base = {
+    giftId: gift.id,
+    recipientName: gift.recipientName,
+    etfSymbol: gift.etfSymbol,
+    occasion: gift.occasion,
+    amount: gift.amount,
+    totalValue: 0,
+    gainLoss: 0,
+    gainLossPercent: 0,
+    shares: 0,
+    investedAt: gift.updatedAt.toISOString(),
+    isRedeemed: false,
+    transactions: [],
+    giftStatus: gift.status,
+  };
+
+  // Claim not started or still in progress — user needs to finish claiming
+  if (['PENDING', 'CLAIMING', 'KYC_SUBMITTED', 'KYC_VERIFIED'].includes(gift.status)) {
+    return { ...base, needsClaiming: true };
   }
 
-  if (gift.status === 'FAILED' || gift.status === 'CANCELLED') {
-    throw new BadRequestError('Este regalo no pudo ser procesado.');
+  // Alpaca flow running — poll until INVESTED
+  if (['AGREEMENT_SIGNED', 'ACCOUNT_CREATING'].includes(gift.status)) {
+    return { ...base, processing: true };
   }
 
-  if (gift.status !== 'INVESTED' && gift.status !== 'REDEEMED') {
-    throw new BadRequestError('Este regalo aún no está disponible.');
+  if (gift.status === 'FAILED') {
+    return { ...base, failed: true };
+  }
+
+  if (gift.status === 'CANCELLED') {
+    return { ...base, cancelled: true };
   }
 
   // Fetch real current price from Yahoo Finance
