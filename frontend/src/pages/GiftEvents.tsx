@@ -11,6 +11,12 @@ import apiClient from '../api/client';
 type EventStatus = 'ACTIVE' | 'CLOSED';
 type ParticipantStatus = 'INVITED' | 'ACCEPTED' | 'DECLINED' | 'GIFTED';
 
+interface EtfOption {
+  id: string;
+  etfSymbol: string;
+  targetAmount: number;
+}
+
 interface EventParticipant {
   id: string;
   email: string;
@@ -30,6 +36,7 @@ interface GiftEvent {
   targetAmount: number;
   status: EventStatus;
   participants: EventParticipant[];
+  options: EtfOption[];
 }
 
 interface InvitedEvent {
@@ -39,6 +46,7 @@ interface InvitedEvent {
   etfSymbol: string;
   targetAmount: number;
   status: EventStatus;
+  options: EtfOption[];
   creator: { id: string; name: string; email: string };
   participant: {
     id: string;
@@ -51,6 +59,11 @@ interface InvitedEvent {
 interface ParticipantInput {
   email: string;
   name: string;
+}
+
+interface EtfOptionInput {
+  etfSymbol: string;
+  targetAmount: string;
 }
 
 const PARTICIPANT_STATUS_STYLE: Record<ParticipantStatus, string> = {
@@ -72,15 +85,18 @@ export default function GiftEvents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Create modal
+  // Create modal state
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [etfSymbol, setEtfSymbol] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
+  const [etfOptions, setEtfOptions] = useState<EtfOptionInput[]>([{ etfSymbol: '', targetAmount: '' }]);
   const [participants, setParticipants] = useState<ParticipantInput[]>([{ email: '', name: '' }]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+
+  // For "Send Gift" with multiple ETF options
+  const [sendGiftEvent, setSendGiftEvent] = useState<InvitedEvent | null>(null);
+  const [selectedOptionIdx, setSelectedOptionIdx] = useState(0);
 
   const [actionId, setActionId] = useState('');
 
@@ -105,6 +121,14 @@ export default function GiftEvents() {
     else setLoading(false);
   }, [isVisionary, fetchAll]);
 
+  // ETF options CRUD
+  const addEtfOptionRow = () => setEtfOptions((prev) => [...prev, { etfSymbol: '', targetAmount: '' }]);
+  const removeEtfOptionRow = (i: number) =>
+    setEtfOptions((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+  const updateEtfOptionRow = (i: number, field: keyof EtfOptionInput, value: string) =>
+    setEtfOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, [field]: value } : o)));
+
+  // Participants CRUD
   const addParticipantRow = () => setParticipants((prev) => [...prev, { email: '', name: '' }]);
   const removeParticipantRow = (i: number) =>
     setParticipants((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
@@ -114,28 +138,38 @@ export default function GiftEvents() {
   const resetCreateForm = () => {
     setTitle('');
     setDescription('');
-    setEtfSymbol('');
-    setTargetAmount('');
+    setEtfOptions([{ etfSymbol: '', targetAmount: '' }]);
     setParticipants([{ email: '', name: '' }]);
     setCreateError('');
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !etfSymbol.trim() || !targetAmount || creating) return;
-    const normalizedEtf = etfSymbol.trim().toUpperCase();
-    if (!/^[A-Z]{1,10}$/.test(normalizedEtf)) {
-      setCreateError('ETF symbol must be a single valid ticker (e.g. VOO, SPY).');
+    if (!title.trim() || creating) return;
+
+    const filledOptions = etfOptions.filter(o => o.etfSymbol.trim() && o.targetAmount);
+    if (filledOptions.length === 0) {
+      setCreateError('At least one ETF option is required.');
       return;
     }
+    for (const opt of filledOptions) {
+      const sym = opt.etfSymbol.trim().toUpperCase();
+      if (!/^[A-Z]{1,10}$/.test(sym)) {
+        setCreateError(`Invalid ETF symbol: "${opt.etfSymbol}". Use a valid ticker (e.g. VOO, SPY).`);
+        return;
+      }
+    }
+
     setCreating(true);
     setCreateError('');
     try {
       const { data } = await apiClient.post<GiftEvent>('/gift-events', {
         title: title.trim(),
         description: description.trim() || undefined,
-        etfSymbol: normalizedEtf,
-        targetAmount: parseFloat(targetAmount),
+        etfOptions: filledOptions.map(o => ({
+          etfSymbol: o.etfSymbol.trim().toUpperCase(),
+          targetAmount: parseFloat(o.targetAmount),
+        })),
         participants: participants
           .filter((p) => p.email.trim())
           .map((p) => ({ email: p.email.trim(), name: p.name.trim() })),
@@ -185,13 +219,36 @@ export default function GiftEvents() {
     }
   };
 
-  const goSendGift = (ev: InvitedEvent) => {
+  const initiateGoSendGift = (ev: InvitedEvent) => {
+    const opts = ev.options?.length > 0 ? ev.options : [{ id: '', etfSymbol: ev.etfSymbol, targetAmount: ev.targetAmount }];
+    if (opts.length === 1) {
+      const opt = opts[0];
+      const params = new URLSearchParams({
+        recipientName: ev.creator.name,
+        recipientEmail: ev.creator.email,
+        etfSymbol: opt.etfSymbol,
+        amount: String(opt.targetAmount),
+      });
+      navigate(`/send?${params.toString()}`);
+    } else {
+      setSendGiftEvent(ev);
+      setSelectedOptionIdx(0);
+    }
+  };
+
+  const confirmGoSendGift = () => {
+    if (!sendGiftEvent) return;
+    const opts = sendGiftEvent.options?.length > 0
+      ? sendGiftEvent.options
+      : [{ id: '', etfSymbol: sendGiftEvent.etfSymbol, targetAmount: sendGiftEvent.targetAmount }];
+    const opt = opts[selectedOptionIdx] ?? opts[0];
     const params = new URLSearchParams({
-      recipientName: ev.creator.name,
-      recipientEmail: ev.creator.email,
-      etfSymbol: ev.etfSymbol,
-      amount: String(ev.targetAmount),
+      recipientName: sendGiftEvent.creator.name,
+      recipientEmail: sendGiftEvent.creator.email,
+      etfSymbol: opt.etfSymbol,
+      amount: String(opt.targetAmount),
     });
+    setSendGiftEvent(null);
     navigate(`/send?${params.toString()}`);
   };
 
@@ -255,44 +312,54 @@ export default function GiftEvents() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {events.map((ev) => (
-                    <Card key={ev.id} className="p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-gray-900 dark:text-white truncate">{ev.title}</h3>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${ev.status === 'ACTIVE' ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                              {ev.status}
-                            </span>
+                  {events.map((ev) => {
+                    const displayOptions = ev.options?.length > 0
+                      ? ev.options
+                      : [{ id: '', etfSymbol: ev.etfSymbol, targetAmount: ev.targetAmount }];
+                    return (
+                      <Card key={ev.id} className="p-5">
+                        <div className="flex items-start justify-between">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-gray-900 dark:text-white truncate">{ev.title}</h3>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${ev.status === 'ACTIVE' ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                {ev.status}
+                              </span>
+                            </div>
+                            {ev.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{ev.description}</p>}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {displayOptions.map((opt, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 text-sm bg-[#F5C518]/10 text-[#b8960c] font-semibold px-2.5 py-0.5 rounded-full">
+                                  {opt.etfSymbol} · ${opt.targetAmount.toFixed(2)}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{ev.participants.length} participant(s)</p>
                           </div>
-                          {ev.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{ev.description}</p>}
-                          <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                            <span className="font-semibold text-[#b8960c]">{ev.etfSymbol}</span> · target ${ev.targetAmount.toFixed(2)} · {ev.participants.length} participant(s)
-                          </div>
+                          {ev.status === 'ACTIVE' && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleCloseEvent(ev.id)}
+                              loading={actionId === ev.id}
+                            >
+                              Close
+                            </Button>
+                          )}
                         </div>
-                        {ev.status === 'ACTIVE' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleCloseEvent(ev.id)}
-                            loading={actionId === ev.id}
-                          >
-                            Close
-                          </Button>
+                        {ev.participants.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {ev.participants.map((p) => (
+                              <span key={p.id} className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${PARTICIPANT_STATUS_STYLE[p.status]}`}>
+                                <span className="font-medium">{p.name || p.email}</span>
+                                <span>· {p.status}</span>
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                      {ev.participants.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {ev.participants.map((p) => (
-                            <span key={p.id} className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${PARTICIPANT_STATUS_STYLE[p.status]}`}>
-                              <span className="font-medium">{p.name || p.email}</span>
-                              <span>· {p.status}</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                 </div>
               )
             ) : invited.length === 0 ? (
@@ -306,53 +373,62 @@ export default function GiftEvents() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {invited.map((ev) => (
-                  <Card key={ev.id} className="p-5">
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-gray-900 dark:text-white truncate">{ev.title}</h3>
-                        <p className="text-sm text-gray-400 mt-0.5">Organized by {ev.creator.name}</p>
-                        <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                          <span className="font-semibold text-[#b8960c]">{ev.etfSymbol}</span> · ${ev.targetAmount.toFixed(2)}
+                {invited.map((ev) => {
+                  const displayOptions = ev.options?.length > 0
+                    ? ev.options
+                    : [{ id: '', etfSymbol: ev.etfSymbol, targetAmount: ev.targetAmount }];
+                  return (
+                    <Card key={ev.id} className="p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-gray-900 dark:text-white truncate">{ev.title}</h3>
+                          <p className="text-sm text-gray-400 mt-0.5">Organized by {ev.creator.name}</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {displayOptions.map((opt, i) => (
+                              <span key={i} className="inline-flex items-center gap-1 text-sm bg-[#F5C518]/10 text-[#b8960c] font-semibold px-2.5 py-0.5 rounded-full">
+                                {opt.etfSymbol} · ${opt.targetAmount.toFixed(2)}
+                              </span>
+                            ))}
+                          </div>
                         </div>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PARTICIPANT_STATUS_STYLE[ev.participant.status]}`}>
+                          {ev.participant.status}
+                        </span>
                       </div>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PARTICIPANT_STATUS_STYLE[ev.participant.status]}`}>
-                        {ev.participant.status}
-                      </span>
-                    </div>
 
-                    <div className="mt-4 flex flex-wrap gap-3">
-                      {ev.participant.status === 'INVITED' && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleInviteAction(ev.participant.inviteToken, 'accept')}
-                            loading={actionId === ev.participant.inviteToken}
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleInviteAction(ev.participant.inviteToken, 'decline')}
-                            disabled={actionId === ev.participant.inviteToken}
-                          >
-                            Decline
-                          </Button>
-                        </>
-                      )}
-                      {ev.participant.status === 'ACCEPTED' && !ev.participant.giftId && (
-                        <Button size="sm" onClick={() => goSendGift(ev)}>Send Gift</Button>
-                      )}
-                      {ev.participant.status === 'DECLINED' && (
-                        <p className="text-sm text-gray-400">You declined this invitation.</p>
-                      )}
-                      {ev.participant.status === 'GIFTED' && (
-                        <p className="text-sm text-green-600 dark:text-green-400 font-medium">You already sent a gift for this event.</p>
-                      )}
-                    </div>
-                  </Card>
-                ))}
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        {ev.participant.status === 'INVITED' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleInviteAction(ev.participant.inviteToken, 'accept')}
+                              loading={actionId === ev.participant.inviteToken}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleInviteAction(ev.participant.inviteToken, 'decline')}
+                              disabled={actionId === ev.participant.inviteToken}
+                            >
+                              Decline
+                            </Button>
+                          </>
+                        )}
+                        {ev.participant.status === 'ACCEPTED' && !ev.participant.giftId && (
+                          <Button size="sm" onClick={() => initiateGoSendGift(ev)}>Send Gift</Button>
+                        )}
+                        {ev.participant.status === 'DECLINED' && (
+                          <p className="text-sm text-gray-400">You declined this invitation.</p>
+                        )}
+                        {ev.participant.status === 'GIFTED' && (
+                          <p className="text-sm text-green-600 dark:text-green-400 font-medium">You already sent a gift for this event.</p>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -385,11 +461,52 @@ export default function GiftEvents() {
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input label="ETF symbol" placeholder="VOO" value={etfSymbol} onChange={(e) => setEtfSymbol(e.target.value.toUpperCase())} required />
-                <Input label="Target amount ($)" type="number" min="1" step="0.01" placeholder="500.00" value={targetAmount} onChange={(e) => setTargetAmount(e.target.value)} required />
+
+              {/* ETF Options */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">ETF Options</label>
+                <div className="space-y-2">
+                  {etfOptions.map((opt, i) => (
+                    <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="VOO"
+                        value={opt.etfSymbol}
+                        onChange={(e) => updateEtfOptionRow(i, 'etfSymbol', e.target.value.toUpperCase())}
+                        className="col-span-4 rounded-lg border border-gray-200 dark:border-gray-600 py-2.5 px-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F5C518] uppercase"
+                        required={i === 0}
+                        maxLength={10}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Amount ($)"
+                        min="1"
+                        step="0.01"
+                        value={opt.targetAmount}
+                        onChange={(e) => updateEtfOptionRow(i, 'targetAmount', e.target.value)}
+                        className="col-span-7 rounded-lg border border-gray-200 dark:border-gray-600 py-2.5 px-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F5C518]"
+                        required={i === 0}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeEtfOptionRow(i)}
+                        disabled={etfOptions.length === 1}
+                        className="col-span-1 w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Remove ETF option"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={addEtfOptionRow} className="mt-3 text-sm font-semibold text-[#b8960c] hover:text-[#8a6f08] transition-colors">
+                  + Add ETF option
+                </button>
               </div>
 
+              {/* Participants */}
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Participants</label>
                 <div className="space-y-2">
@@ -429,7 +546,7 @@ export default function GiftEvents() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button type="submit" loading={creating} className="flex-1" disabled={!title.trim() || !etfSymbol.trim() || !targetAmount}>
+                <Button type="submit" loading={creating} className="flex-1" disabled={!title.trim() || etfOptions.every(o => !o.etfSymbol.trim())}>
                   Create event
                 </Button>
                 <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>
@@ -437,6 +554,46 @@ export default function GiftEvents() {
                 </Button>
               </div>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ETF selection modal for "Send Gift" when there are multiple options */}
+      {sendGiftEvent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setSendGiftEvent(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose ETF option"
+        >
+          <Card className="w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Choose an ETF to gift</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Select which investment you'd like to send for <span className="font-semibold">{sendGiftEvent.title}</span>.</p>
+            <div className="space-y-2 mb-5">
+              {(sendGiftEvent.options?.length > 0
+                ? sendGiftEvent.options
+                : [{ id: '', etfSymbol: sendGiftEvent.etfSymbol, targetAmount: sendGiftEvent.targetAmount }]
+              ).map((opt, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedOptionIdx(i)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-colors text-left ${
+                    selectedOptionIdx === i
+                      ? 'border-[#F5C518] bg-[#F5C518]/10'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                  }`}
+                >
+                  <span className="font-bold text-gray-900 dark:text-white">{opt.etfSymbol}</span>
+                  <span className="text-gray-600 dark:text-gray-300">${opt.targetAmount.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1" onClick={confirmGoSendGift}>Continue</Button>
+              <Button variant="secondary" onClick={() => setSendGiftEvent(null)}>Cancel</Button>
+            </div>
           </Card>
         </div>
       )}

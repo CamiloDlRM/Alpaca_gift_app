@@ -121,7 +121,9 @@ export default function MyGifts() {
                         </div>
                         <div className="min-w-0">
                           <div className="font-semibold text-gray-900 dark:text-white">{gift.recipientName}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{gift.occasion} · {gift.etfSymbol} · {new Date(gift.deliveryDate).toLocaleDateString()}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {gift.occasion} · {gift.etfSymbol} · {gift.deliveryDate ? new Date(gift.deliveryDate).toLocaleDateString() : `Sent ${new Date(gift.createdAt).toLocaleDateString()}`}
+                          </div>
                           {gift.note && <div className="text-xs text-gray-400 italic mt-0.5 truncate">"{gift.note}"</div>}
                         </div>
                       </div>

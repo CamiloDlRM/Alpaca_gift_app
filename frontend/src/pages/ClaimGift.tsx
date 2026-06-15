@@ -211,6 +211,24 @@ export default function ClaimGift() {
     );
   }
 
+  // Gift was cancelled by the sender
+  if (gift.status === 'CANCELLED') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {claimPageHeader}
+        <div className="max-w-lg mx-auto px-4 py-16 text-center">
+          <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Gift Cancelled</h1>
+          <p className="text-gray-500 dark:text-gray-400">
+            This gift has been cancelled by the sender and is no longer available to claim.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Gift failed during Alpaca processing
   if (gift.status === 'FAILED') {
     return (

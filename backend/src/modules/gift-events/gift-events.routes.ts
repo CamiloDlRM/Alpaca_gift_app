@@ -13,11 +13,15 @@ const participantSchema = z.object({
   name: z.string().min(1),
 });
 
+const etfOptionSchema = z.object({
+  etfSymbol: z.string().min(1),
+  targetAmount: z.number().positive(),
+});
+
 const createSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  etfSymbol: z.string().min(1),
-  targetAmount: z.number().positive(),
+  etfOptions: z.array(etfOptionSchema).min(1),
   participants: z.array(participantSchema).min(1),
 });
 

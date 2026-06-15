@@ -214,10 +214,21 @@ model GiftEvent {
   targetAmount Float
   status       GiftEventStatus        @default(ACTIVE)
   participants GiftEventParticipant[]
+  options      GiftEventOption[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
 
   @@index([creatorId])
+}
+
+model GiftEventOption {
+  id           String    @id @default(uuid())
+  eventId      String
+  event        GiftEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  etfSymbol    String
+  targetAmount Float
+
+  @@index([eventId])
 }
 
 model GiftEventParticipant {

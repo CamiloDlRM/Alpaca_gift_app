@@ -6,6 +6,12 @@ import apiClient from '../api/client';
 
 type ParticipantStatus = 'INVITED' | 'ACCEPTED' | 'DECLINED' | 'GIFTED';
 
+interface EtfOption {
+  id: string;
+  etfSymbol: string;
+  targetAmount: number;
+}
+
 interface InviteParticipant {
   id: string;
   email: string;
@@ -21,6 +27,7 @@ interface InviteEvent {
   description: string | null;
   etfSymbol: string;
   targetAmount: number;
+  options: EtfOption[];
   status: 'ACTIVE' | 'CLOSED';
   creator: { id: string; name: string; email: string };
 }
@@ -54,6 +61,8 @@ export default function GiftEventInvite() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [selectedOptionIdx, setSelectedOptionIdx] = useState(0);
+  const [showOptionPicker, setShowOptionPicker] = useState(false);
 
   const fetchInvite = useCallback(async () => {
     if (!inviteToken) return;
@@ -87,15 +96,31 @@ export default function GiftEventInvite() {
     }
   };
 
-  const goSendGift = () => {
+  const goSendGift = (optionIdx: number) => {
     if (!data) return;
+    const opts = data.event.options?.length > 0
+      ? data.event.options
+      : [{ id: '', etfSymbol: data.event.etfSymbol, targetAmount: data.event.targetAmount }];
+    const opt = opts[optionIdx] ?? opts[0];
     const params = new URLSearchParams({
       recipientName: data.event.creator.name,
       recipientEmail: data.event.creator.email,
-      etfSymbol: data.event.etfSymbol,
-      amount: String(data.event.targetAmount),
+      etfSymbol: opt.etfSymbol,
+      amount: String(opt.targetAmount),
     });
     navigate(`/send?${params.toString()}`);
+  };
+
+  const handleSendGift = () => {
+    if (!data) return;
+    const opts = data.event.options?.length > 0
+      ? data.event.options
+      : [{ id: '', etfSymbol: data.event.etfSymbol, targetAmount: data.event.targetAmount }];
+    if (opts.length === 1) {
+      goSendGift(0);
+    } else {
+      setShowOptionPicker(true);
+    }
   };
 
   if (loading) {
@@ -127,6 +152,9 @@ export default function GiftEventInvite() {
   }
 
   const { participant, event } = data;
+  const displayOptions = event.options?.length > 0
+    ? event.options
+    : [{ id: '', etfSymbol: event.etfSymbol, targetAmount: event.targetAmount }];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -148,16 +176,19 @@ export default function GiftEventInvite() {
             <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">{event.description}</p>
           )}
 
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 space-y-2 text-sm mb-6">
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">ETF to gift</span>
-              <span className="font-semibold text-gray-900 dark:text-white">{event.etfSymbol}</span>
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+              {displayOptions.length === 1 ? 'ETF to gift' : 'ETF options'}
+            </p>
+            <div className="space-y-2">
+              {displayOptions.map((opt, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span className="font-bold text-[#b8960c]">{opt.etfSymbol}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">${opt.targetAmount.toFixed(2)}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Target amount</span>
-              <span className="font-semibold text-gray-900 dark:text-white">${event.targetAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
               <span className="text-gray-500 dark:text-gray-400">Your status</span>
               <span className="font-semibold text-gray-900 dark:text-white">{participant.status}</span>
             </div>
@@ -174,7 +205,7 @@ export default function GiftEventInvite() {
           )}
 
           {participant.status === 'ACCEPTED' && (
-            <Button className="w-full" onClick={goSendGift}>
+            <Button className="w-full" onClick={handleSendGift}>
               Send Gift
             </Button>
           )}
@@ -192,6 +223,45 @@ export default function GiftEventInvite() {
           )}
         </Card>
       </div>
+
+      {/* ETF option picker modal */}
+      {showOptionPicker && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowOptionPicker(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose ETF option"
+        >
+          <Card className="w-full max-w-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Choose an ETF to gift</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Select which investment you'd like to send for <span className="font-semibold">{event.title}</span>.
+            </p>
+            <div className="space-y-2 mb-5">
+              {displayOptions.map((opt, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedOptionIdx(i)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-colors text-left ${
+                    selectedOptionIdx === i
+                      ? 'border-[#F5C518] bg-[#F5C518]/10'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                  }`}
+                >
+                  <span className="font-bold text-gray-900 dark:text-white">{opt.etfSymbol}</span>
+                  <span className="text-gray-600 dark:text-gray-300">${opt.targetAmount.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1" onClick={() => { setShowOptionPicker(false); goSendGift(selectedOptionIdx); }}>Continue</Button>
+              <Button variant="secondary" onClick={() => setShowOptionPicker(false)}>Cancel</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
