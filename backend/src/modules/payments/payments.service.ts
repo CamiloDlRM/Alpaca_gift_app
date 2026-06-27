@@ -9,8 +9,10 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Flat sending fee charged to BASIC (Momments) users on each gift.
 export const BASIC_SENDING_FEE = 4.99;
-// Flat sending fee charged to PRO (Future Builder) and PRO_PLUS (Visionary) users on each gift.
+// Flat sending fee charged to PRO (Future Builder) users on each gift.
 export const PRO_SENDING_FEE = 1.5;
+// Flat sending fee charged to PRO_PLUS (Visionary) users on each gift.
+export const PRO_PLUS_SENDING_FEE = 1.0;
 
 async function getOrCreateStripeCustomer(userId: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -54,9 +56,11 @@ export async function createPaymentIntent(
   // Non-registered recipients are allowed — they receive an invitation email to claim.
 
   const amount = dto.giftData.amount;
-  // BASIC (Momments) users pay a flat sending fee per gift.
-  // PRO (Future Builder) and PRO_PLUS (Visionary) users pay a reduced flat fee per gift.
-  const sendingFee = user.subscriptionStatus === 'BASIC' ? BASIC_SENDING_FEE : PRO_SENDING_FEE;
+  // Fee per plan: BASIC (Momments) $4.99, PRO (Future Builder) $1.50, PRO_PLUS (Visionary) $1.00.
+  const sendingFee =
+    user.subscriptionStatus === 'PRO_PLUS' ? PRO_PLUS_SENDING_FEE :
+    user.subscriptionStatus === 'PRO' ? PRO_SENDING_FEE :
+    BASIC_SENDING_FEE;
   const commission = sendingFee; // kept in legacy field for backward compatibility
   const total = amount + sendingFee;
 

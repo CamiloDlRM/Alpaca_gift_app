@@ -19,9 +19,9 @@ How WealthGift works:
 - WealthGift offers 5 ETF categories: "Leading Companies", "Innovation & Technology", "Emerging Growth", "Stability & Income", and "Worldwide Growth".
 - Each category contains 20 ETFs, for a total of 100 ETFs available to gift.
 - Plans:
-  - Basic: up to 5 gifts per month, with a $0.99 fee per gift.
-  - Pro: unlimited gifts, $0 fee.
-  - Pro+: unlimited gifts plus premium features.
+  - Momments (Basic): unlimited gifts with a $4.99 sending fee per gift.
+  - Future Builder (Pro): $39/year, unlimited gifts with a $1.50 sending fee per gift, scheduled gifts, saved recipients.
+  - Visionary (Pro+): $69/year, unlimited gifts with a $1.00 sending fee per gift, everything in Future Builder plus automatic scheduled gifts and group gifting events.
 - A sender chooses an ETF and an amount, then sends a gift. The recipient claims it via a unique link.
 - After claiming, the recipient goes through: KYC (identity verification) → Agreement (terms) → Account (brokerage account) → Invested (money is put into the ETF).
 - Ratings: both senders and receivers can rate ETFs 1–5 stars with an optional comment.

@@ -17,8 +17,8 @@ const FAQS = [
     a: 'If the gift is in PENDING status (not yet claimed), contact support to process it. Once the recipient starts the claim process it cannot be cancelled.',
   },
   {
-    q: 'What is the $0.99 sending fee?',
-    a: 'Basic plan users pay a flat $0.99 sending fee per gift to cover operational costs. With a PRO plan ($9.99/mo) there are no fees and you can send unlimited gifts.',
+    q: 'What is the sending fee?',
+    a: 'Each plan has a per-gift sending fee: Momments (free plan) pays $4.99 per gift, Future Builder ($39/year) pays $1.50 per gift, and Visionary ($69/year) pays $1.00 per gift.',
   },
   {
     q: 'Are my payments secure?',

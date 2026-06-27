@@ -208,11 +208,9 @@ function PaymentStepInner({ formData, paymentData, isPro, onBack, onSuccess }: P
             <span className="text-gray-900 dark:text-white">${paymentData.amount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">
-              {isPro ? 'Sending fee' : 'Sending fee ($0.99)'}
-            </span>
-            <span className={isPro ? 'text-green-600 font-medium' : 'text-gray-900 dark:text-white'}>
-              {isPro ? '$0.00 \u2713 No fee' : `$${(paymentData.sendingFee ?? paymentData.commission).toFixed(2)}`}
+            <span className="text-gray-500 dark:text-gray-400">Sending fee</span>
+            <span className="text-gray-900 dark:text-white">
+              ${(paymentData.sendingFee ?? paymentData.commission).toFixed(2)}
             </span>
           </div>
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between">
@@ -624,7 +622,7 @@ export default function SendGift() {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">You have reached the 5-gift limit on the BASIC plan</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Upgrade to PRO or PRO+ to send unlimited gifts with no sending fees.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Upgrade to Future Builder ($1.50/gift) or Visionary ($1/gift) to send unlimited gifts at a reduced fee.</p>
             <Button onClick={() => navigate('/pricing')}>
               Upgrade to PRO
             </Button>

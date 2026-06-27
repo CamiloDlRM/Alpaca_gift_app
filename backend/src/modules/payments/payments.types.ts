@@ -14,13 +14,9 @@ export interface PaymentIntentResponse {
   clientSecret: string;
   paymentIntentId: string;
   amount: number;
-  /**
-   * Legacy field. For BASIC users this mirrors `sendingFee`. For PRO/PRO_PLUS it is 0.
-   */
+  /** Legacy field kept for backward compatibility. Mirrors sendingFee. */
   commission: number;
-  /**
-   * Flat $0.99 "tarifa de envío" charged to BASIC users on each gift. 0 for paid plans.
-   */
+  /** Sending fee per plan: $4.99 (Momments/BASIC), $1.50 (Future Builder/PRO), $1.00 (Visionary/PRO_PLUS). */
   sendingFee: number;
   total: number;
 }
