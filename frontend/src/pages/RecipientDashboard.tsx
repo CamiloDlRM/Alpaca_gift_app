@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import apiClient from '../api/client';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useThemeStore } from '../store/theme.store';
 
 interface RecipientTransaction {
   date: string;
@@ -148,6 +149,7 @@ function CancelledView() {
 
 export default function RecipientDashboard() {
   const { claimToken } = useParams<{ claimToken: string }>();
+  const { isDark } = useThemeStore();
   const [portfolio, setPortfolio] = useState<RecipientPortfolio | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [period, setPeriod] = useState<Period>('1M');
@@ -351,7 +353,7 @@ export default function RecipientDashboard() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }}
                     tickFormatter={(v: number) => `$${v}`} domain={['dataMin - 5', 'dataMax + 5']} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', color: isDark ? '#f9fafb' : '#111827' }}
                     formatter={(v: number) => [`$${v.toFixed(2)}`, 'Value']}
                     labelFormatter={(l: string) => new Date(l).toLocaleDateString()}
                   />

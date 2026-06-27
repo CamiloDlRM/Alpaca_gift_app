@@ -135,7 +135,7 @@ export default function Agreement() {
 
   if (!statusChecked) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
           <span className="sr-only">Loading</span>
         </div>
@@ -144,55 +144,55 @@ export default function Agreement() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Nav />
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Brokerage Agreement</h1>
-        <p className="text-gray-500 mb-8">Review and sign the agreement to receive your investment gift.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Brokerage Agreement</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">Review and sign the agreement to receive your investment gift.</p>
 
         {error && (
-          <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6" role="alert">{error}</div>
         )}
 
         {/* Agreement text */}
         <Card className="p-6 mb-6">
-          <div className="h-64 overflow-y-auto pr-4 text-sm text-gray-600 leading-relaxed space-y-4">
-            <h3 className="font-bold text-gray-900 text-base">Customer Account Agreement</h3>
+          <div className="h-64 overflow-y-auto pr-4 text-sm text-gray-600 dark:text-gray-400 leading-relaxed space-y-4">
+            <h3 className="font-bold text-gray-900 dark:text-white text-base">Customer Account Agreement</h3>
             <p>
               This Customer Account Agreement ("Agreement") sets forth the terms and conditions under which
               WealthGift and its clearing partner will maintain one or more brokerage accounts on your behalf.
             </p>
-            <h4 className="font-semibold text-gray-900">1. Account Opening</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">1. Account Opening</h4>
             <p>
               By signing this Agreement, you authorize WealthGift to open a brokerage account in your name.
               You represent that all information provided during the identity verification process is accurate
               and complete. You agree to notify us promptly of any changes to your personal information.
             </p>
-            <h4 className="font-semibold text-gray-900">2. Investment Risks</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">2. Investment Risks</h4>
             <p>
               You understand that investing in securities involves risk, including the possible loss of principal.
               Exchange-traded funds (ETFs) are subject to market risk and may decline in value. Past performance
               does not guarantee future results. The value of your investment may fluctuate and you may receive
               more or less than your original investment when you redeem your shares.
             </p>
-            <h4 className="font-semibold text-gray-900">3. Gift Acceptance</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">3. Gift Acceptance</h4>
             <p>
               By accepting this gift, you agree to receive the specified ETF shares into your brokerage account.
               The gift amount will be used to purchase fractional or whole shares of the designated ETF at the
               current market price at the time of execution.
             </p>
-            <h4 className="font-semibold text-gray-900">4. Account Management</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">4. Account Management</h4>
             <p>
               Your account will be managed according to the terms of this Agreement. You may view your holdings,
               performance, and account details through the WealthGift platform. Withdrawals and transfers are
               subject to applicable rules and regulations.
             </p>
-            <h4 className="font-semibold text-gray-900">5. SIPC Protection</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">5. SIPC Protection</h4>
             <p>
               Your account is protected by the Securities Investor Protection Corporation (SIPC) up to $500,000,
               including a $250,000 limit for cash. SIPC does not protect against the decline in value of your securities.
             </p>
-            <h4 className="font-semibold text-gray-900">6. Regulatory Disclosures</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">6. Regulatory Disclosures</h4>
             <p>
               Brokerage services are provided by our clearing partner, a registered broker-dealer and member of
               FINRA and SIPC. WealthGift is not a registered broker-dealer. Securities in your account are held
@@ -220,7 +220,7 @@ export default function Agreement() {
               onChange={(e) => setAgreed(e.target.checked)}
               className="mt-1 w-5 h-5 rounded border-gray-300 text-[#F5C518] focus:ring-[#F5C518]"
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
               I have read and agree to the Customer Account Agreement, the terms and conditions,
               and acknowledge the investment risks described above.
             </span>
@@ -230,16 +230,16 @@ export default function Agreement() {
         {/* Signature pad */}
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-medium text-gray-700">Your Signature</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Signature</label>
             <button
               type="button"
               onClick={clearSignature}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
             >
               Clear
             </button>
           </div>
-          <div className="border-2 border-dashed border-gray-200 rounded-lg overflow-hidden bg-white">
+          <div className="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-700">
             <canvas
               ref={canvasRef}
               className="w-full cursor-crosshair touch-none"

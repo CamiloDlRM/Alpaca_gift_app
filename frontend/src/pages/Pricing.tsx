@@ -307,11 +307,12 @@ export default function Pricing() {
             <div className="mb-6">
               <span className="text-4xl font-bold text-gray-900 dark:text-white">$69</span>
               <span className="text-gray-500 dark:text-gray-400 ml-1">/ year</span>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">$1.50 per gift</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">$1 per gift</div>
             </div>
             <ul className="space-y-3 mb-8 flex-1">
               {[
                 'Everything in Future Builder',
+                '$1 sending fee per gift',
                 'Automatic scheduled gifts (favorites with dates)',
                 'Creation of gift lists (group gifting events)',
                 'Priority support',
@@ -343,7 +344,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
-          * Momments charges a $4.99 sending fee per gift. Future Builder and Visionary are billed annually and charge a reduced $1.50 fee per gift.
+          * Momments charges a $4.99 sending fee per gift. Future Builder is billed annually with a $1.50 fee per gift. Visionary is billed annually with a $1 fee per gift.
         </p>
       </div>
 

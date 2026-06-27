@@ -94,7 +94,14 @@ export default function Profile() {
   };
 
   const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
-  const planLabel = user?.subscriptionStatus === 'PRO_PLUS' ? 'PRO+' : user?.subscriptionStatus === 'PRO' ? 'PRO' : 'Basic';
+  const planLabel =
+    user?.subscriptionStatus === 'PRO_PLUS' ? 'Visionary' :
+    user?.subscriptionStatus === 'PRO' ? 'Future Builder' :
+    'Momments';
+  const planDescription =
+    user?.subscriptionStatus === 'PRO_PLUS' ? '$69/year · $1 sending fee per gift.' :
+    user?.subscriptionStatus === 'PRO' ? '$39/year · $1.50 sending fee per gift.' :
+    'Free to use · $4.99 sending fee per gift.';
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -121,12 +128,14 @@ export default function Profile() {
                   )}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {isPro ? 'Unlimited gifts with no sending fee.' : 'Up to 5 gifts with a $0.99 sending fee.'}
+                  {planDescription}
                 </div>
               </div>
-              {!isPro && (
+              {user?.subscriptionStatus !== 'PRO_PLUS' && (
                 <Link to="/pricing">
-                  <Button size="sm">Upgrade to PRO</Button>
+                  <Button size="sm">
+                    {user?.subscriptionStatus === 'PRO' ? 'Upgrade to Visionary' : 'Upgrade plan'}
+                  </Button>
                 </Link>
               )}
             </div>

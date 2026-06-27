@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Nav } from '../components/layout/Nav';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useThemeStore } from '../store/theme.store';
 import apiClient from '../api/client';
 
 // Inline sender rating card — lets the gift sender rate the ETF as SENDER
@@ -196,6 +197,7 @@ type Period = typeof PERIODS[number];
 export default function GiftDashboard() {
   const { giftId } = useParams<{ giftId: string }>();
   const navigate = useNavigate();
+  const { isDark } = useThemeStore();
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [period, setPeriod] = useState<Period>('1M');
@@ -275,7 +277,7 @@ export default function GiftDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Nav backTo="/dashboard" backLabel="My Gifts" />
         <div className="flex items-center justify-center py-32">
           <div className="w-8 h-8 border-4 border-[#F5C518] border-t-transparent rounded-full animate-spin" role="status">
@@ -288,11 +290,11 @@ export default function GiftDashboard() {
 
   if (error || !portfolio) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Nav backTo="/dashboard" backLabel="My Gifts" />
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Portfolio Unavailable</h1>
-          <p className="text-gray-500">{error || 'Could not load portfolio data.'}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Portfolio Unavailable</h1>
+          <p className="text-gray-500 dark:text-gray-400">{error || 'Could not load portfolio data.'}</p>
         </div>
       </div>
     );
@@ -316,12 +318,12 @@ export default function GiftDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Nav backTo="/dashboard" backLabel="My Gifts" />
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Your Gift is Growing</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-8">Your Gift is Growing</h1>
 
         {/* Value display */}
         <Card className="p-6 sm:p-8 mb-6">
           <div className="mb-6">
-            <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-1">
+            <div className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-1">
               ${portfolio.totalValue.toFixed(2)}
             </div>
             <div className={`text-lg font-semibold flex items-center gap-2 ${isPositive ? 'text-positive' : 'text-red-500'}`}>
@@ -339,7 +341,7 @@ export default function GiftDashboard() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   period === p
                     ? 'bg-[#F5C518] text-black'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 role="tab"
                 aria-selected={period === p}
@@ -378,10 +380,11 @@ export default function GiftDashboard() {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: isDark ? '#1f2937' : '#fff',
+                    border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
                     borderRadius: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    color: isDark ? '#f9fafb' : '#111827',
                   }}
                   formatter={(value: number) => [`$${value.toFixed(2)}`, 'Value']}
                   labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
@@ -400,19 +403,19 @@ export default function GiftDashboard() {
 
         {/* Holdings */}
         <Card className="p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Your Holdings</h2>
-          <div className="flex items-center justify-between py-4 border-b border-gray-50">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Holdings</h2>
+          <div className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-[#F5C518]/10 rounded-full flex items-center justify-center">
                 <span className="text-sm font-bold text-[#F5C518]">{portfolio.symbol.charAt(0)}</span>
               </div>
               <div>
-                <div className="font-semibold text-gray-900">{portfolio.symbol}</div>
-                <div className="text-sm text-gray-500">{portfolio.shares.toFixed(4)} shares</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{portfolio.symbol}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{portfolio.shares.toFixed(4)} shares</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="font-semibold text-gray-900">${portfolio.totalValue.toFixed(2)}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">${portfolio.totalValue.toFixed(2)}</div>
               <div className={`text-sm font-medium ${isPositive ? 'text-positive' : 'text-red-500'}`}>
                 {isPositive ? '+' : ''}{portfolio.gainLossPercent.toFixed(2)}%
               </div>
@@ -423,7 +426,7 @@ export default function GiftDashboard() {
         {/* Gift status + cancel */}
         {(giftStatus === 'PENDING' || cancelSuccess) && (
           <Card className="p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Gift status</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Gift status</h2>
             {cancelSuccess ? (
               <div className="mt-3 flex items-start gap-2 bg-green-50 text-green-700 px-4 py-3 rounded-lg text-sm" role="status">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
@@ -433,7 +436,7 @@ export default function GiftDashboard() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   This gift is still pending. You can cancel it for a full refund as long as it has not been claimed.
                 </p>
                 {cancelError && (

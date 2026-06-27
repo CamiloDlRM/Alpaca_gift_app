@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { ETFReviewForm } from '../components/ETFReviewForm';
 import apiClient from '../api/client';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useThemeStore } from '../store/theme.store';
 
 interface ConsolidatedGiftItem {
   giftId: string;
@@ -168,6 +169,7 @@ function PositionChart({
 }) {
   const [period, setPeriod] = useState<Period>('1M');
   const [tab, setTab] = useState<'money' | 'price'>('money');
+  const { isDark } = useThemeStore();
   const [raw, setRaw] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -282,11 +284,12 @@ function PositionChart({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: isDark ? '#1f2937' : '#fff',
+                  border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
                   borderRadius: '8px',
                   fontSize: 12,
                   boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  color: isDark ? '#f9fafb' : '#111827',
                 }}
                 formatter={(v: number) => [
                   `$${v.toFixed(2)}`,
