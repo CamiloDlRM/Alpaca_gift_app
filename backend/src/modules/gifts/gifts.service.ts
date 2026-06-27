@@ -135,7 +135,7 @@ export async function cancelGift(giftId: string, senderId: string, reason?: stri
   }
 }
 
-export async function transitionStatus(giftId: string, newStatus: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string }): Promise<void> {
+export async function transitionStatus(giftId: string, newStatus: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string; purchasePricePerShare?: number }): Promise<void> {
   const gift = await giftsRepo.findGiftById(giftId);
   if (!gift) throw new NotFoundError('Gift not found');
 

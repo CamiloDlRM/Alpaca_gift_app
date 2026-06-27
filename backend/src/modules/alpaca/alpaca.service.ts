@@ -4,6 +4,7 @@ import { eventBus, EVENTS } from '../../shared/events/event-bus';
 import { getGiftByClaimToken as findGiftByClaimToken, transitionStatus } from '../gifts/gifts.service';
 import { GiftStatus } from '@prisma/client';
 import { prisma } from '../../shared/db/prisma.client';
+import { fetchCurrentPrice } from '../market-data/market-data.service';
 
 function createRealAlpacaService(): AlpacaService {
   const BASE_URL = process.env.ALPACA_BASE_URL || 'https://broker-api.sandbox.alpaca.markets';
@@ -226,7 +227,20 @@ eventBus.on<{ giftId: string }>(EVENTS.AGREEMENT_SIGNED, async ({ giftId }) => {
     await alpacaService.fundAccount(accountId, gift.amount);
     const { orderId } = await alpacaService.buyETF(accountId, gift.etfSymbol, gift.amount);
 
-    await transitionStatus(giftId, GiftStatus.INVESTED, { alpacaAccountId: accountId, alpacaOrderId: orderId });
+    // Capture the ETF price at the time of purchase so we can compute accurate
+    // gain/loss later without relying on daily changePercent or history approximations.
+    let purchasePricePerShare: number | undefined;
+    try {
+      purchasePricePerShare = await fetchCurrentPrice(gift.etfSymbol);
+    } catch {
+      // Non-fatal: gain/loss will fall back to approximation for this gift.
+    }
+
+    await transitionStatus(giftId, GiftStatus.INVESTED, {
+      alpacaAccountId: accountId,
+      alpacaOrderId: orderId,
+      ...(purchasePricePerShare != null ? { purchasePricePerShare } : {}),
+    });
 
     eventBus.emit(EVENTS.ACCOUNT_CREATED, { giftId, accountId });
     eventBus.emit(EVENTS.ETF_PURCHASED, { giftId, orderId });

@@ -37,6 +37,6 @@ export async function findGiftsByRecipientEmail(email: string) {
   });
 }
 
-export async function updateGiftStatus(id: string, status: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string }) {
+export async function updateGiftStatus(id: string, status: GiftStatus, extra?: { alpacaAccountId?: string; alpacaOrderId?: string; purchasePricePerShare?: number }) {
   return prisma.gift.update({ where: { id }, data: { status, ...extra } });
 }

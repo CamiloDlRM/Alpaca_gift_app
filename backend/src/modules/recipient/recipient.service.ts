@@ -60,22 +60,26 @@ export async function getRecipientPortfolio(claimToken: string): Promise<Recipie
     currentPrice = gift.amount;
   }
 
-  // Calculate shares based on amount invested and price at investment time
-  // We approximate purchase price using 1M history first bar, or current price
-  let purchasePrice = currentPrice;
-  try {
-    const history = await fetchPriceHistory(gift.etfSymbol, '1M');
-    if (history.length > 0) {
-      // Find the bar closest to the investment date
-      const investedAt = gift.updatedAt.getTime();
-      const closest = history.reduce((prev, curr) => {
-        const prevDiff = Math.abs(new Date(prev.date).getTime() - investedAt);
-        const currDiff = Math.abs(new Date(curr.date).getTime() - investedAt);
-        return currDiff < prevDiff ? curr : prev;
-      });
-      purchasePrice = closest.value;
-    }
-  } catch { /* use currentPrice as fallback */ }
+  // Use the ETF price captured at the moment of purchase (stored on the gift).
+  // For legacy gifts that predate this field, approximate from 1M history.
+  let purchasePrice: number = currentPrice;
+  const storedPurchasePrice: number | null = (gift as any).purchasePricePerShare ?? null;
+  if (storedPurchasePrice != null && storedPurchasePrice > 0) {
+    purchasePrice = storedPurchasePrice;
+  } else {
+    try {
+      const history = await fetchPriceHistory(gift.etfSymbol, '1M');
+      if (history.length > 0) {
+        const investedAt = gift.updatedAt.getTime();
+        const closest = history.reduce((prev, curr) => {
+          const prevDiff = Math.abs(new Date(prev.date).getTime() - investedAt);
+          const currDiff = Math.abs(new Date(curr.date).getTime() - investedAt);
+          return currDiff < prevDiff ? curr : prev;
+        });
+        purchasePrice = closest.value;
+      }
+    } catch { /* keep currentPrice as fallback */ }
+  }
 
   const shares = purchasePrice > 0 ? gift.amount / purchasePrice : 0;
 
@@ -189,18 +193,44 @@ export async function getConsolidatedRecipientPortfolio(
   // Build a map of ETF metadata for quick lookup
   const etfMap = new Map(getAllETFs().map((e) => [e.symbol, e]));
 
+  // Fetch current market prices for all unique active ETF symbols in parallel.
+  const activeSymbols = [...new Set(
+    gifts.filter((g) => g.status !== 'REDEEMED').map((g) => g.etfSymbol)
+  )];
+  const currentPriceMap = new Map<string, number>();
+  await Promise.all(
+    activeSymbols.map(async (symbol) => {
+      try {
+        const price = await fetchCurrentPrice(symbol);
+        currentPriceMap.set(symbol, price);
+      } catch { /* leave missing — will fallback to amount */ }
+    })
+  );
+
   // Compute current value for each gift
   const positionMap = new Map<string, ConsolidatedPositionItem>();
 
   for (const gift of gifts) {
     const isRedeemed = gift.status === 'REDEEMED';
     const etf = etfMap.get(gift.etfSymbol);
-    const changePercent = etf?.changePercent ?? 0;
 
-    // Use persisted redeemedAmount for sold gifts, otherwise compute from market
-    const currentValue = isRedeemed && gift.redeemedAmount != null
-      ? gift.redeemedAmount
-      : Number((gift.amount * (1 + changePercent / 100)).toFixed(2));
+    // Use persisted redeemedAmount for sold gifts.
+    // For active gifts, compute from purchasePricePerShare + current market price.
+    let currentValue: number;
+    if (isRedeemed && gift.redeemedAmount != null) {
+      currentValue = gift.redeemedAmount;
+    } else {
+      const currentPrice = currentPriceMap.get(gift.etfSymbol);
+      const giftPurchasePrice: number | null = (gift as any).purchasePricePerShare ?? null;
+      if (giftPurchasePrice != null && giftPurchasePrice > 0 && currentPrice != null) {
+        const shares = gift.amount / giftPurchasePrice;
+        currentValue = Number((shares * currentPrice).toFixed(2));
+      } else {
+        // Legacy fallback: use daily changePercent (less accurate but safe for old gifts).
+        const changePercent = etf?.changePercent ?? 0;
+        currentValue = Number((gift.amount * (1 + changePercent / 100)).toFixed(2));
+      }
+    }
 
     const gainLoss = Number((currentValue - gift.amount).toFixed(2));
     const gainLossPercent = gift.amount > 0

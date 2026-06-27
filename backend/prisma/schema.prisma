@@ -51,10 +51,11 @@ model Gift {
   claimPin        String?
   claimPinExpiry  DateTime?
   claimEmailSentAt DateTime?
-  cancelledAt     DateTime?
-  cancelledReason String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  cancelledAt          DateTime?
+  cancelledReason      String?
+  purchasePricePerShare Float?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
   kyc             KYC?
   agreement       Agreement?
   payment         Payment?
