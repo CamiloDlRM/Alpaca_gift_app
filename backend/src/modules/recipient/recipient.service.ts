@@ -263,7 +263,7 @@ export async function getConsolidatedRecipientPortfolio(
         totalCurrentValue: currentValue,
         gainLoss: 0,
         gainLossPercent: 0,
-        changePercent,
+        changePercent: etf?.changePercent ?? 0,
         gifts: [giftItem],
       });
     }
