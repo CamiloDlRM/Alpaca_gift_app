@@ -7,7 +7,6 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { ETFCommunityReviews } from '../components/ETFCommunityReviews';
 import { ETFCategoryRankings } from '../components/ETFCategoryRankings';
-import { ETFTopRankings } from '../components/ETFTopRankings';
 import { useAuthStore } from '../store/auth.store';
 import apiClient from '../api/client';
 
@@ -109,6 +108,16 @@ const OccasionIcon = ({ value, className = 'w-6 h-6' }: { value: string; classNa
     );
     default: return null;
   }
+};
+
+// Category-level metadata (icon + short description) shown on the category card
+// and inside the customization modal. Falls back gracefully for unknown categories.
+const CATEGORY_META: Record<string, { icon: string; description: string }> = {
+  'Leading Companies':       { icon: '🏆', description: "Invest in America's largest and most established businesses." },
+  'Innovation & Technology': { icon: '🚀', description: 'Back the companies driving technology and innovation forward.' },
+  'Emerging Growth':         { icon: '🌱', description: 'Smaller companies with high long-term growth potential.' },
+  'Stability & Income':      { icon: '🛡️', description: 'Steady, lower-volatility funds focused on income.' },
+  'Worldwide Growth':        { icon: '🌍', description: 'Diversify globally across international markets.' },
 };
 
 const OCCASIONS = [
@@ -318,9 +327,11 @@ export default function SendGift() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ETF pagination
+  // ETF pagination + customization modal
   const [etfPage, setEtfPage] = useState(0);
   const ETF_PAGE_SIZE = 6;
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [etfSearch, setEtfSearch] = useState('');
 
   // ETF ratings map (symbol → {avg, total})
   const [etfRatingsMap, setEtfRatingsMap] = useState<Record<string, { avg: number; total: number }>>({});
@@ -342,7 +353,20 @@ export default function SendGift() {
   const isPro = user?.subscriptionStatus === 'PRO' || user?.subscriptionStatus === 'PRO_PLUS';
   const isFreeLimitReached = !isPro && giftsCount >= 5;
 
-  useEffect(() => { setEtfPage(0); }, [selectedCategory]);
+  useEffect(() => { setEtfPage(0); setEtfSearch(''); }, [selectedCategory]);
+
+  // Default ETF for the selected category = first ETF in the catalog for it.
+  const filteredEtfs = etfs.filter((e) => e.category === selectedCategory);
+  const defaultEtfSymbol = filteredEtfs[0]?.symbol ?? '';
+
+  // Auto-select the default ETF so there's always a valid selection for the
+  // chosen category. Respects a pre-filled symbol that belongs to the category.
+  useEffect(() => {
+    if (filteredEtfs.length === 0) return;
+    const currentValid = filteredEtfs.some((e) => e.symbol === etfSymbol);
+    if (!currentValid) setEtfSymbol(defaultEtfSymbol);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, etfs]);
 
   // Fetch community ratings for selected category ETFs
   useEffect(() => {
@@ -411,7 +435,11 @@ export default function SendGift() {
       setEtfs(etfRes.data);
       setCategories(catRes.data);
       setGiftsCount(giftsRes.data.length);
-      if (catRes.data.length > 0) setSelectedCategory(catRes.data[0]);
+      // If a symbol was pre-filled via URL (favorites/events), open on its category.
+      const preSymbol = searchParams.get('etfSymbol');
+      const preEtf = preSymbol ? etfRes.data.find((e) => e.symbol === preSymbol) : undefined;
+      if (preEtf) setSelectedCategory(preEtf.category);
+      else if (catRes.data.length > 0) setSelectedCategory(catRes.data[0]);
     } catch {
       setError('Error al cargar datos. Intenta de nuevo.');
     } finally {
@@ -422,8 +450,6 @@ export default function SendGift() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const filteredEtfs = etfs.filter((e) => e.category === selectedCategory);
 
   const handleContinueToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -781,127 +807,53 @@ export default function SendGift() {
                 </select>
               </div>
 
-              {/* Top-ranked ETFs for the selected category — visual guide above the ETF picker */}
-              {selectedCategory && (
-                <ETFTopRankings
-                  category={selectedCategory}
-                  onSelectETF={setEtfSymbol}
-                  selectedETF={etfSymbol}
-                />
-              )}
-
-              {(() => {
-                const totalEtfPages = Math.max(1, Math.ceil(filteredEtfs.length / ETF_PAGE_SIZE));
-                const pagedEtfs = filteredEtfs.slice(etfPage * ETF_PAGE_SIZE, (etfPage + 1) * ETF_PAGE_SIZE);
+              {/* Selected category card + entry point to the customization modal */}
+              {selectedCategory && (() => {
+                const meta = CATEGORY_META[selectedCategory];
+                const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
+                const isDefault = etfSymbol === defaultEtfSymbol;
                 return (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select investment</label>
-                      {filteredEtfs.length > 0 && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {filteredEtfs.length} ETFs · page {etfPage + 1}/{totalEtfPages}
-                        </span>
-                      )}
+                  <div className="rounded-2xl border-2 border-[#F5C518]/40 bg-yellow-50/60 dark:bg-yellow-900/10 p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-[#F5C518]/20 flex items-center justify-center text-2xl flex-shrink-0" aria-hidden="true">
+                        {meta?.icon ?? '📈'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{selectedCategory}</h3>
+                        {meta?.description && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{meta.description}</p>
+                        )}
+                      </div>
                     </div>
 
-                    {filteredEtfs.length === 0 ? (
-                      <p className="text-sm text-gray-400 py-3">No ETFs available for this category.</p>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {pagedEtfs.map((etf, ei) => {
-                            const selected = etfSymbol === etf.symbol;
-                            return (
-                              <button
-                                type="button"
-                                key={etf.symbol}
-                                onClick={() => setEtfSymbol(etf.symbol)}
-                                style={{ animationDelay: `${ei * 30}ms`, animationFillMode: 'both' }}
-                                className={`relative flex flex-col p-3 rounded-xl border-2 transition-all text-left animate-scaleIn ${
-                                  selected
-                                    ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20 shadow-md'
-                                    : 'border-gray-100 dark:border-gray-700 hover:border-[#F5C518]/50 hover:shadow-sm bg-white dark:bg-gray-800'
-                                }`}
-                              >
-                                {selected && (
-                                  <span className="absolute top-2 right-2 w-4 h-4 bg-[#F5C518] rounded-full flex items-center justify-center">
-                                    <svg className="w-2.5 h-2.5 text-black" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                      <path d="M2 6l3 3 5-5"/>
-                                    </svg>
-                                  </span>
-                                )}
-                                <div className="font-bold text-gray-900 dark:text-white text-sm pr-5">{etf.symbol}</div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 mt-0.5 mb-2 leading-tight">{etf.name}</div>
-                                {(() => {
-                                  const r = etfRatingsMap[etf.symbol];
-                                  return r && r.total > 0 ? (
-                                    <div className="mt-auto flex items-center gap-1.5">
-                                      <div className="flex gap-0.5">
-                                        {[1,2,3,4,5].map(i => (
-                                          <svg key={i} className={`w-3 h-3 ${i <= Math.round(r.avg) ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                          </svg>
-                                        ))}
-                                      </div>
-                                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.avg.toFixed(1)}</span>
-                                      <span className="text-[10px] text-gray-400">({r.total})</span>
-                                    </div>
-                                  ) : (
-                                    <div className="mt-auto flex items-center gap-0.5">
-                                      {[1,2,3,4,5].map(i => (
-                                        <svg key={i} className="w-3 h-3 text-gray-200 dark:text-gray-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                        </svg>
-                                      ))}
-                                      <span className="text-[10px] text-gray-300 dark:text-gray-600 ml-1">New</span>
-                                    </div>
-                                  );
-                                })()}
-                              </button>
-                            );
-                          })}
+                    {/* Current selection */}
+                    {selectedEtf && (
+                      <div className="mt-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-4 py-3">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Current selection</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="font-bold text-gray-900 dark:text-white">{selectedEtf.symbol}</span>
+                          {isDefault && (
+                            <span className="text-[10px] font-semibold text-[#b8960c] bg-[#F5C518]/15 rounded-full px-2 py-0.5">★ Default</span>
+                          )}
                         </div>
-
-                        {totalEtfPages > 1 && (
-                          <div className="flex items-center justify-between pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setEtfPage(p => Math.max(0, p - 1))}
-                              disabled={etfPage === 0}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                              Prev
-                            </button>
-                            <div className="flex gap-1">
-                              {Array.from({ length: totalEtfPages }, (_, i) => (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={() => setEtfPage(i)}
-                                  className={`w-6 h-6 rounded-full text-xs font-bold transition-colors ${
-                                    i === etfPage
-                                      ? 'bg-[#F5C518] text-black'
-                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                  }`}
-                                >
-                                  {i + 1}
-                                </button>
-                              ))}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setEtfPage(p => Math.min(totalEtfPages - 1, p + 1))}
-                              disabled={etfPage >= totalEtfPages - 1}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            >
-                              Next
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                            </button>
-                          </div>
-                        )}
-                      </>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedEtf.name}</div>
+                      </div>
                     )}
+
+                    <div className="border-t border-[#F5C518]/20 mt-4 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => { setEtfSearch(''); setEtfPage(0); setCustomizeOpen(true); }}
+                        className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.559.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.93l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.93l.15-.894z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Customize Your WealthGift
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                      </button>
+                    </div>
                   </div>
                 );
               })()}
@@ -977,6 +929,202 @@ export default function SendGift() {
               </Button>
             </form>
           </Card>
+
+          {/* Advanced WealthGift Customization modal */}
+          {customizeOpen && (() => {
+            const meta = CATEGORY_META[selectedCategory];
+            const searchLower = etfSearch.trim().toLowerCase();
+            const searchedEtfs = searchLower
+              ? filteredEtfs.filter((e) => e.symbol.toLowerCase().includes(searchLower) || e.name.toLowerCase().includes(searchLower))
+              : filteredEtfs;
+            const totalPages = Math.max(1, Math.ceil(searchedEtfs.length / ETF_PAGE_SIZE));
+            const pageClamped = Math.min(etfPage, totalPages - 1);
+            const pagedEtfs = searchedEtfs.slice(pageClamped * ETF_PAGE_SIZE, (pageClamped + 1) * ETF_PAGE_SIZE);
+            const selectedEtf = etfs.find((e) => e.symbol === etfSymbol);
+            return (
+              <div
+                className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4"
+                onClick={(e) => { if (e.target === e.currentTarget) setCustomizeOpen(false); }}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Advanced WealthGift Customization"
+              >
+                <div className="bg-white dark:bg-gray-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col animate-slideUp">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white">Advanced WealthGift Customization</h2>
+                    <button
+                      type="button"
+                      onClick={() => setCustomizeOpen(false)}
+                      aria-label="Close"
+                      className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+
+                  {/* Scrollable body */}
+                  <div className="overflow-y-auto px-5 py-4 flex-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Choose a different ETF for your selected category. You can keep the default selection or pick another option.
+                    </p>
+
+                    {/* Category + current selection card */}
+                    <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/40 p-4 mb-4 flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Selected category</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-lg" aria-hidden="true">{meta?.icon ?? '📈'}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">{selectedCategory}</span>
+                        </div>
+                        {meta?.description && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{meta.description}</p>
+                        )}
+                      </div>
+                      {selectedEtf && (
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Current selection</div>
+                          <div className="font-bold text-gray-900 dark:text-white mt-1">{selectedEtf.symbol}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 max-w-[9rem] truncate">{selectedEtf.name}</div>
+                          {etfSymbol === defaultEtfSymbol && (
+                            <span className="inline-block mt-1 text-[10px] font-semibold text-[#b8960c] bg-[#F5C518]/15 rounded-full px-2 py-0.5">★ Default</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mb-4">
+                      <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                      <input
+                        type="text"
+                        value={etfSearch}
+                        onChange={(e) => { setEtfSearch(e.target.value); setEtfPage(0); }}
+                        placeholder="Search for an ETF or keyword"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 py-3 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F5C518] focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Count + page */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{searchedEtfs.length} ETFs available</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Page {pageClamped + 1} of {totalPages}</span>
+                    </div>
+
+                    {/* ETF grid */}
+                    {searchedEtfs.length === 0 ? (
+                      <p className="text-sm text-gray-400 py-8 text-center">No ETFs match your search.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {pagedEtfs.map((etf) => {
+                          const selected = etfSymbol === etf.symbol;
+                          const r = etfRatingsMap[etf.symbol];
+                          return (
+                            <button
+                              type="button"
+                              key={etf.symbol}
+                              onClick={() => setEtfSymbol(etf.symbol)}
+                              className={`relative flex gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                                selected
+                                  ? 'border-[#F5C518] bg-yellow-50 dark:bg-yellow-900/20 shadow-sm'
+                                  : 'border-gray-100 dark:border-gray-700 hover:border-[#F5C518]/50 bg-white dark:bg-gray-800'
+                              }`}
+                            >
+                              {/* Radio */}
+                              <span className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selected ? 'border-[#F5C518]' : 'border-gray-300 dark:border-gray-600'}`}>
+                                {selected && <span className="w-2 h-2 rounded-full bg-[#F5C518]" />}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-bold text-gray-900 dark:text-white text-sm">{etf.symbol}</div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 leading-tight mt-0.5">{etf.name}</div>
+                                {r && r.total > 0 ? (
+                                  <div className="flex items-center gap-1.5 mt-1.5">
+                                    <div className="flex gap-0.5">
+                                      {[1,2,3,4,5].map(i => (
+                                        <svg key={i} className={`w-3 h-3 ${i <= Math.round(r.avg) ? 'text-[#F5C518]' : 'text-gray-200 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                      ))}
+                                    </div>
+                                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{r.avg.toFixed(1)}</span>
+                                    <span className="text-[10px] text-gray-400">({r.total})</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-0.5 mt-1.5">
+                                    {[1,2,3,4,5].map(i => (
+                                      <svg key={i} className="w-3 h-3 text-gray-200 dark:text-gray-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                      </svg>
+                                    ))}
+                                    <span className="text-[10px] text-gray-300 dark:text-gray-600 ml-1">New</span>
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setEtfPage(() => Math.max(0, pageClamped - 1))}
+                          disabled={pageClamped === 0}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                          Prev
+                        </button>
+                        <div className="flex gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setEtfPage(i)}
+                              className={`w-7 h-7 rounded-full text-xs font-bold transition-colors ${
+                                i === pageClamped
+                                  ? 'bg-[#F5C518] text-black'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEtfPage(() => Math.min(totalPages - 1, pageClamped + 1))}
+                          disabled={pageClamped >= totalPages - 1}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center gap-2 px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex-shrink-0">
+                    <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
+                      All investments are held in brokerage accounts provided by our clearing partner, a registered broker-dealer and member FINRA/SIPC.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCustomizeOpen(false)}
+                      className="ml-auto flex-shrink-0 px-4 py-2 rounded-full bg-[#F5C518] hover:bg-yellow-400 text-black text-sm font-bold transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           </>
         ) : paymentData ? (
