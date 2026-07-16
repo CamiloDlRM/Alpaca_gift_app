@@ -34,7 +34,7 @@ export async function sendGiftReceivedEmail(opts: {
         <tr>
           <td style="background:#F5C518;padding:28px 40px;text-align:center">
             <div style="display:inline-flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;background:rgba(0,0,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
+              <div style="width:36px;height:36px;background:#111827;border-radius:50%;display:flex;align-items:center;justify-content:center">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
               <span style="font-size:20px;font-weight:700;color:#000">WealthGift</span>
@@ -43,16 +43,14 @@ export async function sendGiftReceivedEmail(opts: {
         </tr>
         <tr>
           <td style="padding:40px 40px 32px">
-            <p style="margin:0 0 8px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600">You have a gift waiting</p>
             <h1 style="margin:0 0 24px;font-size:28px;font-weight:700;color:#111827">Hi ${opts.recipientName}!</h1>
             <p style="margin:0 0 24px;font-size:16px;color:#374151;line-height:1.6">
-              <strong>${opts.senderName}</strong> has sent you a <strong>${opts.occasion}</strong> investment gift through WealthGift.
+              <strong>${opts.senderName}</strong> just sent you a special WealthGift that grows over time for your <strong>${opts.occasion}</strong>.
             </p>
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:12px;margin-bottom:32px">
               <tr>
                 <td style="padding:24px;text-align:center">
-                  <div style="font-size:36px;font-weight:700;color:#111827;margin-bottom:4px">$${opts.amount.toFixed(2)}</div>
-                  <div style="font-size:16px;color:#6b7280;font-weight:500">invested in ${opts.etfSymbol}</div>
+                  <div style="font-size:36px;font-weight:700;color:#111827">$${opts.amount.toFixed(2)}</div>
                 </td>
               </tr>
             </table>
@@ -60,7 +58,7 @@ export async function sendGiftReceivedEmail(opts: {
               <tr>
                 <td align="center">
                   <a href="${claimUrl}" style="display:inline-block;background:#F5C518;color:#000;font-size:16px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:100px">
-                    Claim Your Gift
+                    Receive your WealthGift
                   </a>
                 </td>
               </tr>
@@ -110,7 +108,7 @@ export async function sendGiftInvitationEmail(opts: {
         <tr>
           <td style="background:#F5C518;padding:28px 40px;text-align:center">
             <div style="display:inline-flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;background:rgba(0,0,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
+              <div style="width:36px;height:36px;background:#111827;border-radius:50%;display:flex;align-items:center;justify-content:center">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
               <span style="font-size:20px;font-weight:700;color:#000">WealthGift</span>
@@ -119,21 +117,19 @@ export async function sendGiftInvitationEmail(opts: {
         </tr>
         <tr>
           <td style="padding:40px 40px 32px">
-            <p style="margin:0 0 8px;font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600">You've been gifted an investment</p>
             <h1 style="margin:0 0 24px;font-size:28px;font-weight:700;color:#111827">Hi ${opts.recipientName}!</h1>
             <p style="margin:0 0 24px;font-size:16px;color:#374151;line-height:1.6">
-              <strong>${opts.senderName}</strong> has sent you a <strong>${opts.occasion}</strong> investment gift through WealthGift.
+              <strong>${opts.senderName}</strong> just sent you a special WealthGift that grows over time for your <strong>${opts.occasion}</strong>.
             </p>
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:12px;margin-bottom:32px">
               <tr>
                 <td style="padding:24px;text-align:center">
-                  <div style="font-size:36px;font-weight:700;color:#111827;margin-bottom:4px">$${opts.amount.toFixed(2)}</div>
-                  <div style="font-size:16px;color:#6b7280;font-weight:500">invested in ${opts.etfSymbol}</div>
+                  <div style="font-size:36px;font-weight:700;color:#111827">$${opts.amount.toFixed(2)}</div>
                 </td>
               </tr>
             </table>
             <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6">
-              To claim your gift, create a <strong>free WealthGift account</strong> with this email address. It only takes a minute, and your gift will be waiting for you.
+              To receive your WealthGift, create a <strong>free account</strong> with this email address. It only takes a minute, and your gift will be waiting for you.
             </p>
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
@@ -546,7 +542,7 @@ export async function sendVerificationEmail(opts: VerificationEmailOpts) {
         <tr>
           <td style="background:#F5C518;padding:28px 40px;text-align:center">
             <div style="display:inline-flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;background:rgba(0,0,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center">
+              <div style="width:36px;height:36px;background:#111827;border-radius:50%;display:flex;align-items:center;justify-content:center">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 12 L8 8 L12 14 L16 6 L20 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </div>
               <span style="font-size:20px;font-weight:700;color:#000">WealthGift</span>

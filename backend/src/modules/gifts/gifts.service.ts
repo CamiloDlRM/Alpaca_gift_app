@@ -13,8 +13,12 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY!);
 const BASE_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 function toGiftResponse(gift: any): GiftResponse {
+  // Strip the nested `sender` relation so we never leak the full user row;
+  // expose only the display name via `senderName`.
+  const { sender, ...rest } = gift;
   return {
-    ...gift,
+    ...rest,
+    senderName: sender?.name ?? null,
     claimLink: `${BASE_URL}/claim/${gift.claimToken}`,
   };
 }

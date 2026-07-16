@@ -27,7 +27,12 @@ export async function findGiftById(id: string) {
 }
 
 export async function findGiftByClaimToken(claimToken: string) {
-  return prisma.gift.findUnique({ where: { claimToken } });
+  // Include only the sender's display name (never the full user row) so the
+  // public claim page can greet the recipient with who sent the gift.
+  return prisma.gift.findUnique({
+    where: { claimToken },
+    include: { sender: { select: { name: true } } },
+  });
 }
 
 export async function findGiftsByRecipientEmail(email: string) {

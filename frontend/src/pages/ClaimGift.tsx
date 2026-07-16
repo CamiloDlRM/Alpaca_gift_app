@@ -10,6 +10,7 @@ import apiClient from '../api/client';
 interface GiftResponse {
   id: string;
   senderId: string;
+  senderName?: string | null;
   recipientName: string;
   occasion: string;
   etfSymbol: string;
@@ -151,11 +152,15 @@ export default function ClaimGift() {
           <div className="w-16 h-16 bg-[#F5C518]/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-[#F5C518]" fill="currentColor" viewBox="0 0 24 24"><path d="M20 7h-1.209A4.92 4.92 0 0019 5.5C19 3.57 17.43 2 15.5 2c-1.622 0-2.705 1.482-3.404 3.085C11.498 3.49 10.39 2 8.5 2 6.57 2 5 3.57 5 5.5c0 .596.079 1.089.209 1.5H4c-1.1 0-2 .9-2 2v2c0 .55.45 1 1 1v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7c.55 0 1-.45 1-1V9c0-1.1-.9-2-2-2z"/></svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">You have a gift waiting!</h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">Log in to your WealthGift account to claim your investment gift.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            {gift?.senderName
+              ? `${gift.senderName} just sent you a special gift that grows over time.`
+              : 'You have a gift waiting!'}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Log in to receive your WealthGift and see what's waiting for you.</p>
           <div className="space-y-3">
             <a href={`/login?next=/claim/${claimToken}`} className="block w-full bg-[#F5C518] text-black font-bold py-3 px-6 rounded-xl hover:bg-yellow-400 transition-colors text-center">
-              Log in to claim gift
+              Log in to WealthGift
             </a>
             <a href={`/register?next=/claim/${claimToken}`} className="block w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 px-6 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
               Create an account

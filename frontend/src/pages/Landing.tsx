@@ -321,13 +321,13 @@ export default function Landing() {
             <div className="space-y-8 animate-slideUp">
               <div className="inline-flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-4 py-2 rounded-full text-sm font-medium">
                 <span className="w-2 h-2 bg-[#F5C518] rounded-full animate-pulse" />
-                The future of gifting is here
+                The evolution of how people give
               </div>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
-                Give the gift of{' '}
+                Give a gift that{' '}
                 <span className="text-[#F5C518] relative inline-block">
-                  investment
+                  grows
                   <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none" aria-hidden="true">
                     <path d="M2 8 C50 2 150 2 198 8" stroke="#F5C518" strokeWidth="3" strokeLinecap="round" />
                   </svg>
@@ -335,7 +335,7 @@ export default function Landing() {
               </h1>
 
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-lg">
-                Skip the gift cards. Give your loved ones real investments — ETFs that grow over time. Start building their wealth today.
+                Skip the gift cards. Give something meaningful over time.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -345,7 +345,7 @@ export default function Landing() {
                       to="/register"
                       className="inline-flex items-center justify-center bg-[#F5C518] hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-xl text-lg transition-all hover:shadow-lg hover:shadow-yellow-400/30 hover:-translate-y-0.5 active:translate-y-0"
                     >
-                      Get Started Free
+                      Send your first WealthGift
                       <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -369,6 +369,12 @@ export default function Landing() {
                   </Link>
                 )}
               </div>
+
+              {!isLoggedIn && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">
+                  Try your first WealthGift at no cost.
+                </p>
+              )}
 
               {/* Trust badges */}
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 dark:text-gray-400">

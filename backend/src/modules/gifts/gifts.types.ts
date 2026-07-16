@@ -13,6 +13,7 @@ export interface CreateGiftDto {
 export interface GiftResponse {
   id: string;
   senderId: string;
+  senderName?: string | null;
   recipientName: string;
   occasion: string;
   etfSymbol: string;
